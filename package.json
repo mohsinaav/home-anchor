@@ -1,0 +1,27 @@
+{
+  "name": "home-anchor",
+  "version": "1.0.0",
+  "description": "Family organization app for managing schedules, points, and activities",
+  "main": "index.html",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:ui": "npx playwright test --ui",
+    "test:headed": "npx playwright test --headed",
+    "test:debug": "npx playwright test --debug",
+    "test:report": "npx playwright show-report",
+    "serve": "npx http-server -p 3000 -c-1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.40.0",
+    "http-server": "^14.1.1"
+  },
+  "keywords": [
+    "family",
+    "organization",
+    "kids",
+    "points",
+    "rewards"
+  ],
+  "author": "",
+  "license": "MIT"
+}

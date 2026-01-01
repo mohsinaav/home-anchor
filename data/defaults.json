@@ -1,0 +1,79 @@
+{
+  "version": "1.0.0",
+  "defaultActivities": [
+    { "name": "Make bed", "points": 5, "icon": "bed" },
+    { "name": "Brush teeth", "points": 5, "icon": "sparkles" },
+    { "name": "Get dressed", "points": 5, "icon": "shirt" },
+    { "name": "Do homework", "points": 10, "icon": "book-open" },
+    { "name": "Help with dishes", "points": 10, "icon": "utensils" },
+    { "name": "Clean room", "points": 15, "icon": "home" },
+    { "name": "Read for 20 min", "points": 15, "icon": "book" },
+    { "name": "Practice instrument", "points": 15, "icon": "music" },
+    { "name": "Help with laundry", "points": 10, "icon": "shirt" },
+    { "name": "Set the table", "points": 5, "icon": "utensils-crossed" },
+    { "name": "Feed pet", "points": 5, "icon": "heart" },
+    { "name": "Take out trash", "points": 10, "icon": "trash" },
+    { "name": "Water plants", "points": 5, "icon": "flower-2" },
+    { "name": "Be kind to sibling", "points": 10, "icon": "heart-handshake" },
+    { "name": "No screen time before homework", "points": 10, "icon": "tv-off" }
+  ],
+  "defaultRewards": [
+    { "name": "30 min screen time", "cost": 50, "icon": "tv" },
+    { "name": "Extra 15 min bedtime", "cost": 75, "icon": "moon" },
+    { "name": "Pick dinner", "cost": 100, "icon": "pizza" },
+    { "name": "Pick a movie", "cost": 75, "icon": "film" },
+    { "name": "Skip one chore", "cost": 100, "icon": "x-circle" },
+    { "name": "Ice cream treat", "cost": 150, "icon": "ice-cream-2" },
+    { "name": "Friend sleepover", "cost": 300, "icon": "users" },
+    { "name": "Small toy", "cost": 500, "icon": "gift" },
+    { "name": "Special outing", "cost": 750, "icon": "map-pin" },
+    { "name": "$5 allowance", "cost": 1000, "icon": "banknote" }
+  ],
+  "toddlerActivities": [
+    { "name": "Finger painting", "category": "art", "icon": "palette" },
+    { "name": "Play-doh fun", "category": "art", "icon": "shapes" },
+    { "name": "Block stacking", "category": "motor", "icon": "blocks" },
+    { "name": "Story time", "category": "learning", "icon": "book" },
+    { "name": "Dance party", "category": "movement", "icon": "music" },
+    { "name": "Bubble play", "category": "sensory", "icon": "circle" },
+    { "name": "Nature walk", "category": "outdoor", "icon": "tree-pine" },
+    { "name": "Sandbox play", "category": "outdoor", "icon": "shovel" },
+    { "name": "Color sorting", "category": "learning", "icon": "palette" },
+    { "name": "Animal sounds", "category": "learning", "icon": "cat" },
+    { "name": "Puzzle time", "category": "motor", "icon": "puzzle" },
+    { "name": "Water play", "category": "sensory", "icon": "droplets" },
+    { "name": "Ball games", "category": "movement", "icon": "circle" },
+    { "name": "Sticker fun", "category": "art", "icon": "star" },
+    { "name": "Hide and seek", "category": "movement", "icon": "search" }
+  ],
+  "sampleRecipes": [
+    {
+      "name": "Simple Pasta",
+      "ingredients": [
+        { "name": "Pasta", "quantity": "500", "unit": "g" },
+        { "name": "Tomato sauce", "quantity": "1", "unit": "jar" },
+        { "name": "Parmesan cheese", "quantity": "50", "unit": "g" }
+      ],
+      "instructions": "1. Boil pasta according to package directions.\n2. Heat tomato sauce in a pan.\n3. Drain pasta and mix with sauce.\n4. Top with parmesan cheese.",
+      "prepTime": 20,
+      "tags": ["quick", "kid-friendly"]
+    },
+    {
+      "name": "Chicken Stir Fry",
+      "ingredients": [
+        { "name": "Chicken breast", "quantity": "400", "unit": "g" },
+        { "name": "Mixed vegetables", "quantity": "300", "unit": "g" },
+        { "name": "Soy sauce", "quantity": "3", "unit": "tbsp" },
+        { "name": "Rice", "quantity": "2", "unit": "cups" }
+      ],
+      "instructions": "1. Cook rice according to package directions.\n2. Slice chicken into strips and stir fry until cooked.\n3. Add vegetables and cook for 5 minutes.\n4. Add soy sauce and serve over rice.",
+      "prepTime": 30,
+      "tags": ["healthy", "protein"]
+    }
+  ],
+  "icons": {
+    "activities": ["bed", "sparkles", "book", "book-open", "utensils", "home", "music", "shirt", "heart", "star", "check-circle", "award"],
+    "rewards": ["tv", "moon", "pizza", "film", "gift", "ice-cream-2", "users", "map-pin", "banknote", "gamepad-2", "candy", "party-popper"],
+    "tabs": ["user", "star", "baby", "heart", "home", "briefcase", "book", "music", "gamepad-2", "sun"]
+  }
+}

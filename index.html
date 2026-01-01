@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Anchor</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/widgets.css">
+    <link rel="stylesheet" href="css/theme-adult.css">
+    <link rel="stylesheet" href="css/theme-kid.css">
+    <link rel="stylesheet" href="css/calendar.css">
+    <link rel="stylesheet" href="css/schedule.css">
+    <link rel="stylesheet" href="css/kids-widgets.css">
+    <link rel="stylesheet" href="css/pages.css">
+</head>
+<body>
+    <div id="app" class="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="header__brand">
+                <i data-lucide="anchor" class="header__logo"></i>
+                <h1 class="header__title">Home Anchor</h1>
+            </div>
+            <div class="header__actions">
+                <button class="header__btn" id="dashboardBtn" aria-label="Family Dashboard" title="Family Dashboard">
+                    <i data-lucide="layout-dashboard"></i>
+                </button>
+                <button class="header__btn" id="settingsBtn" aria-label="Settings" title="Settings">
+                    <i data-lucide="settings"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Tab Navigation -->
+        <nav class="tabs" id="tabNav">
+            <div class="tabs__list" id="tabList">
+                <!-- Tabs will be rendered by JavaScript -->
+            </div>
+            <button class="tabs__add" id="addTabBtn" aria-label="Add new tab">
+                <i data-lucide="plus"></i>
+            </button>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main" id="mainContent">
+            <!-- Content will be rendered by JavaScript based on active tab -->
+            <div class="loading">
+                <i data-lucide="loader-2" class="loading__spinner"></i>
+                <p>Loading...</p>
+            </div>
+        </main>
+
+        <!-- Modal Container -->
+        <div class="modal-overlay" id="modalOverlay">
+            <div class="modal" id="modal">
+                <div class="modal__header">
+                    <h2 class="modal__title" id="modalTitle">Modal Title</h2>
+                    <button class="modal__close" id="modalClose" aria-label="Close modal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal__content" id="modalContent">
+                    <!-- Modal content will be injected here -->
+                </div>
+                <div class="modal__footer" id="modalFooter">
+                    <!-- Modal actions will be injected here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PIN Entry Modal -->
+        <div class="pin-overlay" id="pinOverlay">
+            <div class="pin-modal">
+                <h2 class="pin-modal__title">Enter Admin PIN</h2>
+                <div class="pin-modal__input-wrapper">
+                    <input
+                        type="password"
+                        id="pinInput"
+                        class="pin-modal__input"
+                        maxlength="4"
+                        pattern="[0-9]*"
+                        inputmode="numeric"
+                        placeholder="••••"
+                        autocomplete="off"
+                    >
+                </div>
+                <p class="pin-modal__error" id="pinError"></p>
+                <div class="pin-modal__actions">
+                    <button class="btn btn--secondary" id="pinCancel">Cancel</button>
+                    <button class="btn btn--primary" id="pinSubmit">Submit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notifications -->
+        <div class="toast-container" id="toastContainer">
+            <!-- Toasts will be injected here -->
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/utils/dates.js"></script>
+    <script src="js/utils/validation.js"></script>
+    <script src="js/utils/avatar.js"></script>
+    <script src="js/components/modal.js"></script>
+    <script src="js/components/tabs.js"></script>
+    <script src="js/components/widget-renderer.js"></script>
+    <script src="js/components/schedule-sidebar.js"></script>
+    <script src="js/components/save-indicator.js"></script>
+    <script src="js/components/calendar.js"></script>
+    <!-- Features -->
+    <script src="js/features/schedule.js"></script>
+    <script src="js/features/points.js"></script>
+    <script src="js/features/rewards.js"></script>
+    <script src="js/features/achievements.js"></script>
+    <script src="js/features/chores.js"></script>
+    <script src="js/features/kid-tasks.js"></script>
+    <script src="js/features/toddler-tasks.js"></script>
+    <script src="js/features/toddler-routine.js"></script>
+    <script src="js/features/accomplishments.js"></script>
+    <script src="js/features/screen-time.js"></script>
+    <script src="js/features/kid-journal.js"></script>
+    <script src="js/features/kid-workout.js"></script>
+    <script src="js/features/tasks.js"></script>
+    <script src="js/features/meals.js"></script>
+    <script src="js/features/workout.js"></script>
+    <script src="js/features/circuit-timer.js"></script>
+    <script src="js/features/gratitude.js"></script>
+    <script src="js/features/journal.js"></script>
+    <script src="js/features/habits.js"></script>
+    <script src="js/features/routine.js"></script>
+    <script src="js/features/activities.js"></script>
+    <script src="js/features/daily-log.js"></script>
+    <script src="js/features/milestones.js"></script>
+    <script src="js/features/notifications.js"></script>
+    <script src="js/features/recipes.js"></script>
+    <script src="js/features/grocery.js"></script>
+    <script src="js/features/vision-board.js"></script>
+    <script src="js/features/settings-page.js"></script>
+    <script src="js/features/family-dashboard.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

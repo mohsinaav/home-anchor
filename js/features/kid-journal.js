@@ -1,0 +1,1176 @@
+/**
+ * Kid Journal Feature
+ * A journal widget for kids to write, reflect, and track their mood
+ */
+
+const KidJournal = (function() {
+    // Maximum entries to show in widget preview
+    const MAX_WIDGET_ENTRIES = 3;
+
+    // Mood options with emojis and colors
+    const MOODS = [
+        { id: 'happy', emoji: '😊', name: 'Happy', color: '#FCD34D' },
+        { id: 'sad', emoji: '😢', name: 'Sad', color: '#93C5FD' },
+        { id: 'excited', emoji: '🤩', name: 'Excited', color: '#F472B6' },
+        { id: 'calm', emoji: '😌', name: 'Calm', color: '#86EFAC' },
+        { id: 'angry', emoji: '😠', name: 'Angry', color: '#FCA5A5' },
+        { id: 'tired', emoji: '😴', name: 'Tired', color: '#C4B5FD' },
+        { id: 'silly', emoji: '🤪', name: 'Silly', color: '#FDBA74' }
+    ];
+
+    // Daily prompts for inspiration
+    const PROMPTS = [
+        "What made you happy today?",
+        "What did you learn today?",
+        "Who did you play with?",
+        "What are you thankful for?",
+        "What was the best part of your day?",
+        "What do you want to do tomorrow?",
+        "How did you help someone today?",
+        "What was something funny that happened?",
+        "What was hard today? How did you handle it?",
+        "Describe your favorite moment today"
+    ];
+
+    // Sticker options (shown after entry)
+    const STICKERS = [
+        '⚽', '🏀', '🎮', '📚', '🎨', '🎵', '🎂', '🍕', '🌟', '❤️',
+        '🐶', '🐱', '🦋', '🌈', '🚀', '🎪', '🏖️', '🎃', '🎄', '🎁',
+        '🎈', '🎯', '🏆', '🎸', '🎤', '🎬', '🍦', '🌸', '🦄', '🐳'
+    ];
+
+    // Text emojis (can be inserted into journal text)
+    const TEXT_EMOJIS = [
+        '😊', '😄', '😁', '🥰', '😍', '🤗', '😎', '🤩', '😜', '😋',
+        '😢', '😭', '😤', '😡', '🥺', '😴', '🤔', '🙄', '😇', '🤭',
+        '❤️', '💖', '💕', '✨', '🌟', '⭐', '🎉', '🎊', '🔥', '💪',
+        '👍', '👏', '🙌', '🤝', '✌️', '🤞', '👋', '🥳', '🎈', '🎁'
+    ];
+
+    /**
+     * Get widget data with defaults
+     */
+    function getWidgetData(memberId) {
+        const stored = Storage.getWidgetData(memberId, 'kid-journal');
+        if (!stored || !stored.entries) {
+            return {
+                entries: [],
+                settings: { showPrompts: true }
+            };
+        }
+        return stored;
+    }
+
+    /**
+     * Save widget data
+     */
+    function saveWidgetData(memberId, data) {
+        Storage.setWidgetData(memberId, 'kid-journal', data);
+    }
+
+    /**
+     * Get today's prompt (rotates daily based on day of year)
+     */
+    function getTodayPrompt() {
+        const now = new Date();
+        const start = new Date(now.getFullYear(), 0, 0);
+        const diff = now - start;
+        const dayOfYear = Math.floor(diff / (1000 * 60 * 60 * 24));
+        return PROMPTS[dayOfYear % PROMPTS.length];
+    }
+
+    /**
+     * Get mood by ID
+     */
+    function getMoodById(moodId) {
+        return MOODS.find(m => m.id === moodId) || MOODS[0];
+    }
+
+    /**
+     * Format date for display
+     */
+    function formatDate(dateStr) {
+        // Handle both ISO string and YYYY-MM-DD format
+        const date = new Date(dateStr + (dateStr.includes('T') ? '' : 'T00:00:00'));
+        const options = { month: 'short', day: 'numeric' };
+        return date.toLocaleDateString('en-US', options);
+    }
+
+    /**
+     * Get today's date string in local timezone (YYYY-MM-DD)
+     */
+    function getToday() {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Get local date string from Date object (YYYY-MM-DD)
+     */
+    function getLocalDateString(date) {
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
+    /**
+     * Check if kid already has an entry for today
+     */
+    function hasEntryToday(entries) {
+        const today = getToday();
+        return entries.some(e => getEntryDate(e) === today);
+    }
+
+    /**
+     * Get the date part from an entry (handles both old ISO format and new format)
+     */
+    function getEntryDate(entry) {
+        // If entry has a date field, use it; otherwise extract from createdAt
+        if (entry.date) return entry.date;
+        // Convert ISO string to local date
+        const d = new Date(entry.createdAt);
+        return getLocalDateString(d);
+    }
+
+    /**
+     * Truncate text
+     */
+    function truncate(text, maxLength = 50) {
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    }
+
+    /**
+     * Render the journal widget
+     */
+    function renderWidget(container, memberId) {
+        const widgetData = getWidgetData(memberId);
+        const entries = widgetData.entries || [];
+        const recentEntries = entries.slice(0, MAX_WIDGET_ENTRIES);
+        const todayPrompt = getTodayPrompt();
+        const showPrompts = widgetData.settings?.showPrompts !== false;
+        const alreadyWroteToday = hasEntryToday(entries);
+        const todayEntry = alreadyWroteToday ? entries.find(e => getEntryDate(e) === getToday()) : null;
+
+        // Calculate streak for display
+        const streak = calculateStreak(entries);
+
+        container.innerHTML = `
+            <div class="kid-journal-widget">
+                <div class="kid-journal-widget__header">
+                    <div class="kid-journal-widget__streak ${streak > 0 ? 'kid-journal-widget__streak--active' : ''}">
+                        <span class="kid-journal-widget__streak-icon">🔥</span>
+                        <span>${streak} day${streak !== 1 ? 's' : ''}</span>
+                    </div>
+                    ${alreadyWroteToday ? `
+                        <span class="kid-journal-widget__badge">
+                            <span>✅</span>
+                            Written today!
+                        </span>
+                    ` : ''}
+                </div>
+
+                <div class="kid-journal-widget__diary">
+                    <div class="kid-journal-widget__cover">
+                        <div class="kid-journal-widget__cover-deco kid-journal-widget__cover-deco--star">⭐</div>
+                        <div class="kid-journal-widget__cover-deco kid-journal-widget__cover-deco--heart">💖</div>
+                        <div class="kid-journal-widget__cover-icon">📔</div>
+                        <h3 class="kid-journal-widget__cover-title">My Diary</h3>
+                        <p class="kid-journal-widget__cover-prompt">${todayPrompt}</p>
+                    </div>
+                </div>
+
+                <div class="kid-journal-widget__actions">
+                    <button class="btn btn--primary btn--block kid-journal-widget__open-btn" data-action="open-journal">
+                        <span class="kid-journal-widget__open-icon">✏️</span>
+                        ${alreadyWroteToday ? 'View My Diary' : 'Write in My Diary'}
+                    </button>
+                    ${!alreadyWroteToday ? `
+                        <div class="kid-journal-widget__points-hint">
+                            <span>⭐</span> Write today for <strong>+5 points!</strong>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind open journal button
+        container.querySelector('[data-action="open-journal"]')?.addEventListener('click', () => {
+            showFullPage(memberId, 'list');
+        });
+    }
+
+    /**
+     * Render entry preview for widget
+     */
+    function renderEntryPreview(entry) {
+        const mood = getMoodById(entry.mood);
+        const stickersHtml = entry.stickers?.length > 0
+            ? `<span class="kid-journal-entry-preview__stickers">${entry.stickers.slice(0, 3).join('')}</span>`
+            : '';
+
+        return `
+            <div class="kid-journal-entry-preview" data-entry-id="${entry.id}">
+                <span class="kid-journal-entry-preview__mood" style="--mood-color: ${mood.color}">
+                    ${mood.emoji}
+                </span>
+                <div class="kid-journal-entry-preview__content">
+                    <span class="kid-journal-entry-preview__date">${formatDate(entry.createdAt)}</span>
+                    <span class="kid-journal-entry-preview__text">${truncate(entry.content)}</span>
+                </div>
+                ${stickersHtml}
+            </div>
+        `;
+    }
+
+    /**
+     * Bind widget events
+     */
+    function bindWidgetEvents(container, memberId, widgetData) {
+        let selectedMood = null;
+        let selectedStickers = [];
+
+        // Mood selection
+        container.querySelectorAll('.kid-journal-mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                container.querySelectorAll('.kid-journal-mood-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedMood = btn.dataset.mood;
+            });
+        });
+
+        // Toggle stickers panel
+        container.querySelector('[data-action="add-stickers"]')?.addEventListener('click', () => {
+            const panel = container.querySelector('#stickersPanel');
+            if (panel) {
+                panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
+            }
+        });
+
+        // Sticker selection
+        container.querySelectorAll('.kid-journal-sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sticker = btn.dataset.sticker;
+                if (!selectedStickers.includes(sticker) && selectedStickers.length < 5) {
+                    selectedStickers.push(sticker);
+                    updateSelectedStickers(container, selectedStickers);
+                }
+            });
+        });
+
+        // Save entry
+        container.querySelector('#saveJournalBtn')?.addEventListener('click', () => {
+            const textarea = container.querySelector('#journalInput');
+            const content = textarea?.value?.trim();
+
+            if (!content) {
+                Toast.warning('Please write something first!');
+                return;
+            }
+
+            if (!selectedMood) {
+                Toast.warning('Please select how you feel!');
+                return;
+            }
+
+            // Check if already wrote today
+            if (hasEntryToday(widgetData.entries || [])) {
+                Toast.warning('You already wrote today! Come back tomorrow.');
+                return;
+            }
+
+            const today = getToday();
+            const newEntry = {
+                id: `journal-${Date.now()}`,
+                content,
+                mood: selectedMood,
+                stickers: [...selectedStickers],
+                prompt: widgetData.settings?.showPrompts ? getTodayPrompt() : null,
+                date: today, // Store local date separately
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            widgetData.entries = [newEntry, ...(widgetData.entries || [])];
+            saveWidgetData(memberId, widgetData);
+
+            // Award +5 points for daily journal entry
+            const pointsData = Storage.getWidgetData(memberId, 'points');
+            if (pointsData) {
+                const updatedPointsData = {
+                    ...pointsData,
+                    balance: (pointsData.balance || 0) + 5,
+                    history: [
+                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: 5, type: 'earned' },
+                        ...(pointsData.history || []).slice(0, 99)
+                    ]
+                };
+                Storage.setWidgetData(memberId, 'points', updatedPointsData);
+
+                // Refresh points widget if visible
+                const pointsBody = document.getElementById('widget-points');
+                if (pointsBody && typeof Points !== 'undefined') {
+                    Points.renderWidget(pointsBody, memberId);
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            // Update achievements
+            if (typeof Achievements !== 'undefined') {
+                Achievements.updateStats(memberId, 'activity', 1);
+                Achievements.updateStats(memberId, 'points', 5);
+            }
+
+            renderWidget(container, memberId);
+            Toast.success('+5 points! Great job writing today! ✨');
+        });
+
+        // View all entries
+        container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+            showFullPage(memberId, 'list');
+        });
+
+        // Calendar view
+        container.querySelector('[data-action="calendar-view"]')?.addEventListener('click', () => {
+            showFullPage(memberId, 'calendar');
+        });
+
+        // Click on entry preview to view full page
+        container.querySelectorAll('.kid-journal-entry-preview').forEach(preview => {
+            preview.addEventListener('click', () => {
+                showFullPage(memberId, 'list');
+            });
+        });
+
+        // Toggle emoji panel
+        const emojiToggleBtn = container.querySelector('#emojiToggleBtn');
+        const emojiPanel = container.querySelector('#emojiPanel');
+        const journalInput = container.querySelector('#journalInput');
+
+        if (emojiToggleBtn && emojiPanel) {
+            emojiToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = emojiPanel.style.display !== 'none';
+                emojiPanel.style.display = isOpen ? 'none' : 'block';
+                emojiToggleBtn.classList.toggle('active', !isOpen);
+            });
+
+            // Insert emoji into textarea at cursor position
+            container.querySelectorAll('.kid-journal-emoji-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const emoji = btn.dataset.emoji;
+                    if (journalInput) {
+                        const start = journalInput.selectionStart;
+                        const end = journalInput.selectionEnd;
+                        const text = journalInput.value;
+                        journalInput.value = text.substring(0, start) + emoji + text.substring(end);
+                        journalInput.focus();
+                        journalInput.selectionStart = journalInput.selectionEnd = start + emoji.length;
+                    }
+                });
+            });
+
+            // Close emoji panel when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!emojiPanel.contains(e.target) && e.target !== emojiToggleBtn) {
+                    emojiPanel.style.display = 'none';
+                    emojiToggleBtn.classList.remove('active');
+                }
+            });
+        }
+    }
+
+    /**
+     * Update selected stickers display
+     */
+    function updateSelectedStickers(container, stickers) {
+        const display = container.querySelector('#selectedStickers');
+        if (display) {
+            display.innerHTML = stickers.map(s => `
+                <span class="kid-journal-selected-sticker" data-remove="${s}">${s}</span>
+            `).join('');
+
+            display.querySelectorAll('[data-remove]').forEach(el => {
+                el.addEventListener('click', () => {
+                    const idx = stickers.indexOf(el.dataset.remove);
+                    if (idx > -1) stickers.splice(idx, 1);
+                    updateSelectedStickers(container, stickers);
+                });
+            });
+        }
+    }
+
+    /**
+     * Show full page view
+     */
+    function showFullPage(memberId, view = 'list') {
+        const main = document.getElementById('mainContent');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        renderFullPage(main, memberId, member, view);
+    }
+
+    /**
+     * Render full page
+     */
+    function renderFullPage(container, memberId, member, currentView = 'list') {
+        const widgetData = getWidgetData(memberId);
+        const entries = widgetData.entries || [];
+
+        // Calculate stats
+        const totalEntries = entries.length;
+        const streak = calculateStreak(entries);
+        const moodCounts = {};
+        entries.forEach(e => {
+            moodCounts[e.mood] = (moodCounts[e.mood] || 0) + 1;
+        });
+        const mostCommonMood = Object.keys(moodCounts).length > 0
+            ? Object.keys(moodCounts).reduce((a, b) => moodCounts[a] > moodCounts[b] ? a : b)
+            : null;
+        const mostCommonMoodObj = mostCommonMood ? getMoodById(mostCommonMood) : null;
+
+        container.innerHTML = `
+            <div class="kid-journal-page">
+                <div class="kid-journal-page__header">
+                    <button class="btn btn--ghost" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back to ${member?.name || 'Dashboard'}
+                    </button>
+                    <h1 class="kid-journal-page__title">
+                        📔 My Journal
+                    </h1>
+                    <div class="kid-journal-page__view-toggle">
+                        <button class="btn btn--sm ${currentView === 'calendar' ? 'btn--primary' : 'btn--ghost'}" data-view="calendar">
+                            <i data-lucide="calendar"></i>
+                        </button>
+                        <button class="btn btn--sm ${currentView === 'list' ? 'btn--primary' : 'btn--ghost'}" data-view="list">
+                            <i data-lucide="list"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="kid-journal-page__stats">
+                    <div class="kid-journal-stat">
+                        <span class="kid-journal-stat__value">${totalEntries}</span>
+                        <span class="kid-journal-stat__label">Entries</span>
+                    </div>
+                    <div class="kid-journal-stat">
+                        <span class="kid-journal-stat__value">${streak > 0 ? `🔥 ${streak}` : '0'}</span>
+                        <span class="kid-journal-stat__label">Day Streak</span>
+                    </div>
+                    ${mostCommonMoodObj ? `
+                        <div class="kid-journal-stat">
+                            <span class="kid-journal-stat__value">${mostCommonMoodObj.emoji}</span>
+                            <span class="kid-journal-stat__label">Most ${mostCommonMoodObj.name}</span>
+                        </div>
+                    ` : ''}
+                </div>
+
+                <button class="btn btn--primary btn--lg kid-journal-page__new-btn" data-action="new-entry">
+                    <i data-lucide="plus"></i>
+                    New Entry
+                </button>
+
+                <div class="kid-journal-page__content">
+                    ${currentView === 'list'
+                        ? renderListView(entries, memberId)
+                        : renderCalendarView(entries, memberId)}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindFullPageEvents(container, memberId, member, widgetData, currentView);
+    }
+
+    /**
+     * Calculate writing streak
+     */
+    function calculateStreak(entries) {
+        if (entries.length === 0) return 0;
+
+        const today = getToday();
+        const dates = [...new Set(entries.map(e => getEntryDate(e)))].sort().reverse();
+
+        let streak = 0;
+        let checkDate = new Date(today + 'T00:00:00');
+
+        for (let i = 0; i < dates.length; i++) {
+            const entryDate = dates[i];
+            const checkDateStr = getLocalDateString(checkDate);
+
+            if (entryDate === checkDateStr) {
+                streak++;
+                checkDate.setDate(checkDate.getDate() - 1);
+            } else if (entryDate < checkDateStr) {
+                // Check if we're on day 1 and entry is from yesterday
+                if (streak === 0) {
+                    const yesterday = new Date(today + 'T00:00:00');
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    if (entryDate === getLocalDateString(yesterday)) {
+                        streak = 1;
+                        checkDate = new Date(entryDate + 'T00:00:00');
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        break;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+        return streak;
+    }
+
+    /**
+     * Render list view
+     */
+    function renderListView(entries, memberId) {
+        if (entries.length === 0) {
+            return `
+                <div class="kid-journal-page__empty">
+                    <div class="kid-journal-page__empty-icon">📔</div>
+                    <h2>No Entries Yet</h2>
+                    <p>Start writing to capture your thoughts and feelings!</p>
+                </div>
+            `;
+        }
+
+        // Group entries by date (using local date)
+        const grouped = {};
+        entries.forEach(entry => {
+            const date = getEntryDate(entry);
+            if (!grouped[date]) grouped[date] = [];
+            grouped[date].push(entry);
+        });
+
+        const today = getToday();
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = getLocalDateString(yesterday);
+
+        let html = '';
+        Object.keys(grouped).sort().reverse().forEach(date => {
+            let dateLabel = formatDate(date);
+            if (date === today) dateLabel = 'Today';
+            else if (date === yesterdayStr) dateLabel = 'Yesterday';
+
+            html += `
+                <div class="kid-journal-day-group">
+                    <h3 class="kid-journal-day-group__title">${dateLabel}</h3>
+                    <div class="kid-journal-day-group__entries">
+                        ${grouped[date].map(entry => renderFullEntry(entry)).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        return html;
+    }
+
+    /**
+     * Render full entry card
+     */
+    function renderFullEntry(entry) {
+        const mood = getMoodById(entry.mood);
+        const time = new Date(entry.createdAt).toLocaleTimeString('en-US', {
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
+
+        return `
+            <div class="kid-journal-entry" data-entry-id="${entry.id}">
+                <div class="kid-journal-entry__header">
+                    <span class="kid-journal-entry__mood" style="--mood-color: ${mood.color}">
+                        ${mood.emoji}
+                    </span>
+                    <span class="kid-journal-entry__time">${time}</span>
+                    ${entry.stickers?.length > 0 ? `
+                        <span class="kid-journal-entry__stickers">
+                            ${entry.stickers.join(' ')}
+                        </span>
+                    ` : ''}
+                </div>
+                <div class="kid-journal-entry__content">
+                    ${entry.content}
+                </div>
+                ${entry.prompt ? `
+                    <div class="kid-journal-entry__prompt">
+                        💡 ${entry.prompt}
+                    </div>
+                ` : ''}
+                <div class="kid-journal-entry__actions">
+                    <button class="btn btn--ghost btn--sm" data-edit="${entry.id}">
+                        <i data-lucide="edit-2"></i>
+                        Edit
+                    </button>
+                    <button class="btn btn--ghost btn--sm btn--danger" data-delete="${entry.id}">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render calendar view
+     */
+    function renderCalendarView(entries, memberId) {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth();
+
+        // Get entries for this month (using local date)
+        const monthEntries = {};
+        entries.forEach(entry => {
+            const date = getEntryDate(entry);
+            const [entryYear, entryMonth] = date.split('-').map(Number);
+            if ((entryMonth - 1) === month && entryYear === year) {
+                if (!monthEntries[date]) monthEntries[date] = [];
+                monthEntries[date].push(entry);
+            }
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthName = now.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        let calendarHtml = `
+            <div class="kid-journal-calendar">
+                <div class="kid-journal-calendar__header">
+                    <button class="btn btn--ghost btn--sm" data-calendar-nav="prev">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="kid-journal-calendar__month">${monthName}</span>
+                    <button class="btn btn--ghost btn--sm" data-calendar-nav="next">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+                <div class="kid-journal-calendar__weekdays">
+                    <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                </div>
+                <div class="kid-journal-calendar__days">
+        `;
+
+        // Empty cells for days before first day
+        for (let i = 0; i < firstDay; i++) {
+            calendarHtml += `<div class="kid-journal-calendar__day kid-journal-calendar__day--empty"></div>`;
+        }
+
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayEntries = monthEntries[dateStr] || [];
+            const isToday = dateStr === getToday();
+            const hasMood = dayEntries.length > 0 ? getMoodById(dayEntries[0].mood) : null;
+
+            calendarHtml += `
+                <div class="kid-journal-calendar__day ${isToday ? 'kid-journal-calendar__day--today' : ''} ${dayEntries.length > 0 ? 'kid-journal-calendar__day--has-entry' : ''}"
+                    data-date="${dateStr}"
+                    ${hasMood ? `style="--day-mood-color: ${hasMood.color}"` : ''}>
+                    <span class="kid-journal-calendar__day-num">${day}</span>
+                    ${hasMood ? `<span class="kid-journal-calendar__day-mood">${hasMood.emoji}</span>` : ''}
+                </div>
+            `;
+        }
+
+        calendarHtml += `
+                </div>
+            </div>
+            <div class="kid-journal-calendar__selected" id="calendarSelected">
+                <p class="kid-journal-calendar__selected-hint">Tap a day to see entries</p>
+            </div>
+        `;
+
+        return calendarHtml;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, widgetData, currentView) {
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+
+        // View toggle
+        container.querySelectorAll('[data-view]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.view;
+                renderFullPage(container, memberId, member, view);
+            });
+        });
+
+        // New entry
+        container.querySelector('[data-action="new-entry"]')?.addEventListener('click', () => {
+            showNewEntryModal(memberId, () => {
+                renderFullPage(container, memberId, member, currentView);
+            });
+        });
+
+        // Edit entry
+        container.querySelectorAll('[data-edit]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const entryId = btn.dataset.edit;
+                showEditEntryModal(memberId, entryId, () => {
+                    renderFullPage(container, memberId, member, currentView);
+                });
+            });
+        });
+
+        // Delete entry (PIN protected)
+        container.querySelectorAll('[data-delete]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const entryId = btn.dataset.delete;
+                const verified = await PIN.verify();
+                if (verified) {
+                    if (confirm('Delete this journal entry?')) {
+                        widgetData.entries = widgetData.entries.filter(e => e.id !== entryId);
+                        saveWidgetData(memberId, widgetData);
+                        renderFullPage(container, memberId, member, currentView);
+                        Toast.success('Entry deleted');
+                    }
+                }
+            });
+        });
+
+        // Calendar day click
+        container.querySelectorAll('.kid-journal-calendar__day[data-date]').forEach(day => {
+            day.addEventListener('click', () => {
+                const date = day.dataset.date;
+                const dayEntries = widgetData.entries.filter(e => getEntryDate(e) === date);
+                const selectedDiv = container.querySelector('#calendarSelected');
+
+                if (selectedDiv) {
+                    if (dayEntries.length === 0) {
+                        selectedDiv.innerHTML = `
+                            <p class="kid-journal-calendar__selected-date">${formatDate(date)}</p>
+                            <p class="kid-journal-calendar__selected-empty">No entry for this day</p>
+                        `;
+                    } else {
+                        selectedDiv.innerHTML = `
+                            <p class="kid-journal-calendar__selected-date">${formatDate(date)}</p>
+                            ${dayEntries.map(entry => renderFullEntry(entry)).join('')}
+                        `;
+
+                        if (typeof lucide !== 'undefined') {
+                            lucide.createIcons();
+                        }
+
+                        // Re-bind edit/delete for these entries
+                        selectedDiv.querySelectorAll('[data-edit]').forEach(btn => {
+                            btn.addEventListener('click', () => {
+                                showEditEntryModal(memberId, btn.dataset.edit, () => {
+                                    renderFullPage(container, memberId, member, currentView);
+                                });
+                            });
+                        });
+
+                        selectedDiv.querySelectorAll('[data-delete]').forEach(btn => {
+                            btn.addEventListener('click', async () => {
+                                const verified = await PIN.verify();
+                                if (verified) {
+                                    if (confirm('Delete this journal entry?')) {
+                                        widgetData.entries = widgetData.entries.filter(e => e.id !== btn.dataset.delete);
+                                        saveWidgetData(memberId, widgetData);
+                                        renderFullPage(container, memberId, member, currentView);
+                                        Toast.success('Entry deleted');
+                                    }
+                                }
+                            });
+                        });
+                    }
+                }
+
+                // Highlight selected day
+                container.querySelectorAll('.kid-journal-calendar__day').forEach(d => d.classList.remove('selected'));
+                day.classList.add('selected');
+            });
+        });
+    }
+
+    /**
+     * Show new entry modal
+     */
+    function showNewEntryModal(memberId, onSave) {
+        const todayPrompt = getTodayPrompt();
+
+        const content = `
+            <div class="kid-journal-modal">
+                <div class="kid-journal-prompt kid-journal-prompt--modal">
+                    <span class="kid-journal-prompt__icon">💡</span>
+                    <span class="kid-journal-prompt__text">${todayPrompt}</span>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">What's on your mind?</label>
+                    <textarea class="form-input" id="modalJournalContent" rows="5" placeholder="Write your thoughts..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">How do you feel?</label>
+                    <div class="kid-journal-mood-picker kid-journal-mood-picker--modal">
+                        ${MOODS.map(mood => `
+                            <button type="button"
+                                class="kid-journal-mood-btn kid-journal-mood-btn--lg"
+                                data-mood="${mood.id}"
+                                title="${mood.name}"
+                                style="--mood-color: ${mood.color}">
+                                ${mood.emoji}
+                                <span class="kid-journal-mood-btn__name">${mood.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Add stickers (optional)</label>
+                    <div class="kid-journal-stickers-grid kid-journal-stickers-grid--modal">
+                        ${STICKERS.map(sticker => `
+                            <button type="button" class="kid-journal-sticker-btn" data-sticker="${sticker}">
+                                ${sticker}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="kid-journal-selected-stickers" id="modalSelectedStickers"></div>
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: '📔 New Journal Entry',
+            content,
+            size: 'md',
+            footer: `
+                <button class="btn btn--ghost" data-modal-cancel>Cancel</button>
+                <button class="btn btn--primary" id="modalSaveBtn">
+                    <i data-lucide="save"></i>
+                    Save Entry
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        let selectedMood = null;
+        let selectedStickers = [];
+
+        // Mood selection
+        document.querySelectorAll('.kid-journal-mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.kid-journal-mood-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedMood = btn.dataset.mood;
+            });
+        });
+
+        // Sticker selection
+        document.querySelectorAll('.kid-journal-sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sticker = btn.dataset.sticker;
+                if (!selectedStickers.includes(sticker) && selectedStickers.length < 5) {
+                    selectedStickers.push(sticker);
+                    btn.classList.add('selected');
+                    updateModalStickers(selectedStickers);
+                } else if (selectedStickers.includes(sticker)) {
+                    selectedStickers = selectedStickers.filter(s => s !== sticker);
+                    btn.classList.remove('selected');
+                    updateModalStickers(selectedStickers);
+                }
+            });
+        });
+
+        // Save
+        document.getElementById('modalSaveBtn')?.addEventListener('click', () => {
+            const content = document.getElementById('modalJournalContent')?.value?.trim();
+
+            if (!content) {
+                Toast.warning('Please write something first!');
+                return;
+            }
+
+            if (!selectedMood) {
+                Toast.warning('Please select how you feel!');
+                return;
+            }
+
+            const widgetData = getWidgetData(memberId);
+
+            // Check if already wrote today
+            if (hasEntryToday(widgetData.entries || [])) {
+                Toast.warning('You already wrote today! Come back tomorrow.');
+                Modal.close();
+                return;
+            }
+
+            const today = getToday();
+            const newEntry = {
+                id: `journal-${Date.now()}`,
+                content,
+                mood: selectedMood,
+                stickers: [...selectedStickers],
+                prompt: todayPrompt,
+                date: today, // Store local date separately
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+
+            widgetData.entries = [newEntry, ...(widgetData.entries || [])];
+            saveWidgetData(memberId, widgetData);
+
+            // Award +5 points for daily journal entry
+            const pointsData = Storage.getWidgetData(memberId, 'points');
+            if (pointsData) {
+                const updatedPointsData = {
+                    ...pointsData,
+                    balance: (pointsData.balance || 0) + 5,
+                    history: [
+                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: 5, type: 'earned' },
+                        ...(pointsData.history || []).slice(0, 99)
+                    ]
+                };
+                Storage.setWidgetData(memberId, 'points', updatedPointsData);
+
+                // Refresh points widget if visible
+                const pointsBody = document.getElementById('widget-points');
+                if (pointsBody && typeof Points !== 'undefined') {
+                    Points.renderWidget(pointsBody, memberId);
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            }
+
+            // Update achievements
+            if (typeof Achievements !== 'undefined') {
+                Achievements.updateStats(memberId, 'activity', 1);
+                Achievements.updateStats(memberId, 'points', 5);
+            }
+
+            Modal.close();
+            Toast.success('+5 points! Great job writing today! ✨');
+
+            if (onSave) onSave();
+
+            // Refresh widget if visible
+            const widgetBody = document.getElementById('widget-kid-journal');
+            if (widgetBody) {
+                renderWidget(widgetBody, memberId);
+            }
+        });
+
+        document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
+            Modal.close();
+        });
+    }
+
+    /**
+     * Show edit entry modal
+     */
+    function showEditEntryModal(memberId, entryId, onSave) {
+        const widgetData = getWidgetData(memberId);
+        const entry = widgetData.entries.find(e => e.id === entryId);
+        if (!entry) return;
+
+        const content = `
+            <div class="kid-journal-modal">
+                <div class="form-group">
+                    <label class="form-label">What's on your mind?</label>
+                    <div class="kid-journal-modal__input-area">
+                        <textarea class="form-input" id="editJournalContent" rows="5">${entry.content}</textarea>
+                        <button type="button" class="kid-journal-emoji-btn" id="editEmojiToggleBtn" title="Add emoji">
+                            😊
+                        </button>
+                    </div>
+                    <div class="kid-journal-emoji-panel" id="editEmojiPanel" style="display: none;">
+                        <div class="kid-journal-emoji-grid">
+                            ${TEXT_EMOJIS.map(emoji => `
+                                <button type="button" class="kid-journal-emoji-item" data-emoji="${emoji}">
+                                    ${emoji}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">How do you feel?</label>
+                    <div class="kid-journal-mood-picker kid-journal-mood-picker--modal">
+                        ${MOODS.map(mood => `
+                            <button type="button"
+                                class="kid-journal-mood-btn kid-journal-mood-btn--lg ${entry.mood === mood.id ? 'selected' : ''}"
+                                data-mood="${mood.id}"
+                                title="${mood.name}"
+                                style="--mood-color: ${mood.color}">
+                                ${mood.emoji}
+                                <span class="kid-journal-mood-btn__name">${mood.name}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Stickers</label>
+                    <div class="kid-journal-stickers-grid kid-journal-stickers-grid--modal">
+                        ${STICKERS.map(sticker => `
+                            <button type="button" class="kid-journal-sticker-btn ${entry.stickers?.includes(sticker) ? 'selected' : ''}" data-sticker="${sticker}">
+                                ${sticker}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <div class="kid-journal-selected-stickers" id="editSelectedStickers">
+                        ${(entry.stickers || []).map(s => `<span>${s}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: '✏️ Edit Entry',
+            content,
+            size: 'md',
+            footer: `
+                <button class="btn btn--ghost" data-modal-cancel>Cancel</button>
+                <button class="btn btn--primary" id="editSaveBtn">
+                    <i data-lucide="save"></i>
+                    Save Changes
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        let selectedMood = entry.mood;
+        let selectedStickers = [...(entry.stickers || [])];
+
+        // Emoji picker for edit modal
+        const editEmojiToggleBtn = document.getElementById('editEmojiToggleBtn');
+        const editEmojiPanel = document.getElementById('editEmojiPanel');
+        const editJournalContent = document.getElementById('editJournalContent');
+
+        if (editEmojiToggleBtn && editEmojiPanel) {
+            editEmojiToggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isOpen = editEmojiPanel.style.display !== 'none';
+                editEmojiPanel.style.display = isOpen ? 'none' : 'block';
+                editEmojiToggleBtn.classList.toggle('active', !isOpen);
+            });
+
+            // Insert emoji into textarea at cursor position
+            editEmojiPanel.querySelectorAll('.kid-journal-emoji-item').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const emoji = btn.dataset.emoji;
+                    if (editJournalContent) {
+                        const start = editJournalContent.selectionStart;
+                        const end = editJournalContent.selectionEnd;
+                        const text = editJournalContent.value;
+                        editJournalContent.value = text.substring(0, start) + emoji + text.substring(end);
+                        editJournalContent.focus();
+                        editJournalContent.selectionStart = editJournalContent.selectionEnd = start + emoji.length;
+                    }
+                });
+            });
+        }
+
+        // Mood selection
+        document.querySelectorAll('.kid-journal-mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.kid-journal-mood-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedMood = btn.dataset.mood;
+            });
+        });
+
+        // Sticker selection
+        document.querySelectorAll('.kid-journal-sticker-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const sticker = btn.dataset.sticker;
+                if (!selectedStickers.includes(sticker) && selectedStickers.length < 5) {
+                    selectedStickers.push(sticker);
+                    btn.classList.add('selected');
+                } else if (selectedStickers.includes(sticker)) {
+                    selectedStickers = selectedStickers.filter(s => s !== sticker);
+                    btn.classList.remove('selected');
+                }
+                updateEditStickers(selectedStickers);
+            });
+        });
+
+        // Save
+        document.getElementById('editSaveBtn')?.addEventListener('click', () => {
+            const newContent = document.getElementById('editJournalContent')?.value?.trim();
+
+            if (!newContent) {
+                Toast.warning('Please write something!');
+                return;
+            }
+
+            entry.content = newContent;
+            entry.mood = selectedMood;
+            entry.stickers = [...selectedStickers];
+            entry.updatedAt = new Date().toISOString();
+
+            saveWidgetData(memberId, widgetData);
+
+            Modal.close();
+            Toast.success('Entry updated!');
+
+            if (onSave) onSave();
+
+            // Refresh widget if visible
+            const widgetBody = document.getElementById('widget-kid-journal');
+            if (widgetBody) {
+                renderWidget(widgetBody, memberId);
+            }
+        });
+
+        document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
+            Modal.close();
+        });
+    }
+
+    /**
+     * Update modal stickers display
+     */
+    function updateModalStickers(stickers) {
+        const display = document.getElementById('modalSelectedStickers');
+        if (display) {
+            display.innerHTML = stickers.map(s => `<span>${s}</span>`).join('');
+        }
+    }
+
+    /**
+     * Update edit stickers display
+     */
+    function updateEditStickers(stickers) {
+        const display = document.getElementById('editSelectedStickers');
+        if (display) {
+            display.innerHTML = stickers.map(s => `<span>${s}</span>`).join('');
+        }
+    }
+
+    function init() {
+        // Initialize kid journal feature
+    }
+
+    return {
+        init,
+        renderWidget,
+        showFullPage
+    };
+})();

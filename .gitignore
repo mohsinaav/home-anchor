@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE/Editor
+.vscode/
+.idea/
+
+# MCP/Playwright temp files
+.mcp.json
+.playwright-mcp/
+
+# Screenshots and temp images (keep only essential ones)
+snapshot*.png
+"snapshot *.png"
+Screenshot*.png
+
+# Archive folder (if not needed in repo)
+Archieve/
+
+# Build output (if any)
+dist/
+build/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test results
+test-results/
+playwright-report/
