@@ -104,6 +104,65 @@
     --max-width: 1400px;
 }
 
+/* Dark Mode Variables */
+html.dark-mode {
+    /* Background Colors */
+    --gray-50: #0F172A;
+    --gray-100: #1E293B;
+    --gray-200: #334155;
+    --gray-300: #475569;
+    --gray-400: #64748B;
+    --gray-500: #94A3B8;
+    --gray-600: #CBD5E1;
+    --gray-700: #E2E8F0;
+    --gray-800: #F1F5F9;
+    --gray-900: #F8FAFC;
+
+    /* Keep white/black inverted for contrast */
+    --white: #1E293B;
+    --black: #F8FAFC;
+
+    /* Adjusted brand colors for dark mode */
+    --primary: #818CF8;
+    --primary-light: #6366F1;
+    --primary-dark: #A5B4FC;
+
+    /* Adjusted semantic colors for dark mode */
+    --success: #34D399;
+    --success-light: #064E3B;
+    --warning: #FBBF24;
+    --warning-light: #78350F;
+    --error: #F87171;
+    --error-light: #7F1D1D;
+    --info: #60A5FA;
+    --info-light: #1E3A5F;
+
+    /* Shadows for dark mode */
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
+    --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.3);
+    --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.4);
+}
+
+/* Dark mode body adjustments */
+html.dark-mode body {
+    background-color: #0F172A;
+    color: #E2E8F0;
+}
+
+/* Dark mode scrollbar */
+html.dark-mode ::-webkit-scrollbar-track {
+    background: #1E293B;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb {
+    background: #475569;
+}
+
+html.dark-mode ::-webkit-scrollbar-thumb:hover {
+    background: #64748B;
+}
+
 /* CSS Reset */
 *,
 *::before,

@@ -37,3 +37,6 @@ npm-debug.log*
 # Test results
 test-results/
 playwright-report/
+
+# Misc
+TODO-LATER.md

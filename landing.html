@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Anchor - Your Family's Digital Command Center</title>
+    <meta name="description" content="Organize schedules, track kids' activities, plan meals, and keep your whole family on the same page with Home Anchor.">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/landing.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="landing-nav">
+        <div class="landing-nav__container">
+            <a href="#" class="landing-nav__brand">
+                <i data-lucide="anchor"></i>
+                <span>Home Anchor</span>
+            </a>
+            <div class="landing-nav__actions">
+                <a href="index.html" class="btn btn--ghost">Login</a>
+                <a href="#" class="btn btn--primary" id="navGetStarted">Get Started</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="landing-hero">
+        <div class="landing-hero__container">
+            <div class="landing-hero__content">
+                <h1 class="landing-hero__title">
+                    Your Family's Digital
+                    <span class="landing-hero__title-accent">Command Center</span>
+                </h1>
+                <p class="landing-hero__subtitle">
+                    Organize schedules, track kids' activities, plan meals, and keep everyone on the same page.
+                </p>
+                <div class="landing-hero__cta">
+                    <button class="btn btn--primary btn--lg" id="tryDemoBtn">
+                        <i data-lucide="play-circle"></i>
+                        Try Demo
+                    </button>
+                    <button class="btn btn--secondary btn--lg" id="getStartedBtn">
+                        Get Started Free
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+                <p class="landing-hero__note">
+                    <i data-lucide="check-circle"></i>
+                    No sign-up required for demo
+                </p>
+            </div>
+            <div class="landing-hero__visual">
+                <div class="device-mockup">
+                    <div class="device-mockup__frame">
+                        <div class="device-mockup__screen">
+                            <img src="assets/app-preview.png" alt="Home Anchor Dashboard Preview" class="demo-preview__image">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="landing-hero__wave">
+            <svg viewBox="0 0 1440 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M0 120L60 105C120 90 240 60 360 45C480 30 600 30 720 37.5C840 45 960 60 1080 67.5C1200 75 1320 75 1380 75L1440 75V120H1380C1320 120 1200 120 1080 120C960 120 840 120 720 120C600 120 480 120 360 120C240 120 120 120 60 120H0Z" fill="currentColor"/>
+            </svg>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="landing-features" id="features">
+        <div class="landing-section__container">
+            <h2 class="landing-section__title">Everything Your Family Needs</h2>
+            <p class="landing-section__subtitle">Personalized dashboards for every family member</p>
+
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--blue">
+                        <i data-lucide="user"></i>
+                    </div>
+                    <h3 class="feature-card__title">For Parents</h3>
+                    <p class="feature-card__description">
+                        Tasks, meal planning, workouts, habits, journals, gratitude logs & vision boards
+                    </p>
+                    <ul class="feature-card__list">
+                        <li><i data-lucide="check"></i> Daily task management</li>
+                        <li><i data-lucide="check"></i> Meal & recipe planning</li>
+                        <li><i data-lucide="check"></i> Workout routines</li>
+                        <li><i data-lucide="check"></i> Habit tracking</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card feature-card--highlight">
+                    <div class="feature-card__badge">Popular</div>
+                    <div class="feature-card__icon feature-card__icon--yellow">
+                        <i data-lucide="smile"></i>
+                    </div>
+                    <h3 class="feature-card__title">For Kids</h3>
+                    <p class="feature-card__description">
+                        Fun points system, rewards store, achievements & chores tracking
+                    </p>
+                    <ul class="feature-card__list">
+                        <li><i data-lucide="check"></i> Earn points for activities</li>
+                        <li><i data-lucide="check"></i> Redeem rewards</li>
+                        <li><i data-lucide="check"></i> Track streaks & levels</li>
+                        <li><i data-lucide="check"></i> Unlock achievements</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--pink">
+                        <i data-lucide="baby"></i>
+                    </div>
+                    <h3 class="feature-card__title">For Toddlers</h3>
+                    <p class="feature-card__description">
+                        Simple routines, activity ideas & milestone tracking for little ones
+                    </p>
+                    <ul class="feature-card__list">
+                        <li><i data-lucide="check"></i> Visual daily routines</li>
+                        <li><i data-lucide="check"></i> Activity suggestions</li>
+                        <li><i data-lucide="check"></i> Milestone tracking</li>
+                        <li><i data-lucide="check"></i> Daily logs</li>
+                    </ul>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-card__icon feature-card__icon--green">
+                        <i data-lucide="users"></i>
+                    </div>
+                    <h3 class="feature-card__title">Family Dashboard</h3>
+                    <p class="feature-card__description">
+                        Shared calendar, schedules & family overview all in one place
+                    </p>
+                    <ul class="feature-card__list">
+                        <li><i data-lucide="check"></i> Shared family calendar</li>
+                        <li><i data-lucide="check"></i> Everyone's schedule</li>
+                        <li><i data-lucide="check"></i> Quick stats overview</li>
+                        <li><i data-lucide="check"></i> Notifications</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="landing-how" id="how-it-works">
+        <div class="landing-section__container">
+            <h2 class="landing-section__title">Get Started in 3 Simple Steps</h2>
+            <p class="landing-section__subtitle">Up and running in minutes</p>
+
+            <div class="steps-grid">
+                <div class="step">
+                    <div class="step__number">1</div>
+                    <div class="step__icon">
+                        <i data-lucide="user-plus"></i>
+                    </div>
+                    <h4 class="step__title">Add Family Members</h4>
+                    <p class="step__description">
+                        Create profiles for parents, kids, and toddlers. Each gets their own personalized dashboard.
+                    </p>
+                </div>
+
+                <div class="step__connector">
+                    <i data-lucide="arrow-right"></i>
+                </div>
+
+                <div class="step">
+                    <div class="step__number">2</div>
+                    <div class="step__icon">
+                        <i data-lucide="layout-grid"></i>
+                    </div>
+                    <h4 class="step__title">Customize Widgets</h4>
+                    <p class="step__description">
+                        Choose from 20+ widgets. Tasks, meals, workouts, points, rewards, and more.
+                    </p>
+                </div>
+
+                <div class="step__connector">
+                    <i data-lucide="arrow-right"></i>
+                </div>
+
+                <div class="step">
+                    <div class="step__number">3</div>
+                    <div class="step__icon">
+                        <i data-lucide="sparkles"></i>
+                    </div>
+                    <h4 class="step__title">Stay Organized</h4>
+                    <p class="step__description">
+                        Track activities, reward achievements, and keep the whole family in sync.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Why Home Anchor Section -->
+    <section class="landing-why" id="why">
+        <div class="landing-section__container">
+            <h2 class="landing-section__title">Why Home Anchor?</h2>
+            <p class="landing-section__subtitle">Built with families in mind</p>
+
+            <div class="why-grid">
+                <div class="why-card">
+                    <div class="why-card__icon">
+                        <i data-lucide="badge-check"></i>
+                    </div>
+                    <h4 class="why-card__title">100% Free</h4>
+                    <p class="why-card__description">No hidden fees, no premium tiers. Full access to all features.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-card__icon">
+                        <i data-lucide="shield-check"></i>
+                    </div>
+                    <h4 class="why-card__title">Private & Secure</h4>
+                    <p class="why-card__description">Your data stays on your device. We don't collect or sell your information.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-card__icon">
+                        <i data-lucide="wifi-off"></i>
+                    </div>
+                    <h4 class="why-card__title">Works Offline</h4>
+                    <p class="why-card__description">No internet required. Access your family dashboard anytime, anywhere.</p>
+                </div>
+                <div class="why-card">
+                    <div class="why-card__icon">
+                        <i data-lucide="user-x"></i>
+                    </div>
+                    <h4 class="why-card__title">No Account Needed</h4>
+                    <p class="why-card__description">Start using immediately. No sign-up, no email verification required.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Widgets Showcase Section -->
+    <section class="landing-widgets">
+        <div class="landing-section__container">
+            <h2 class="landing-section__title">20+ Powerful Widgets</h2>
+            <p class="landing-section__subtitle">Everything you need to manage your household</p>
+
+            <div class="widgets-showcase">
+                <div class="widget-tag"><i data-lucide="check-square"></i> Tasks</div>
+                <div class="widget-tag"><i data-lucide="utensils"></i> Meals</div>
+                <div class="widget-tag"><i data-lucide="dumbbell"></i> Workouts</div>
+                <div class="widget-tag"><i data-lucide="target"></i> Habits</div>
+                <div class="widget-tag"><i data-lucide="book-open"></i> Journal</div>
+                <div class="widget-tag"><i data-lucide="heart"></i> Gratitude</div>
+                <div class="widget-tag"><i data-lucide="star"></i> Points</div>
+                <div class="widget-tag"><i data-lucide="gift"></i> Rewards</div>
+                <div class="widget-tag"><i data-lucide="trophy"></i> Achievements</div>
+                <div class="widget-tag"><i data-lucide="list-checks"></i> Chores</div>
+                <div class="widget-tag"><i data-lucide="calendar"></i> Schedule</div>
+                <div class="widget-tag"><i data-lucide="sun"></i> Routines</div>
+                <div class="widget-tag"><i data-lucide="lightbulb"></i> Activities</div>
+                <div class="widget-tag"><i data-lucide="milestone"></i> Milestones</div>
+                <div class="widget-tag"><i data-lucide="clipboard-list"></i> Daily Log</div>
+                <div class="widget-tag"><i data-lucide="chef-hat"></i> Recipes</div>
+                <div class="widget-tag"><i data-lucide="shopping-cart"></i> Grocery</div>
+                <div class="widget-tag"><i data-lucide="image"></i> Vision Board</div>
+                <div class="widget-tag"><i data-lucide="timer"></i> Circuit Timer</div>
+                <div class="widget-tag"><i data-lucide="bell"></i> Notifications</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact/Feedback Section -->
+    <section class="landing-contact" id="contact">
+        <div class="landing-section__container">
+            <h2 class="landing-section__title">We'd Love to Hear From You</h2>
+            <p class="landing-section__subtitle">Questions, feedback, or feature requests? Get in touch!</p>
+
+            <div class="contact-grid">
+                <div class="contact-form-wrapper">
+                    <form class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="contactName">Your Name</label>
+                            <input type="text" id="contactName" name="name" placeholder="Enter your name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email Address</label>
+                            <input type="email" id="contactEmail" name="email" placeholder="you@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactType">Type</label>
+                            <select id="contactType" name="type">
+                                <option value="feedback">General Feedback</option>
+                                <option value="question">Question</option>
+                                <option value="feature">Feature Request</option>
+                                <option value="bug">Bug Report</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Message</label>
+                            <textarea id="contactMessage" name="message" rows="4" placeholder="Tell us what's on your mind..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn--primary btn--lg contact-form__submit">
+                            <i data-lucide="send"></i>
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+
+                <div class="contact-info">
+                    <div class="contact-info__card">
+                        <div class="contact-info__icon">
+                            <i data-lucide="mail"></i>
+                        </div>
+                        <h4>Email Us</h4>
+                        <p>support@homeanchor.app</p>
+                    </div>
+                    <div class="contact-info__card">
+                        <div class="contact-info__icon">
+                            <i data-lucide="message-circle"></i>
+                        </div>
+                        <h4>Feedback</h4>
+                        <p>We read every message and use your feedback to improve!</p>
+                    </div>
+                    <div class="contact-info__card">
+                        <div class="contact-info__icon">
+                            <i data-lucide="lightbulb"></i>
+                        </div>
+                        <h4>Feature Requests</h4>
+                        <p>Have an idea? We'd love to hear it!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer CTA Section -->
+    <section class="landing-footer-cta">
+        <div class="landing-section__container">
+            <div class="footer-cta__content">
+                <h2 class="footer-cta__title">Ready to organize your family?</h2>
+                <p class="footer-cta__subtitle">Start your journey to a more organized household today.</p>
+                <div class="footer-cta__actions">
+                    <button class="btn btn--primary btn--lg" id="footerTryDemo">
+                        <i data-lucide="play-circle"></i>
+                        Try Demo
+                    </button>
+                    <button class="btn btn--white btn--lg" id="footerGetStarted">
+                        Get Started Free
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="landing-footer">
+        <div class="landing-footer__container">
+            <div class="landing-footer__brand">
+                <i data-lucide="anchor"></i>
+                <span>Home Anchor</span>
+            </div>
+            <p class="landing-footer__copyright">
+                &copy; 2025 Home Anchor. Made with <i data-lucide="heart"></i> for families.
+            </p>
+        </div>
+    </footer>
+
+    <!-- JavaScript -->
+    <script src="js/storage.js"></script>
+    <script src="js/landing.js"></script>
+</body>
+</html>

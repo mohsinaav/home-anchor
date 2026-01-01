@@ -2031,6 +2031,87 @@ const Workout = (function() {
     ];
 
     /**
+     * Unit conversion utilities
+     * Values are stored internally in metric units (kg, cm)
+     * These functions convert for display when imperial is selected
+     */
+    const CONVERSION = {
+        // kg to lbs
+        kgToLbs: (kg) => kg * 2.20462,
+        // lbs to kg
+        lbsToKg: (lbs) => lbs / 2.20462,
+        // cm to inches
+        cmToIn: (cm) => cm / 2.54,
+        // inches to cm
+        inToCm: (inches) => inches * 2.54
+    };
+
+    /**
+     * Convert a value for display based on metric type and unit system
+     * @param {number} value - The stored value (in metric units)
+     * @param {string} metricId - The metric ID (weight, waist, etc.)
+     * @param {string} unitSystem - 'metric' or 'imperial'
+     * @returns {number} The converted value
+     */
+    function convertForDisplay(value, metricId, unitSystem) {
+        if (value === null || value === undefined || isNaN(value)) return null;
+        if (unitSystem === 'metric') return value;
+
+        // Imperial conversion
+        if (metricId === 'weight') {
+            return CONVERSION.kgToLbs(value);
+        } else if (metricId === 'bodyfat') {
+            return value; // Percentage stays the same
+        } else {
+            // All other measurements are length (cm to inches)
+            return CONVERSION.cmToIn(value);
+        }
+    }
+
+    /**
+     * Convert a user-entered value to metric for storage
+     * @param {number} value - The user-entered value
+     * @param {string} metricId - The metric ID (weight, waist, etc.)
+     * @param {string} unitSystem - 'metric' or 'imperial'
+     * @returns {number} The value in metric units
+     */
+    function convertToMetric(value, metricId, unitSystem) {
+        if (value === null || value === undefined || isNaN(value)) return null;
+        if (unitSystem === 'metric') return value;
+
+        // Convert from imperial to metric for storage
+        if (metricId === 'weight') {
+            return CONVERSION.lbsToKg(value);
+        } else if (metricId === 'bodyfat') {
+            return value; // Percentage stays the same
+        } else {
+            // All other measurements are length (inches to cm)
+            return CONVERSION.inToCm(value);
+        }
+    }
+
+    /**
+     * Format a converted value for display (round appropriately)
+     * @param {number} value - The value to format
+     * @param {string} metricId - The metric ID
+     * @returns {string} Formatted value string
+     */
+    function formatDisplayValue(value, metricId) {
+        if (value === null || value === undefined || isNaN(value)) return '--';
+
+        // Weight: 1 decimal place
+        if (metricId === 'weight') {
+            return value.toFixed(1);
+        }
+        // Body fat: 1 decimal place
+        if (metricId === 'bodyfat') {
+            return value.toFixed(1);
+        }
+        // Length measurements: 1 decimal place
+        return value.toFixed(1);
+    }
+
+    /**
      * Get default measurements settings
      */
     function getDefaultMeasurementSettings() {
@@ -2079,7 +2160,8 @@ const Workout = (function() {
             .sort((a, b) => new Date(a.date) - new Date(b.date)) // oldest to newest for chart
             .map(entry => ({
                 date: entry.date,
-                value: entry.values[metric.id]
+                // Convert stored value to display unit
+                value: convertForDisplay(entry.values[metric.id], metric.id, unitSystem)
             }));
 
         if (chartData.length < 2) return '<p class="text-muted text-center">Not enough data in last 30 days</p>';
@@ -2119,7 +2201,7 @@ const Workout = (function() {
             <div class="measurements-mini-chart" data-metric="${metric.id}">
                 <div class="measurements-mini-chart__header">
                     <span class="measurements-mini-chart__metric">${metric.name}</span>
-                    <span class="measurements-mini-chart__current">${latestValue} ${unit}</span>
+                    <span class="measurements-mini-chart__current">${formatDisplayValue(latestValue, metric.id)} ${unit}</span>
                     <span class="measurements-mini-chart__change measurements-mini-chart__change--${changeClass}">
                         ${changeText} ${unit}
                     </span>
@@ -2159,12 +2241,16 @@ const Workout = (function() {
         const latestEntry = log[0] || null;
         const previousEntry = log[1] || null;
 
-        // Calculate changes from previous entry
+        // Calculate changes from previous entry (with unit conversion)
         const getChange = (metricId) => {
             if (!latestEntry || !previousEntry) return null;
-            const current = latestEntry.values[metricId];
-            const prev = previousEntry.values[metricId];
-            if (current === undefined || prev === undefined) return null;
+            const currentStored = latestEntry.values[metricId];
+            const prevStored = previousEntry.values[metricId];
+            if (currentStored === undefined || prevStored === undefined) return null;
+
+            // Convert both values for proper comparison in display unit
+            const current = convertForDisplay(currentStored, metricId, settings.unit);
+            const prev = convertForDisplay(prevStored, metricId, settings.unit);
             const diff = current - prev;
             return { diff, direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' };
         };
@@ -2194,16 +2280,19 @@ const Workout = (function() {
                         </div>
                         <div class="measurements-latest__grid">
                             ${enabledMetrics.map(metric => {
-                                const value = latestEntry.values[metric.id];
+                                const storedValue = latestEntry.values[metric.id];
+                                const displayValue = convertForDisplay(storedValue, metric.id, settings.unit);
                                 const change = getChange(metric.id);
                                 const unit = metric.unit[settings.unit];
-                                const goal = settings.goals[metric.id];
+                                const storedGoal = settings.goals[metric.id];
+                                // Convert goal for display if stored in metric
+                                const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit), metric.id) : null;
 
                                 return `
                                     <div class="measurements-metric-card">
                                         <div class="measurements-metric-card__label">${metric.name}</div>
                                         <div class="measurements-metric-card__value">
-                                            ${value !== undefined ? value : '-'}
+                                            ${displayValue !== null ? formatDisplayValue(displayValue, metric.id) : '-'}
                                             <span class="measurements-metric-card__unit">${unit}</span>
                                         </div>
                                         ${change ? `
@@ -2212,8 +2301,8 @@ const Workout = (function() {
                                                 ${Math.abs(change.diff).toFixed(1)}
                                             </div>
                                         ` : ''}
-                                        ${goal ? `
-                                            <div class="measurements-metric-card__goal">Goal: ${goal} ${unit}</div>
+                                        ${displayGoal ? `
+                                            <div class="measurements-metric-card__goal">Goal: ${displayGoal} ${unit}</div>
                                         ` : ''}
                                     </div>
                                 `;
@@ -2272,9 +2361,11 @@ const Workout = (function() {
                                             ${new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                                         </span>
                                         <span class="measurements-history__values">
-                                            ${enabledMetrics.slice(0, 3).map(m =>
-                                                entry.values[m.id] !== undefined ? `${m.name}: ${entry.values[m.id]}` : ''
-                                            ).filter(Boolean).join(' · ')}
+                                            ${enabledMetrics.slice(0, 3).map(m => {
+                                                if (entry.values[m.id] === undefined) return '';
+                                                const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
+                                                return `${m.name}: ${displayVal}`;
+                                            }).filter(Boolean).join(' · ')}
                                         </span>
                                         <button class="btn btn--icon btn--ghost btn--sm measurements-history__delete" data-delete="${entry.id}">
                                             <i data-lucide="trash-2"></i>
@@ -2410,9 +2501,11 @@ const Workout = (function() {
                                 ${new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                             </span>
                             <span class="measurements-history__values">
-                                ${enabledMetrics.map(m =>
-                                    entry.values[m.id] !== undefined ? `${m.name}: ${entry.values[m.id]}` : ''
-                                ).filter(Boolean).join(' · ')}
+                                ${enabledMetrics.map(m => {
+                                    if (entry.values[m.id] === undefined) return '';
+                                    const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
+                                    return `${m.name}: ${displayVal}`;
+                                }).filter(Boolean).join(' · ')}
                             </span>
                             <button class="btn btn--icon btn--ghost btn--sm measurements-history__delete" data-delete="${entry.id}">
                                 <i data-lucide="trash-2"></i>
@@ -2474,7 +2567,11 @@ const Workout = (function() {
                 <div class="measurements-log-form__fields">
                     ${enabledMetrics.map(metric => {
                         const unit = metric.unit[settings.unit];
-                        const lastValue = latestEntry?.values[metric.id] || '';
+                        // Convert last value to display unit for placeholder
+                        const storedLastValue = latestEntry?.values[metric.id];
+                        const displayLastValue = storedLastValue !== undefined
+                            ? formatDisplayValue(convertForDisplay(storedLastValue, metric.id, settings.unit), metric.id)
+                            : '';
 
                         return `
                             <div class="form-group">
@@ -2485,7 +2582,7 @@ const Workout = (function() {
                                 <input type="number"
                                        class="form-input"
                                        id="metric-${metric.id}"
-                                       placeholder="${lastValue || 'Enter value'}"
+                                       placeholder="${displayLastValue || 'Enter value'}"
                                        step="0.1"
                                        min="0">
                             </div>
@@ -2518,7 +2615,9 @@ const Workout = (function() {
             enabledMetrics.forEach(metric => {
                 const input = document.getElementById(`metric-${metric.id}`);
                 if (input && input.value) {
-                    values[metric.id] = parseFloat(input.value);
+                    const enteredValue = parseFloat(input.value);
+                    // Convert to metric for storage (if user entered in imperial)
+                    values[metric.id] = convertToMetric(enteredValue, metric.id, settings.unit);
                     hasValues = true;
                 }
             });
@@ -2580,13 +2679,16 @@ const Workout = (function() {
                 <div class="measurements-settings__goals">
                     ${MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id)).map(metric => {
                         const unit = metric.unit[settings.unit];
+                        // Convert stored goal (in metric) to display unit
+                        const storedGoal = settings.goals[metric.id];
+                        const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit), metric.id) : '';
                         return `
                             <div class="form-group form-group--inline">
                                 <label class="form-label">${metric.name}</label>
                                 <input type="number"
                                        class="form-input form-input--sm"
                                        id="goal-${metric.id}"
-                                       value="${settings.goals[metric.id] || ''}"
+                                       value="${displayGoal}"
                                        placeholder="Target ${unit}"
                                        step="0.1"
                                        min="0">
@@ -2622,11 +2724,13 @@ const Workout = (function() {
                 return false;
             }
 
-            // Get goals
+            // Get goals and convert to metric for storage
             MEASUREMENT_METRICS.forEach(metric => {
                 const goalInput = document.getElementById(`goal-${metric.id}`);
                 if (goalInput && goalInput.value) {
-                    goals[metric.id] = parseFloat(goalInput.value);
+                    const enteredGoal = parseFloat(goalInput.value);
+                    // Convert to metric for storage
+                    goals[metric.id] = convertToMetric(enteredGoal, metric.id, settings.unit);
                 }
             });
 

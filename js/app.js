@@ -91,7 +91,10 @@ const PIN = (function() {
         input.value = '';
         error.textContent = '';
         input.classList.remove('pin-modal__input--error');
-        input?.focus();
+        // Use setTimeout to ensure focus happens after modal is fully visible
+        setTimeout(() => {
+            input?.focus();
+        }, 100);
     }
 
     function hide() {
@@ -554,11 +557,87 @@ const Content = (function() {
     return { render };
 })();
 
+// Demo Mode Banner
+function showDemoBanner() {
+    // Don't show if banner already exists
+    if (document.getElementById('demoBanner')) return;
+
+    const banner = document.createElement('div');
+    banner.id = 'demoBanner';
+    banner.className = 'demo-banner';
+    banner.innerHTML = `
+        <div class="demo-banner__content">
+            <i data-lucide="info" class="demo-banner__icon"></i>
+            <span class="demo-banner__text">
+                <strong>Demo Mode</strong> - You're exploring with sample data.
+            </span>
+        </div>
+        <div class="demo-banner__actions">
+            <button class="btn btn--ghost btn--sm" id="demoKeepBtn">
+                <i data-lucide="save"></i>
+                Keep Data
+            </button>
+            <button class="btn btn--ghost btn--sm" id="demoExitBtn">
+                <i data-lucide="log-out"></i>
+                Start Fresh
+            </button>
+        </div>
+    `;
+
+    // Insert at top of app
+    const app = document.getElementById('app');
+    if (app) {
+        app.insertBefore(banner, app.firstChild);
+    }
+
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
+    // Bind events
+    document.getElementById('demoKeepBtn')?.addEventListener('click', () => {
+        Storage.exitDemoMode(true); // Keep data
+        banner.remove();
+        Toast.success('Demo data saved! This is now your data.');
+    });
+
+    document.getElementById('demoExitBtn')?.addEventListener('click', () => {
+        if (confirm('Start fresh? This will clear all demo data.')) {
+            Storage.exitDemoMode(false); // Clear data
+            window.location.reload();
+        }
+    });
+}
+
+// Apply theme on page load
+function applyThemeOnLoad() {
+    const settings = Storage.getSettings();
+    const theme = settings.theme || 'light';
+
+    if (theme === 'dark') {
+        document.documentElement.classList.add('dark-mode');
+    } else if (theme === 'light') {
+        document.documentElement.classList.remove('dark-mode');
+    } else {
+        // Auto - check system preference
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.classList.toggle('dark-mode', prefersDark);
+    }
+}
+
 // Main App
 const App = (function() {
     function init() {
         // Initialize storage
         Storage.init();
+
+        // Apply saved theme/display mode
+        applyThemeOnLoad();
+
+        // Check for demo mode and show banner
+        if (Storage.isDemoMode()) {
+            showDemoBanner();
+        }
 
         // Initialize components
         Modal.init();
@@ -586,9 +665,25 @@ const App = (function() {
         // Render initial content
         Content.render(State.getActiveTab());
 
+        // Initialize tour (for first-time users)
+        if (typeof Tour !== 'undefined') {
+            Tour.init();
+        }
+
         // Listen for tab changes
         State.subscribe('tabChanged', (tabId) => {
             Content.render(tabId);
+
+            // Show member-specific tour when navigating to a member tab
+            if (typeof Tour !== 'undefined' && tabId !== 'home' && tabId !== 'settings' && tabId !== 'family-dashboard') {
+                const member = Storage.getMember(tabId);
+                if (member) {
+                    // Small delay to let the content render first
+                    setTimeout(() => {
+                        Tour.showMemberTour(member.type);
+                    }, 600);
+                }
+            }
         });
 
         // Settings button - now opens settings page with PIN verification

@@ -430,6 +430,69 @@ textarea.form-input {
 }
 
 /* ==========================================================================
+   Demo Mode Banner
+   ========================================================================== */
+
+.demo-banner {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-bottom: 1px solid #F59E0B;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.demo-banner__content {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.demo-banner__icon {
+    width: 18px;
+    height: 18px;
+    color: #D97706;
+}
+
+.demo-banner__text {
+    font-size: var(--text-sm);
+    color: #92400E;
+}
+
+.demo-banner__text strong {
+    font-weight: var(--font-semibold);
+}
+
+.demo-banner__actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.demo-banner__actions .btn {
+    background: rgba(255, 255, 255, 0.6);
+    color: #92400E;
+    border: 1px solid rgba(217, 119, 6, 0.3);
+}
+
+.demo-banner__actions .btn:hover {
+    background: rgba(255, 255, 255, 0.9);
+}
+
+@media (max-width: 640px) {
+    .demo-banner {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .demo-banner__actions {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ==========================================================================
    Toast Notifications
    ========================================================================== */
 
@@ -1269,3 +1332,107 @@ textarea.form-input {
     flex-shrink: 0;
     margin-top: 2px;
 }
+
+
+/* ==========================================================================
+   Dark Mode Overrides
+   ========================================================================== */
+
+/* Header in dark mode */
+html.dark-mode .header {
+    background-color: #1E293B;
+    border-bottom-color: #334155;
+}
+
+/* Tabs in dark mode */
+html.dark-mode .tabs {
+    background-color: #1E293B;
+    border-bottom-color: #334155;
+}
+
+/* Cards and widgets in dark mode */
+html.dark-mode .card,
+html.dark-mode .widget {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* Modals in dark mode */
+html.dark-mode .modal__content {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .modal__overlay {
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
+/* Form inputs in dark mode */
+html.dark-mode input,
+html.dark-mode textarea,
+html.dark-mode select {
+    background-color: #0F172A;
+    border-color: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode input::placeholder,
+html.dark-mode textarea::placeholder {
+    color: #64748B;
+}
+
+/* Primary buttons keep white text in dark mode */
+html.dark-mode .btn--primary {
+    color: #FFFFFF;
+}
+
+/* Toast notifications */
+html.dark-mode .toast {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* Settings page sections */
+html.dark-mode .settings-section {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* Schedule sidebar */
+html.dark-mode .member-sidebar,
+html.dark-mode .schedule-sidebar {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* Calendar */
+html.dark-mode .calendar {
+    background-color: #1E293B;
+}
+
+html.dark-mode .calendar__day {
+    border-color: #334155;
+}
+
+html.dark-mode .calendar__day:hover {
+    background-color: #334155;
+}
+
+/* Dropdown menus */
+html.dark-mode .dropdown__menu {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* Tab content areas */
+html.dark-mode .tab-content {
+    background-color: #0F172A;
+}
+
+/* Feature cards */
+html.dark-mode .feature-card,
+html.dark-mode .data-action-card {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+

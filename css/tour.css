@@ -1,0 +1,357 @@
+/**
+ * Tour Component Styles - Home Anchor
+ * Bubble tutorials and onboarding overlay
+ */
+
+/* =========================================================================
+   OVERLAY
+   ========================================================================= */
+
+.tour-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 500;
+    pointer-events: auto;
+    animation: tourFadeIn 0.3s ease;
+}
+
+.tour-overlay--closing {
+    animation: tourFadeOut 0.3s ease forwards;
+}
+
+@keyframes tourFadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes tourFadeOut {
+    from {
+        opacity: 1;
+    }
+    to {
+        opacity: 0;
+    }
+}
+
+/* =========================================================================
+   SPOTLIGHT
+   ========================================================================= */
+
+.tour-spotlight {
+    position: fixed;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: 501;
+}
+
+/* Subtle glow around spotlight */
+.tour-spotlight::before {
+    content: '';
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 2px solid var(--primary);
+    box-shadow: 0 0 20px var(--primary-light);
+    animation: spotlightPulse 2s ease-in-out infinite;
+}
+
+@keyframes spotlightPulse {
+    0%, 100% {
+        opacity: 0.6;
+        transform: scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: scale(1.02);
+    }
+}
+
+/* =========================================================================
+   BUBBLE
+   ========================================================================= */
+
+.tour-bubble {
+    position: fixed;
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-5);
+    max-width: 340px;
+    min-width: 280px;
+    box-shadow:
+        0 20px 40px rgba(0, 0, 0, 0.2),
+        0 4px 12px rgba(0, 0, 0, 0.15);
+    z-index: 502;
+    animation: bubbleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: top 0.3s ease, left 0.3s ease;
+}
+
+@keyframes bubbleIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+/* =========================================================================
+   ARROW
+   ========================================================================= */
+
+.tour-bubble__arrow {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    background: white;
+    transform: rotate(45deg);
+    box-shadow: -2px -2px 5px rgba(0, 0, 0, 0.06);
+    z-index: -1;
+}
+
+/* Arrow positions based on bubble position */
+.tour-bubble[data-position="bottom"] .tour-bubble__arrow {
+    top: -10px;
+    box-shadow: -2px -2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.tour-bubble[data-position="top"] .tour-bubble__arrow {
+    bottom: -10px;
+    box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.tour-bubble[data-position="left"] .tour-bubble__arrow {
+    right: -10px;
+    box-shadow: 2px -2px 5px rgba(0, 0, 0, 0.06);
+}
+
+.tour-bubble[data-position="right"] .tour-bubble__arrow {
+    left: -10px;
+    box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.06);
+}
+
+/* =========================================================================
+   HEADER
+   ========================================================================= */
+
+.tour-bubble__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.tour-bubble__step {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-light);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+}
+
+.tour-bubble__close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gray-100);
+    border: none;
+    border-radius: var(--radius-full);
+    color: var(--gray-500);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tour-bubble__close:hover {
+    background: var(--gray-200);
+    color: var(--gray-700);
+}
+
+.tour-bubble__close svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* =========================================================================
+   CONTENT
+   ========================================================================= */
+
+.tour-bubble__title {
+    font-size: var(--text-lg);
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0 0 var(--space-2) 0;
+    line-height: 1.3;
+}
+
+.tour-bubble__content {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    line-height: 1.6;
+    margin: 0 0 var(--space-4) 0;
+}
+
+/* =========================================================================
+   FOOTER / NAVIGATION
+   ========================================================================= */
+
+.tour-bubble__footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-100);
+}
+
+.tour-bubble__skip {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    background: none;
+    border: none;
+    padding: var(--space-2);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+}
+
+.tour-bubble__skip:hover {
+    color: var(--gray-700);
+}
+
+.tour-bubble__nav {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.tour-bubble__prev,
+.tour-bubble__next {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.tour-bubble__prev {
+    background: var(--gray-100);
+    border: none;
+    color: var(--gray-700);
+}
+
+.tour-bubble__prev:hover {
+    background: var(--gray-200);
+}
+
+.tour-bubble__prev svg {
+    width: 16px;
+    height: 16px;
+}
+
+.tour-bubble__next {
+    background: var(--primary);
+    border: none;
+    color: white;
+}
+
+.tour-bubble__next:hover {
+    background: var(--primary-dark);
+    transform: translateX(2px);
+}
+
+.tour-bubble__next svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* =========================================================================
+   MOBILE RESPONSIVE
+   ========================================================================= */
+
+@media (max-width: 480px) {
+    .tour-bubble {
+        max-width: calc(100vw - 32px);
+        min-width: calc(100vw - 32px);
+        left: 16px !important;
+        right: 16px;
+        padding: var(--space-4);
+    }
+
+    .tour-bubble__title {
+        font-size: var(--text-base);
+    }
+
+    .tour-bubble__content {
+        font-size: var(--text-sm);
+    }
+
+    .tour-bubble__footer {
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+
+    .tour-bubble__skip {
+        order: 2;
+    }
+
+    .tour-bubble__nav {
+        order: 1;
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .tour-bubble__prev,
+    .tour-bubble__next {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
+/* =========================================================================
+   REDUCED MOTION
+   ========================================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .tour-overlay,
+    .tour-overlay--closing,
+    .tour-bubble,
+    .tour-spotlight,
+    .tour-spotlight::before {
+        animation: none;
+        transition: none;
+    }
+}
+
+/* =========================================================================
+   DARK MODE SUPPORT (Future)
+   ========================================================================= */
+
+/*
+[data-theme="dark"] .tour-bubble {
+    background: var(--gray-800);
+    color: var(--gray-100);
+}
+
+[data-theme="dark"] .tour-bubble__arrow {
+    background: var(--gray-800);
+}
+
+[data-theme="dark"] .tour-bubble__title {
+    color: var(--gray-100);
+}
+
+[data-theme="dark"] .tour-bubble__content {
+    color: var(--gray-300);
+}
+*/

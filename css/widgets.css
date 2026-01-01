@@ -17581,3 +17581,45 @@
 .kid-task-page-item {
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
+
+/* ==========================================================================
+   Dark Mode Widget Overrides
+   ========================================================================== */
+
+/* Gratitude entries in dark mode */
+html.dark-mode .journal-notebook__gratitude-header {
+    color: #F87171;
+}
+
+html.dark-mode .journal-notebook__gratitude-item {
+    background: linear-gradient(135deg, rgba(127, 29, 29, 0.4) 0%, rgba(127, 29, 29, 0.2) 100%);
+    color: var(--gray-300);
+}
+
+html.dark-mode .journal-notebook__gratitude-item svg {
+    color: #F87171;
+}
+
+/* Gratitude input fields in dark mode */
+html.dark-mode .journal-gratitude__inputs .form-input,
+html.dark-mode .journal-edit-modal__gratitude-inputs .form-input {
+    background: rgba(127, 29, 29, 0.2);
+    border-color: #7F1D1D;
+    color: var(--gray-300);
+}
+
+html.dark-mode .journal-gratitude__inputs .form-input:focus,
+html.dark-mode .journal-edit-modal__gratitude-inputs .form-input:focus {
+    border-color: #F87171;
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.3);
+}
+
+html.dark-mode .journal-gratitude__inputs .form-input::placeholder,
+html.dark-mode .journal-edit-modal__gratitude-inputs .form-input::placeholder {
+    color: var(--gray-500);
+}
+
+/* Gratitude section header in edit modal */
+html.dark-mode .journal-edit-modal__gratitude > label {
+    color: #F87171;
+}

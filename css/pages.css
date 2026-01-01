@@ -821,6 +821,7 @@
     font-weight: var(--font-semibold);
     color: var(--gray-900);
     margin: 0;
+    padding: var(--space-2) 0 var(--space-2) var(--space-4);
 }
 
 .dashboard-section__title svg {
@@ -1251,6 +1252,7 @@
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-3);
+    margin-top: var(--space-3);
 }
 
 .quick-action-btn {

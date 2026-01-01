@@ -110,6 +110,19 @@ const SettingsPage = (function() {
                         </div>
                     </section>
 
+                    <!-- Help & Tutorials Section -->
+                    <section class="settings-section" id="helpSettings">
+                        <div class="settings-section__header">
+                            <h2 class="settings-section__title">
+                                <i data-lucide="help-circle"></i>
+                                Help & Tutorials
+                            </h2>
+                        </div>
+                        <div class="settings-section__content">
+                            ${renderHelpSettings(settings)}
+                        </div>
+                    </section>
+
                     <!-- Data Management Section -->
                     <section class="settings-section" id="dataSettings">
                         <div class="settings-section__header">
@@ -356,6 +369,81 @@ const SettingsPage = (function() {
     }
 
     /**
+     * Render help and tutorials settings
+     */
+    function renderHelpSettings(settings) {
+        const onboarding = settings.onboarding || {};
+        const showTips = !onboarding.skipAllTours;
+
+        return `
+            <div class="help-settings">
+                <div class="data-actions">
+                    <div class="data-action-card">
+                        <div class="data-action-card__icon">
+                            <i data-lucide="play-circle"></i>
+                        </div>
+                        <div class="data-action-card__content">
+                            <h4>Welcome Tour</h4>
+                            <p>Take a guided tour of Home Anchor's main features and navigation.</p>
+                            <button class="btn btn--secondary" id="replayWelcomeTourBtn">
+                                <i data-lucide="refresh-cw"></i>
+                                Replay Welcome Tour
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="data-action-card">
+                        <div class="data-action-card__icon">
+                            <i data-lucide="users"></i>
+                        </div>
+                        <div class="data-action-card__content">
+                            <h4>Member Tours</h4>
+                            <p>Learn about the different dashboard types and their features.</p>
+                            <div style="display: flex; gap: var(--space-2); flex-wrap: wrap; margin-top: var(--space-2);">
+                                <button class="btn btn--ghost btn--sm" id="tourAdultBtn">
+                                    <i data-lucide="user"></i> Adult
+                                </button>
+                                <button class="btn btn--ghost btn--sm" id="tourKidBtn">
+                                    <i data-lucide="smile"></i> Kid
+                                </button>
+                                <button class="btn btn--ghost btn--sm" id="tourToddlerBtn">
+                                    <i data-lucide="baby"></i> Toddler
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="setting-group" style="margin-top: var(--space-4);">
+                        <div class="setting-row">
+                            <div class="setting-row__info">
+                                <label class="setting-label">Show Helpful Tips</label>
+                                <p class="setting-description">Display tutorial bubbles when you visit new features for the first time.</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showTipsToggle" ${showTips ? 'checked' : ''}>
+                                <span class="toggle-switch__slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="data-action-card" style="margin-top: var(--space-3);">
+                        <div class="data-action-card__icon">
+                            <i data-lucide="rotate-ccw"></i>
+                        </div>
+                        <div class="data-action-card__content">
+                            <h4>Reset All Tours</h4>
+                            <p>Reset all tutorial completion states to see tours again.</p>
+                            <button class="btn btn--ghost" id="resetToursBtn">
+                                Reset Tours
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
      * Render data management section
      */
     function renderDataManagement() {
@@ -542,6 +630,72 @@ const SettingsPage = (function() {
         // Reset data
         container.querySelector('#resetDataBtn')?.addEventListener('click', async () => {
             await resetData();
+        });
+
+        // Help & Tutorials
+        // Replay welcome tour
+        container.querySelector('#replayWelcomeTourBtn')?.addEventListener('click', () => {
+            if (typeof Tour !== 'undefined') {
+                // Go back to home first
+                if (typeof Tabs !== 'undefined') {
+                    Tabs.switchTo('home');
+                }
+                // Start the tour after a short delay
+                setTimeout(() => {
+                    Tour.start('welcome');
+                }, 300);
+            }
+        });
+
+        // Member tour buttons
+        container.querySelector('#tourAdultBtn')?.addEventListener('click', () => {
+            const members = Storage.getMembers();
+            const adultMember = members.find(m => m.type === 'adult');
+            if (adultMember && typeof Tabs !== 'undefined' && typeof Tour !== 'undefined') {
+                Tabs.switchTo(adultMember.id);
+                setTimeout(() => Tour.start('adult-member'), 500);
+            } else {
+                Toast.info('Add an adult member first to see this tour');
+            }
+        });
+
+        container.querySelector('#tourKidBtn')?.addEventListener('click', () => {
+            const members = Storage.getMembers();
+            const kidMember = members.find(m => m.type === 'kid');
+            if (kidMember && typeof Tabs !== 'undefined' && typeof Tour !== 'undefined') {
+                Tabs.switchTo(kidMember.id);
+                setTimeout(() => Tour.start('kid-member'), 500);
+            } else {
+                Toast.info('Add a kid member first to see this tour');
+            }
+        });
+
+        container.querySelector('#tourToddlerBtn')?.addEventListener('click', () => {
+            const members = Storage.getMembers();
+            const toddlerMember = members.find(m => m.type === 'toddler');
+            if (toddlerMember && typeof Tabs !== 'undefined' && typeof Tour !== 'undefined') {
+                Tabs.switchTo(toddlerMember.id);
+                setTimeout(() => Tour.start('toddler-member'), 500);
+            } else {
+                Toast.info('Add a toddler member first to see this tour');
+            }
+        });
+
+        // Toggle show tips
+        container.querySelector('#showTipsToggle')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.onboarding = settings.onboarding || {};
+            settings.onboarding.skipAllTours = !e.target.checked;
+            Storage.updateSettings(settings);
+            Toast.success(e.target.checked ? 'Tips enabled' : 'Tips disabled');
+        });
+
+        // Reset all tours
+        container.querySelector('#resetToursBtn')?.addEventListener('click', () => {
+            if (typeof Tour !== 'undefined') {
+                Tour.resetTours();
+                Toast.success('All tours have been reset');
+            }
         });
     }
 

@@ -187,3 +187,105 @@ scaledQty = originalQty * (desiredServings / originalServings)
 1. Recipe Scaling (most useful, self-contained)
 2. Cooking Mode (great UX enhancement)
 3. Import from URL (nice-to-have, complex)
+
+---
+
+## Firebase Authentication & Multi-Device Sync
+
+### Overview
+Add Firebase for user authentication and real-time data sync across devices. Essential for families using the app on multiple phones/tablets.
+
+### Why Firebase?
+- **Real-time sync**: Changes appear instantly on all devices
+- **Offline support**: App works without internet, syncs when back online
+- **Free tier**: Generous limits (1GB storage, 50K reads/day) - enough for hundreds of families
+- **Easy Google Sign-In**: One-tap authentication
+
+### Current State
+- Data stored in localStorage (device-only)
+- ~200 KB/month data for family of 4
+- localStorage limit: 5-10 MB (2-3 years before hitting limit)
+- Export/Import available in Settings as manual backup
+
+### Implementation Plan
+
+#### Phase 1: Firebase Setup
+1. Create Firebase project at https://console.firebase.google.com
+2. Enable Authentication (Google + Email/Password)
+3. Create Firestore database (start in test mode)
+4. Get Firebase config credentials
+
+#### Phase 2: Files to Create
+| File | Purpose |
+|------|---------|
+| `js/firebase-config.js` | Firebase SDK initialization |
+| `js/auth.js` | Sign-in/sign-out functions |
+| `js/firestore-storage.js` | Firestore adapter (same API as Storage) |
+| `css/auth.css` | Login page styles |
+
+#### Phase 3: Files to Modify
+| File | Changes |
+|------|---------|
+| `index.html` | Add Firebase SDK scripts |
+| `landing.html` | Add login UI, update nav |
+| `js/app.js` | Check auth state before init |
+| `js/storage.js` | Add provider abstraction layer |
+| `js/features/settings-page.js` | Add account section, remove PIN |
+
+#### Phase 4: Firestore Data Structure
+```
+families/
+  {familyId}/
+    settings: { theme, notifications, ... }
+    members/
+      {memberId}: { name, type, widgets, ... }
+    schedules/
+      {memberId}: { default: [], 0: [], ... }
+    calendar/
+      {eventId}: { date, title, memberId, ... }
+    widgetData/
+      {memberId}_{widgetId}: { ...data }
+```
+
+#### Phase 5: Data Migration
+- Detect existing localStorage data on first login
+- Offer one-time migration to cloud
+- Clear localStorage after successful migration
+
+### Firebase Pricing Notes
+| Usage | Cost |
+|-------|------|
+| 1 family | Free |
+| 100 families | Free |
+| 1,000+ families | ~$5-25/month |
+
+### Security Rules (Firestore)
+```javascript
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /families/{familyId}/{document=**} {
+      allow read, write: if request.auth != null
+        && request.auth.uid == familyId;
+    }
+  }
+}
+```
+
+### User Flow After Implementation
+```
+Landing Page
+    ↓
+[Try Demo] → Demo Mode (no login)
+[Get Started] → Google/Email Sign-In
+    ↓
+Dashboard (synced across all devices)
+```
+
+### Considerations
+- **Vendor lock-in**: Migrating away from Firebase is painful
+- **Read operations**: Can add up if queries are inefficient
+- **No spending cap**: Blaze plan has no auto-stop (use budget alerts)
+
+### Status
+**Parked** - Validating core product for 15 days first. Will implement before sharing with friends for feedback.

@@ -79,6 +79,12 @@ const Storage = (function() {
             notifications: {
                 enabled: false,
                 sound: false
+            },
+            onboarding: {
+                welcomeTourComplete: false,
+                toursCompleted: [],
+                lastTourDate: null,
+                skipAllTours: false
             }
         },
         // Only Home tab by default - no members
@@ -836,6 +842,230 @@ const Storage = (function() {
     }
 
     // =========================================================================
+    // DEMO DATA
+    // =========================================================================
+
+    /**
+     * Load demo data for the landing page "Try Demo" feature
+     * Creates a sample family with realistic data
+     */
+    function loadDemoData() {
+        const today = new Date().toISOString().split('T')[0];
+        const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
+        const twoDaysAgo = new Date(Date.now() - 2 * 86400000).toISOString().split('T')[0];
+
+        const demoData = {
+            meta: {
+                version: '1.0',
+                createdAt: new Date().toISOString(),
+                lastModified: new Date().toISOString()
+            },
+            settings: {
+                adminPin: '1234',
+                theme: 'light',
+                notifications: {
+                    enabled: false,
+                    sound: false
+                },
+                onboarding: {
+                    welcomeTourComplete: false,
+                    toursCompleted: [],
+                    lastTourDate: null,
+                    skipAllTours: false
+                }
+            },
+            tabs: [
+                { id: 'home', name: 'Home', type: 'home', icon: 'home', removable: false },
+                { id: 'demo-mom', name: 'Mom', type: 'adult', icon: 'user', removable: true },
+                { id: 'demo-dad', name: 'Dad', type: 'adult', icon: 'user', removable: true },
+                { id: 'demo-alex', name: 'Alex', type: 'kid', icon: 'smile', removable: true },
+                { id: 'demo-emma', name: 'Emma', type: 'toddler', icon: 'baby', removable: true }
+            ],
+            members: [
+                {
+                    id: 'demo-mom',
+                    name: 'Mom',
+                    type: 'adult',
+                    avatar: { type: 'initials', value: 'M', color: '#8B5CF6' },
+                    widgets: ['tasks', 'meals', 'workout', 'habits', 'gratitude', 'recipes'],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'demo-dad',
+                    name: 'Dad',
+                    type: 'adult',
+                    avatar: { type: 'initials', value: 'D', color: '#3B82F6' },
+                    widgets: ['tasks', 'meals', 'workout', 'journal', 'habits'],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'demo-alex',
+                    name: 'Alex',
+                    type: 'kid',
+                    age: 8,
+                    avatar: { type: 'initials', value: 'A', color: '#F59E0B' },
+                    widgets: ['points', 'rewards', 'achievements', 'chores', 'kid-workout'],
+                    createdAt: new Date().toISOString()
+                },
+                {
+                    id: 'demo-emma',
+                    name: 'Emma',
+                    type: 'toddler',
+                    age: 2,
+                    avatar: { type: 'initials', value: 'E', color: '#EC4899' },
+                    widgets: ['toddler-routine', 'activities', 'daily-log', 'milestones'],
+                    createdAt: new Date().toISOString()
+                }
+            ],
+            calendar: {
+                events: [
+                    {
+                        id: 'evt-1',
+                        title: 'Soccer Practice',
+                        date: today,
+                        memberId: 'demo-alex',
+                        icon: 'dribbble',
+                        color: '#10B981'
+                    },
+                    {
+                        id: 'evt-2',
+                        title: 'Pediatrician Visit',
+                        date: today,
+                        memberId: 'demo-emma',
+                        icon: 'stethoscope',
+                        color: '#3B82F6'
+                    },
+                    {
+                        id: 'evt-3',
+                        title: 'Family Movie Night',
+                        date: today,
+                        memberId: null,
+                        icon: 'film',
+                        color: '#8B5CF6'
+                    }
+                ]
+            },
+            schedules: {
+                'demo-alex': {
+                    default: [
+                        { id: 's1', time: '07:00', activity: 'Wake Up', icon: 'sun', color: '#F59E0B' },
+                        { id: 's2', time: '07:30', activity: 'Breakfast', icon: 'utensils', color: '#10B981' },
+                        { id: 's3', time: '08:00', activity: 'School', icon: 'book', color: '#3B82F6' },
+                        { id: 's4', time: '15:00', activity: 'Homework', icon: 'edit', color: '#8B5CF6' },
+                        { id: 's5', time: '16:00', activity: 'Play Time', icon: 'gamepad-2', color: '#EC4899' },
+                        { id: 's6', time: '19:00', activity: 'Dinner', icon: 'utensils', color: '#10B981' },
+                        { id: 's7', time: '20:00', activity: 'Bedtime', icon: 'moon', color: '#6366F1' }
+                    ]
+                },
+                'demo-emma': {
+                    default: [
+                        { id: 's1', time: '07:00', activity: 'Wake Up', icon: 'sun', color: '#F59E0B' },
+                        { id: 's2', time: '07:30', activity: 'Breakfast', icon: 'utensils', color: '#10B981' },
+                        { id: 's3', time: '09:00', activity: 'Play Time', icon: 'puzzle', color: '#EC4899' },
+                        { id: 's4', time: '12:00', activity: 'Lunch', icon: 'utensils', color: '#10B981' },
+                        { id: 's5', time: '13:00', activity: 'Nap Time', icon: 'moon', color: '#6366F1' },
+                        { id: 's6', time: '15:00', activity: 'Snack', icon: 'apple', color: '#EF4444' },
+                        { id: 's7', time: '18:00', activity: 'Dinner', icon: 'utensils', color: '#10B981' },
+                        { id: 's8', time: '19:00', activity: 'Bedtime', icon: 'moon', color: '#6366F1' }
+                    ]
+                }
+            },
+            widgetData: {
+                // Alex's Points Widget
+                'demo-alex_points': {
+                    balance: 150,
+                    dailyGoal: 25,
+                    dailyGoalEnabled: true,
+                    activities: [
+                        { id: 'a1', name: 'Brush Teeth', points: 5, icon: 'sparkles', category: 'hygiene', maxPerDay: 2 },
+                        { id: 'a2', name: 'Make Bed', points: 5, icon: 'bed', category: 'chores', maxPerDay: 1 },
+                        { id: 'a3', name: 'Do Homework', points: 10, icon: 'book', category: 'school', maxPerDay: 1 },
+                        { id: 'a4', name: 'Help with Dishes', points: 8, icon: 'utensils', category: 'chores', maxPerDay: 2 },
+                        { id: 'a5', name: 'Read for 20 min', points: 10, icon: 'book-open', category: 'school', maxPerDay: 1 },
+                        { id: 'a6', name: 'Be Kind', points: 5, icon: 'heart', category: 'kindness', maxPerDay: 3 },
+                        { id: 'a7', name: 'Exercise', points: 10, icon: 'dumbbell', category: 'health', maxPerDay: 1 },
+                        { id: 'a8', name: 'Clean Room', points: 15, icon: 'home', category: 'chores', maxPerDay: 1 }
+                    ],
+                    history: [
+                        { id: 'h1', date: today, activityId: 'a1', activityName: 'Brush Teeth', points: 5, type: 'earned', time: '07:30' },
+                        { id: 'h2', date: today, activityId: 'a2', activityName: 'Make Bed', points: 5, type: 'earned', time: '07:45' },
+                        { id: 'h3', date: yesterday, activityId: 'a1', activityName: 'Brush Teeth', points: 5, type: 'earned', time: '07:30' },
+                        { id: 'h4', date: yesterday, activityId: 'a3', activityName: 'Do Homework', points: 10, type: 'earned', time: '16:00' },
+                        { id: 'h5', date: yesterday, activityId: 'a5', activityName: 'Read for 20 min', points: 10, type: 'earned', time: '19:00' },
+                        { id: 'h6', date: twoDaysAgo, activityId: 'a1', activityName: 'Brush Teeth', points: 5, type: 'earned', time: '07:30' },
+                        { id: 'h7', date: twoDaysAgo, activityId: 'a2', activityName: 'Make Bed', points: 5, type: 'earned', time: '07:45' },
+                        { id: 'h8', date: twoDaysAgo, activityId: 'a6', activityName: 'Be Kind', points: 5, type: 'earned', time: '14:00' }
+                    ],
+                    settings: {
+                        fontSize: 'normal',
+                        reducedMotion: false,
+                        categoryFilter: 'all'
+                    }
+                },
+                // Alex's Rewards Widget
+                'demo-alex_rewards': {
+                    rewards: [
+                        { id: 'r1', name: '30 min Screen Time', cost: 20, icon: 'tv', color: '#3B82F6' },
+                        { id: 'r2', name: 'Choose Dinner', cost: 30, icon: 'utensils', color: '#10B981' },
+                        { id: 'r3', name: 'Stay Up Late', cost: 40, icon: 'moon', color: '#8B5CF6' },
+                        { id: 'r4', name: 'Movie Night Pick', cost: 50, icon: 'film', color: '#F59E0B' },
+                        { id: 'r5', name: 'New Book', cost: 75, icon: 'book', color: '#EC4899' },
+                        { id: 'r6', name: 'Special Outing', cost: 100, icon: 'map-pin', color: '#EF4444' }
+                    ],
+                    history: [],
+                    wishlist: ['r4', 'r6']
+                },
+                // Alex's Achievements Widget
+                'demo-alex_achievements': {
+                    unlocked: ['first-points', 'streak-3'],
+                    achievements: [
+                        { id: 'first-points', name: 'First Points!', description: 'Earned your first points', icon: 'star', category: 'points', unlockedAt: twoDaysAgo },
+                        { id: 'streak-3', name: '3 Day Streak', description: 'Completed activities 3 days in a row', icon: 'flame', category: 'streak', unlockedAt: today }
+                    ]
+                },
+                // Mom's Tasks Widget
+                'demo-mom_tasks': {
+                    tasks: [
+                        { id: 't1', text: 'Grocery shopping', completed: false, priority: 'high' },
+                        { id: 't2', text: 'Schedule doctor appointment', completed: true, priority: 'medium' },
+                        { id: 't3', text: 'Meal prep for the week', completed: false, priority: 'medium' },
+                        { id: 't4', text: 'Pay bills', completed: true, priority: 'high' }
+                    ]
+                },
+                // Mom's Habits Widget
+                'demo-mom_habits': {
+                    habits: [
+                        { id: 'h1', name: 'Exercise', icon: 'dumbbell', streak: 5, completedDates: [today, yesterday, twoDaysAgo] },
+                        { id: 'h2', name: 'Read', icon: 'book', streak: 3, completedDates: [today, yesterday] },
+                        { id: 'h3', name: 'Meditate', icon: 'brain', streak: 2, completedDates: [today] },
+                        { id: 'h4', name: 'Drink Water', icon: 'droplet', streak: 7, completedDates: [today, yesterday, twoDaysAgo] }
+                    ]
+                }
+            }
+        };
+
+        saveAll(demoData);
+        return demoData;
+    }
+
+    /**
+     * Check if app is in demo mode
+     */
+    function isDemoMode() {
+        return localStorage.getItem('homeAnchor_demo') === 'true';
+    }
+
+    /**
+     * Exit demo mode and optionally clear data
+     */
+    function exitDemoMode(keepData = false) {
+        localStorage.removeItem('homeAnchor_demo');
+        if (!keepData) {
+            reset();
+        }
+    }
+
+    // =========================================================================
     // PUBLIC API
     // =========================================================================
 
@@ -913,6 +1143,11 @@ const Storage = (function() {
         // Export/Import
         exportData,
         importData,
-        reset
+        reset,
+
+        // Demo Mode
+        loadDemoData,
+        isDemoMode,
+        exitDemoMode
     };
 })();
