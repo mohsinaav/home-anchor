@@ -4,6 +4,15 @@
  */
 
 const ToddlerRoutine = (function() {
+    // Category definitions for grouping
+    const CATEGORIES = {
+        morning: { label: 'Morning', icon: 'sunrise', order: 1 },
+        meals: { label: 'Meals & Snacks', icon: 'utensils', order: 2 },
+        naps: { label: 'Naps', icon: 'moon', order: 3 },
+        evening: { label: 'Evening', icon: 'sunset', order: 4 },
+        bedtime: { label: 'Bedtime', icon: 'bed', order: 5 }
+    };
+
     // SVG illustrations as data URLs for each routine
     const ROUTINE_IMAGES = {
         'wake-up': {
@@ -208,21 +217,21 @@ const ToddlerRoutine = (function() {
         }
     };
 
-    // Default routines for new toddlers
+    // Default routines for new toddlers (with categories)
     const DEFAULT_ROUTINES = [
-        { id: 'default-1', title: 'Wake Up', imageKey: 'wake-up', order: 1 },
-        { id: 'default-2', title: 'Brush Teeth', imageKey: 'brush-teeth', order: 2 },
-        { id: 'default-3', title: 'Get Dressed', imageKey: 'get-dressed', order: 3 },
-        { id: 'default-4', title: 'Breakfast', imageKey: 'breakfast', order: 4 },
-        { id: 'default-5', title: 'Wash Hands', imageKey: 'wash-hands', order: 5 },
-        { id: 'default-6', title: 'Lunch', imageKey: 'lunch', order: 6 },
-        { id: 'default-7', title: 'Nap Time', imageKey: 'nap', order: 7 },
-        { id: 'default-8', title: 'Snack', imageKey: 'snack', order: 8 },
-        { id: 'default-9', title: 'Dinner', imageKey: 'dinner', order: 9 },
-        { id: 'default-10', title: 'Bath Time', imageKey: 'bath', order: 10 },
-        { id: 'default-11', title: 'Pajamas', imageKey: 'pajamas', order: 11 },
-        { id: 'default-12', title: 'Story Time', imageKey: 'story', order: 12 },
-        { id: 'default-13', title: 'Bedtime', imageKey: 'bedtime', order: 13 }
+        { id: 'default-1', title: 'Wake Up', imageKey: 'wake-up', category: 'morning', order: 1 },
+        { id: 'default-2', title: 'Brush Teeth', imageKey: 'brush-teeth', category: 'morning', order: 2 },
+        { id: 'default-3', title: 'Get Dressed', imageKey: 'get-dressed', category: 'morning', order: 3 },
+        { id: 'default-4', title: 'Breakfast', imageKey: 'breakfast', category: 'meals', order: 4 },
+        { id: 'default-5', title: 'Wash Hands', imageKey: 'wash-hands', category: 'meals', order: 5 },
+        { id: 'default-6', title: 'Lunch', imageKey: 'lunch', category: 'meals', order: 6 },
+        { id: 'default-7', title: 'Nap Time', imageKey: 'nap', category: 'naps', order: 7 },
+        { id: 'default-8', title: 'Snack', imageKey: 'snack', category: 'meals', order: 8 },
+        { id: 'default-9', title: 'Dinner', imageKey: 'dinner', category: 'meals', order: 9 },
+        { id: 'default-10', title: 'Bath Time', imageKey: 'bath', category: 'evening', order: 10 },
+        { id: 'default-11', title: 'Pajamas', imageKey: 'pajamas', category: 'bedtime', order: 11 },
+        { id: 'default-12', title: 'Story Time', imageKey: 'story', category: 'bedtime', order: 12 },
+        { id: 'default-13', title: 'Bedtime', imageKey: 'bedtime', category: 'bedtime', order: 13 }
     ];
 
     /**
@@ -234,10 +243,111 @@ const ToddlerRoutine = (function() {
             return {
                 routines: DEFAULT_ROUTINES.map(r => ({ ...r, id: `routine-${Date.now()}-${r.order}` })),
                 completedToday: [],
-                lastResetDate: DateUtils.today()
+                lastResetDate: DateUtils.today(),
+                history: [], // Track completion history { date, completed: [routineIds], total }
+                stats: {}    // Cached stats
             };
         }
+        // Ensure history and stats exist for older data
+        if (!stored.history) stored.history = [];
+        if (!stored.stats) stored.stats = {};
         return stored;
+    }
+
+    /**
+     * Record daily history before reset
+     */
+    function recordDailyHistory(data) {
+        const history = data.history || [];
+        const completedToday = data.completedToday || [];
+        const totalRoutines = data.routines?.length || 0;
+
+        // Add today's record
+        history.push({
+            date: data.lastResetDate,
+            completed: completedToday.length,
+            total: totalRoutines,
+            routineIds: [...completedToday]
+        });
+
+        // Keep only last 30 days
+        if (history.length > 30) {
+            history.shift();
+        }
+
+        return history;
+    }
+
+    /**
+     * Calculate stats from history
+     */
+    function calculateStats(data) {
+        const history = data.history || [];
+        const routines = data.routines || [];
+
+        if (history.length === 0) {
+            return {
+                avgCompletion: 0,
+                totalDays: 0,
+                perfectDays: 0,
+                routineStats: {}
+            };
+        }
+
+        // Calculate routine-specific stats
+        const routineStats = {};
+        routines.forEach(r => {
+            routineStats[r.id] = { completed: 0, total: 0, title: r.title };
+        });
+
+        let totalCompleted = 0;
+        let totalPossible = 0;
+        let perfectDays = 0;
+
+        history.forEach(day => {
+            totalCompleted += day.completed;
+            totalPossible += day.total;
+            if (day.completed === day.total && day.total > 0) {
+                perfectDays++;
+            }
+            // Track per-routine completions
+            (day.routineIds || []).forEach(routineId => {
+                if (routineStats[routineId]) {
+                    routineStats[routineId].completed++;
+                }
+            });
+            routines.forEach(r => {
+                if (routineStats[r.id]) {
+                    routineStats[r.id].total++;
+                }
+            });
+        });
+
+        return {
+            avgCompletion: totalPossible > 0 ? Math.round((totalCompleted / totalPossible) * 100) : 0,
+            totalDays: history.length,
+            perfectDays,
+            routineStats
+        };
+    }
+
+    /**
+     * Get frequently skipped routines
+     */
+    function getSkippedRoutines(data) {
+        const stats = calculateStats(data);
+        const skipped = [];
+
+        Object.entries(stats.routineStats).forEach(([id, stat]) => {
+            if (stat.total > 0) {
+                const rate = (stat.completed / stat.total) * 100;
+                if (rate < 50) {
+                    skipped.push({ id, title: stat.title, rate: Math.round(rate) });
+                }
+            }
+        });
+
+        return skipped.sort((a, b) => a.rate - b.rate);
     }
 
     /**
@@ -248,15 +358,47 @@ const ToddlerRoutine = (function() {
         const today = DateUtils.today();
 
         if (data.lastResetDate !== today) {
+            // Record yesterday's history before resetting
+            const history = recordDailyHistory(data);
+
             const updatedData = {
                 ...data,
                 completedToday: [],
-                lastResetDate: today
+                lastResetDate: today,
+                history
             };
             Storage.setWidgetData(memberId, 'toddler-routine', updatedData);
             return updatedData;
         }
         return data;
+    }
+
+    /**
+     * Group routines by category
+     */
+    function groupRoutinesByCategory(routines) {
+        const groups = {};
+
+        // Initialize all categories
+        Object.keys(CATEGORIES).forEach(cat => {
+            groups[cat] = [];
+        });
+
+        // Group routines
+        routines.forEach(routine => {
+            const category = routine.category || 'morning';
+            if (!groups[category]) {
+                groups[category] = [];
+            }
+            groups[category].push(routine);
+        });
+
+        // Sort each group by order
+        Object.keys(groups).forEach(cat => {
+            groups[cat].sort((a, b) => (a.order || 0) - (b.order || 0));
+        });
+
+        return groups;
     }
 
     /**
@@ -281,21 +423,31 @@ const ToddlerRoutine = (function() {
         const routines = data.routines || [];
         const completedToday = data.completedToday || [];
 
-        // Show all routines in widget (smaller cards fit more)
-        const displayRoutines = routines;
         const completedCount = completedToday.length;
         const totalCount = routines.length;
+        const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        const allComplete = completedCount === totalCount && totalCount > 0;
 
         container.innerHTML = `
-            <div class="toddler-routine-widget">
+            <div class="toddler-routine-widget ${allComplete ? 'toddler-routine-widget--complete' : ''}">
                 <div class="toddler-routine-widget__header">
-                    <span class="toddler-routine-widget__progress">
-                        ${completedCount}/${totalCount} done
-                    </span>
+                    <div class="toddler-routine-progress-ring" data-progress="${progressPercent}">
+                        <svg viewBox="0 0 36 36">
+                            <path class="toddler-routine-progress-ring__bg"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="toddler-routine-progress-ring__fill"
+                                stroke-dasharray="${progressPercent}, 100"
+                                d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        </svg>
+                        <span class="toddler-routine-progress-ring__text">${completedCount}/${totalCount}</span>
+                    </div>
+                    <button class="btn btn--sm btn--ghost" data-action="stats" title="View stats">
+                        <i data-lucide="bar-chart-2"></i>
+                    </button>
                 </div>
 
                 <div class="toddler-routine-grid">
-                    ${displayRoutines.map(routine => {
+                    ${routines.map(routine => {
                         const isComplete = completedToday.includes(routine.id);
                         return `
                             <div class="toddler-routine-card ${isComplete ? 'toddler-routine-card--done' : ''}"
@@ -332,8 +484,121 @@ const ToddlerRoutine = (function() {
             lucide.createIcons();
         }
 
+        // Check if all complete and trigger celebration
+        if (allComplete && !data.celebratedToday) {
+            triggerCelebration(memberId);
+        }
+
         // Bind events
         bindWidgetEvents(container, memberId);
+    }
+
+    /**
+     * Trigger celebration animation when all routines are complete
+     */
+    function triggerCelebration(memberId) {
+        const data = getWidgetData(memberId);
+
+        // Mark as celebrated to avoid repeating
+        Storage.setWidgetData(memberId, 'toddler-routine', {
+            ...data,
+            celebratedToday: true
+        });
+
+        // Show confetti celebration
+        if (typeof Confetti !== 'undefined' && Confetti.celebrate) {
+            Confetti.celebrate();
+        }
+
+        // Show celebration message
+        Toast.success('All routines complete! Great job!');
+    }
+
+    /**
+     * Show stats modal
+     */
+    function showStatsModal(memberId) {
+        const data = getWidgetData(memberId);
+        const stats = calculateStats(data);
+        const skipped = getSkippedRoutines(data);
+        const history = data.history || [];
+
+        // Generate last 7 days calendar
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            const dayRecord = history.find(h => h.date === dateStr);
+            last7Days.push({
+                date: dateStr,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                completed: dayRecord?.completed || 0,
+                total: dayRecord?.total || data.routines.length,
+                isToday: i === 0
+            });
+        }
+
+        Modal.open({
+            title: 'Routine Stats',
+            content: `
+                <div class="routine-stats">
+                    <div class="routine-stats__summary">
+                        <div class="routine-stats__card">
+                            <span class="routine-stats__value">${stats.avgCompletion}%</span>
+                            <span class="routine-stats__label">Avg Completion</span>
+                        </div>
+                        <div class="routine-stats__card">
+                            <span class="routine-stats__value">${stats.perfectDays}</span>
+                            <span class="routine-stats__label">Perfect Days</span>
+                        </div>
+                        <div class="routine-stats__card">
+                            <span class="routine-stats__value">${stats.totalDays}</span>
+                            <span class="routine-stats__label">Days Tracked</span>
+                        </div>
+                    </div>
+
+                    <div class="routine-stats__calendar">
+                        <h4 class="routine-stats__section-title">Last 7 Days</h4>
+                        <div class="routine-stats__days">
+                            ${last7Days.map(day => {
+                                const percent = day.total > 0 ? Math.round((day.completed / day.total) * 100) : 0;
+                                const level = percent === 100 ? 'perfect' : percent >= 50 ? 'good' : percent > 0 ? 'partial' : 'none';
+                                return `
+                                    <div class="routine-stats__day ${day.isToday ? 'routine-stats__day--today' : ''}">
+                                        <span class="routine-stats__day-name">${day.dayName}</span>
+                                        <div class="routine-stats__day-circle routine-stats__day-circle--${level}">
+                                            ${day.completed}/${day.total}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+
+                    ${skipped.length > 0 ? `
+                        <div class="routine-stats__skipped">
+                            <h4 class="routine-stats__section-title">Frequently Skipped</h4>
+                            <div class="routine-stats__skipped-list">
+                                ${skipped.slice(0, 3).map(s => `
+                                    <div class="routine-stats__skipped-item">
+                                        <span>${s.title}</span>
+                                        <span class="routine-stats__skipped-rate">${s.rate}%</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            footer: '<button class="btn btn--primary" data-modal-close>Close</button>'
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        document.querySelector('[data-modal-close]')?.addEventListener('click', () => Modal.close());
     }
 
     /**
@@ -346,6 +611,12 @@ const ToddlerRoutine = (function() {
                 const routineId = card.dataset.routineId;
                 toggleComplete(memberId, routineId);
             });
+        });
+
+        // Stats button
+        container.querySelector('[data-action="stats"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showStatsModal(memberId);
         });
 
         // Reset button
@@ -362,6 +633,31 @@ const ToddlerRoutine = (function() {
                 showManageModal(memberId);
             }
         });
+    }
+
+    /**
+     * Reorder routines (called from manage modal)
+     */
+    function reorderRoutines(memberId, fromIndex, toIndex) {
+        const data = getWidgetData(memberId);
+        const routines = [...(data.routines || [])];
+
+        // Remove from old position and insert at new position
+        const [moved] = routines.splice(fromIndex, 1);
+        routines.splice(toIndex, 0, moved);
+
+        // Update order values
+        routines.forEach((r, i) => {
+            r.order = i + 1;
+        });
+
+        Storage.setWidgetData(memberId, 'toddler-routine', {
+            ...data,
+            routines
+        });
+
+        // Refresh widget
+        refreshWidget(memberId);
     }
 
     /**
@@ -427,7 +723,7 @@ const ToddlerRoutine = (function() {
     }
 
     /**
-     * Show full page view
+     * Show full page view with category grouping
      */
     function showFullPage(memberId) {
         const main = document.querySelector('main');
@@ -440,6 +736,50 @@ const ToddlerRoutine = (function() {
 
         const completedCount = completedToday.length;
         const totalCount = routines.length;
+        const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        const allComplete = completedCount === totalCount && totalCount > 0;
+
+        // Group routines by category
+        const groupedRoutines = groupRoutinesByCategory(routines);
+
+        // Generate category sections HTML
+        const categorySectionsHTML = Object.entries(CATEGORIES)
+            .filter(([cat]) => groupedRoutines[cat] && groupedRoutines[cat].length > 0)
+            .map(([cat, catInfo]) => {
+                const catRoutines = groupedRoutines[cat];
+                const catCompleted = catRoutines.filter(r => completedToday.includes(r.id)).length;
+
+                return `
+                    <div class="routine-category" data-category="${cat}">
+                        <div class="routine-category__header">
+                            <div class="routine-category__title">
+                                <i data-lucide="${catInfo.icon}"></i>
+                                <span>${catInfo.label}</span>
+                            </div>
+                            <span class="routine-category__count">${catCompleted}/${catRoutines.length}</span>
+                        </div>
+                        <div class="routine-category__grid">
+                            ${catRoutines.map(routine => {
+                                const isComplete = completedToday.includes(routine.id);
+                                return `
+                                    <div class="toddler-routine-card toddler-routine-card--large ${isComplete ? 'toddler-routine-card--done' : ''}"
+                                         data-routine-id="${routine.id}">
+                                        <div class="toddler-routine-card__image">
+                                            <img src="${getImageSrc(routine)}" alt="${routine.title}">
+                                            ${isComplete ? `
+                                                <div class="toddler-routine-card__check">
+                                                    <i data-lucide="check"></i>
+                                                </div>
+                                            ` : ''}
+                                        </div>
+                                        <span class="toddler-routine-card__label">${routine.title}</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
 
         main.innerHTML = `
             <div class="full-page">
@@ -450,6 +790,9 @@ const ToddlerRoutine = (function() {
                     </button>
                     <h1 class="full-page__title">${member?.name || ''}'s Routine</h1>
                     <div class="full-page__actions">
+                        <button class="btn btn--sm btn--ghost" id="statsBtn" title="View stats">
+                            <i data-lucide="bar-chart-2"></i>
+                        </button>
                         <button class="btn btn--sm btn--ghost" id="editRoutinesBtn">
                             <i data-lucide="settings"></i>
                         </button>
@@ -457,38 +800,31 @@ const ToddlerRoutine = (function() {
                 </div>
 
                 <div class="full-page__content">
-                    <div class="toddler-routine-full-header">
-                        <div class="toddler-routine-progress-bar">
-                            <div class="toddler-routine-progress-bar__fill"
-                                 style="width: ${totalCount > 0 ? (completedCount / totalCount * 100) : 0}%"></div>
+                    <div class="toddler-routine-full-header ${allComplete ? 'toddler-routine-full-header--complete' : ''}">
+                        <div class="toddler-routine-progress-ring toddler-routine-progress-ring--large" data-progress="${progressPercent}">
+                            <svg viewBox="0 0 36 36">
+                                <path class="toddler-routine-progress-ring__bg"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                                <path class="toddler-routine-progress-ring__fill"
+                                    stroke-dasharray="${progressPercent}, 100"
+                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            </svg>
+                            <span class="toddler-routine-progress-ring__text">${progressPercent}%</span>
                         </div>
-                        <span class="toddler-routine-progress-text">
-                            ${completedCount} of ${totalCount} complete
-                        </span>
+                        <div class="toddler-routine-full-header__info">
+                            <span class="toddler-routine-progress-text">
+                                ${completedCount} of ${totalCount} complete
+                            </span>
+                            ${allComplete ? '<span class="toddler-routine-complete-badge">All Done!</span>' : ''}
+                        </div>
                         <button class="btn btn--sm btn--outline" id="resetAllBtn">
                             <i data-lucide="rotate-ccw"></i>
                             Reset
                         </button>
                     </div>
 
-                    <div class="toddler-routine-full-grid">
-                        ${routines.map(routine => {
-                            const isComplete = completedToday.includes(routine.id);
-                            return `
-                                <div class="toddler-routine-card toddler-routine-card--large ${isComplete ? 'toddler-routine-card--done' : ''}"
-                                     data-routine-id="${routine.id}">
-                                    <div class="toddler-routine-card__image">
-                                        <img src="${getImageSrc(routine)}" alt="${routine.title}">
-                                        ${isComplete ? `
-                                            <div class="toddler-routine-card__check">
-                                                <i data-lucide="check"></i>
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                    <span class="toddler-routine-card__label">${routine.title}</span>
-                                </div>
-                            `;
-                        }).join('')}
+                    <div class="toddler-routine-categories">
+                        ${categorySectionsHTML}
                     </div>
                 </div>
             </div>
@@ -508,8 +844,15 @@ const ToddlerRoutine = (function() {
             showResetConfirm(memberId);
         });
 
-        document.getElementById('editRoutinesBtn')?.addEventListener('click', () => {
-            showEditRoutinesModal(memberId);
+        document.getElementById('statsBtn')?.addEventListener('click', () => {
+            showStatsModal(memberId);
+        });
+
+        document.getElementById('editRoutinesBtn')?.addEventListener('click', async () => {
+            const verified = await PIN.verify();
+            if (verified) {
+                showManageModal(memberId);
+            }
         });
 
         // Toggle complete on card click
@@ -520,6 +863,7 @@ const ToddlerRoutine = (function() {
             });
         });
     }
+
 
     /**
      * Generate manage modal HTML
@@ -533,11 +877,19 @@ const ToddlerRoutine = (function() {
             label: ROUTINE_IMAGES[key].label
         }));
 
+        const categoryOptions = Object.entries(CATEGORIES).map(([key, cat]) => ({
+            key,
+            label: cat.label
+        }));
+
         return `
             <div class="manage-routines">
                 <div class="manage-routines__list">
                     ${routines.map((routine) => `
-                        <div class="manage-routine-item" data-routine-id="${routine.id}">
+                        <div class="manage-routine-item" data-routine-id="${routine.id}" draggable="true">
+                            <div class="manage-routine-item__drag-handle">
+                                <i data-lucide="grip-vertical"></i>
+                            </div>
                             <div class="manage-routine-item__image" data-upload="${routine.id}">
                                 <img src="${getImageSrc(routine)}" alt="${routine.title}">
                                 <div class="manage-routine-item__image-overlay">
@@ -552,11 +904,17 @@ const ToddlerRoutine = (function() {
                             <div class="manage-routine-item__details">
                                 <input type="text" class="form-input manage-routine-item__name" value="${routine.title}"
                                        data-field="title" placeholder="Enter routine name">
-                                <div class="manage-routine-item__image-select">
-                                    <span class="manage-routine-item__label">Image:</span>
-                                    <select class="form-select" data-field="imageKey">
+                                <div class="manage-routine-item__selects">
+                                    <select class="form-select" data-field="imageKey" title="Image">
                                         ${imageOptions.map(opt => `
                                             <option value="${opt.key}" ${opt.key === routine.imageKey ? 'selected' : ''}>
+                                                ${opt.label}
+                                            </option>
+                                        `).join('')}
+                                    </select>
+                                    <select class="form-select" data-field="category" title="Category">
+                                        ${categoryOptions.map(opt => `
+                                            <option value="${opt.key}" ${opt.key === (routine.category || 'morning') ? 'selected' : ''}>
                                                 ${opt.label}
                                             </option>
                                         `).join('')}
@@ -573,15 +931,17 @@ const ToddlerRoutine = (function() {
                 <div class="manage-routines__add">
                     <h4 class="manage-routines__add-title">Add New Routine</h4>
                     <div class="manage-routines__add-form">
-                        <input type="text" class="form-input" id="newRoutineName" placeholder="Enter routine name (e.g., Potty Time)">
-                        <div class="manage-routines__add-image">
-                            <span class="manage-routine-item__label">Image:</span>
-                            <select class="form-select" id="newRoutineImage">
-                                ${imageOptions.map(opt => `
-                                    <option value="${opt.key}">${opt.label}</option>
-                                `).join('')}
-                            </select>
-                        </div>
+                        <input type="text" class="form-input" id="newRoutineName" placeholder="Routine name (e.g., Potty Time)">
+                        <select class="form-select" id="newRoutineImage" title="Image">
+                            ${imageOptions.map(opt => `
+                                <option value="${opt.key}">${opt.label}</option>
+                            `).join('')}
+                        </select>
+                        <select class="form-select" id="newRoutineCategory" title="Category">
+                            ${categoryOptions.map(opt => `
+                                <option value="${opt.key}">${opt.label}</option>
+                            `).join('')}
+                        </select>
                         <button class="btn btn--primary btn--sm" id="addRoutineBtn">
                             <i data-lucide="plus"></i>
                             Add
@@ -733,11 +1093,12 @@ const ToddlerRoutine = (function() {
             });
         });
 
-        // Title/image changes (save on change)
+        // Title/image/category changes (save on change)
         document.querySelectorAll('.manage-routine-item').forEach(item => {
             const routineId = item.dataset.routineId;
             const titleInput = item.querySelector('[data-field="title"]');
             const imageSelect = item.querySelector('[data-field="imageKey"]');
+            const categorySelect = item.querySelector('[data-field="category"]');
 
             const saveChanges = () => {
                 const data = getWidgetData(memberId);
@@ -745,8 +1106,9 @@ const ToddlerRoutine = (function() {
                     if (r.id === routineId) {
                         return {
                             ...r,
-                            title: titleInput.value || r.title,
-                            imageKey: imageSelect.value
+                            title: titleInput?.value || r.title,
+                            imageKey: imageSelect?.value || r.imageKey,
+                            category: categorySelect?.value || r.category || 'morning'
                         };
                     }
                     return r;
@@ -761,6 +1123,7 @@ const ToddlerRoutine = (function() {
             };
 
             titleInput?.addEventListener('change', saveChanges);
+            categorySelect?.addEventListener('change', saveChanges);
             imageSelect?.addEventListener('change', () => {
                 saveChanges();
                 // Update preview image
@@ -771,10 +1134,14 @@ const ToddlerRoutine = (function() {
             });
         });
 
+        // Setup drag and drop in manage modal
+        setupManageDragAndDrop(memberId);
+
         // Add new routine
         const addRoutine = () => {
             const nameInput = document.getElementById('newRoutineName');
             const imageSelect = document.getElementById('newRoutineImage');
+            const categorySelect = document.getElementById('newRoutineCategory');
             const name = nameInput?.value?.trim();
 
             if (!name) {
@@ -789,6 +1156,7 @@ const ToddlerRoutine = (function() {
                 id: `routine-${Date.now()}`,
                 title: name,
                 imageKey: imageSelect?.value || 'wake-up',
+                category: categorySelect?.value || 'morning',
                 customImage: null,
                 order: routines.length + 1
             };
@@ -814,6 +1182,84 @@ const ToddlerRoutine = (function() {
         // Done button - close modal
         document.querySelector('[data-modal-done]')?.addEventListener('click', () => {
             Modal.close();
+        });
+    }
+
+    /**
+     * Setup drag and drop in manage modal for reordering
+     */
+    function setupManageDragAndDrop(memberId) {
+        const list = document.querySelector('.manage-routines__list');
+        if (!list) return;
+
+        let draggedItem = null;
+
+        list.querySelectorAll('.manage-routine-item').forEach((item, index) => {
+            const handle = item.querySelector('.manage-routine-item__drag-handle');
+
+            // Only allow drag from handle
+            item.addEventListener('dragstart', (e) => {
+                if (!e.target.closest('.manage-routine-item__drag-handle')) {
+                    e.preventDefault();
+                    return;
+                }
+                draggedItem = item;
+                item.classList.add('dragging');
+                e.dataTransfer.effectAllowed = 'move';
+            });
+
+            item.addEventListener('dragend', () => {
+                item.classList.remove('dragging');
+                draggedItem = null;
+                list.querySelectorAll('.manage-routine-item').forEach(i => {
+                    i.classList.remove('drag-over');
+                });
+            });
+
+            item.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                if (draggedItem && draggedItem !== item) {
+                    item.classList.add('drag-over');
+                }
+            });
+
+            item.addEventListener('dragleave', () => {
+                item.classList.remove('drag-over');
+            });
+
+            item.addEventListener('drop', (e) => {
+                e.preventDefault();
+                item.classList.remove('drag-over');
+
+                if (draggedItem && draggedItem !== item) {
+                    const data = getWidgetData(memberId);
+                    const routines = [...(data.routines || [])];
+
+                    const draggedId = draggedItem.dataset.routineId;
+                    const targetId = item.dataset.routineId;
+
+                    const draggedIndex = routines.findIndex(r => r.id === draggedId);
+                    const targetIndex = routines.findIndex(r => r.id === targetId);
+
+                    if (draggedIndex !== -1 && targetIndex !== -1) {
+                        const [moved] = routines.splice(draggedIndex, 1);
+                        routines.splice(targetIndex, 0, moved);
+
+                        // Update order values
+                        routines.forEach((r, i) => {
+                            r.order = i + 1;
+                        });
+
+                        Storage.setWidgetData(memberId, 'toddler-routine', {
+                            ...data,
+                            routines
+                        });
+
+                        refreshManageModal(memberId);
+                        refreshWidget(memberId);
+                    }
+                }
+            });
         });
     }
 

@@ -9061,8 +9061,18 @@
 
 .manage-habits__add-form {
     display: flex;
-    gap: var(--space-2);
+    flex-wrap: wrap;
+    gap: var(--space-3);
     margin-bottom: var(--space-3);
+    align-items: flex-end;
+}
+
+.manage-habits__add-form .form-group {
+    position: static;
+}
+
+.manage-habits__add-form select {
+    position: static;
 }
 
 .manage-habits__add-input {
@@ -9140,6 +9150,20 @@
 
     .habits-summary {
         grid-template-columns: 1fr;
+    }
+
+    .manage-habits__add-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .manage-habits__add-form .form-group {
+        width: 100% !important;
+        min-width: 100% !important;
+    }
+
+    .manage-habits__add-form button {
+        align-self: stretch !important;
     }
 }
 

@@ -628,6 +628,10 @@
         grid-template-columns: 1fr;
     }
 
+    .member-main {
+        padding-bottom: 150px;
+    }
+
     .member-sidebar {
         position: fixed;
         top: auto;

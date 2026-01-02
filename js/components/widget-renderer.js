@@ -588,6 +588,24 @@ const WidgetRenderer = (function() {
                 const widgetId = card.dataset.focusWidget;
                 setFocusedWidget(member.id, widgetId);
                 renderAdultFocusLayout(container, member, hasMoreWidgets);
+
+                // Scroll to expanded widget on mobile
+                setTimeout(() => {
+                    const expandedWidget = container.querySelector('.widget-card:not([data-focus-widget])');
+                    if (expandedWidget && window.innerWidth <= 1024) {
+                        // Get header and tabs heights
+                        const header = document.querySelector('.header');
+                        const tabs = document.querySelector('.tabs');
+                        const headerHeight = (header?.offsetHeight || 0) + (tabs?.offsetHeight || 0);
+
+                        // Scroll to widget accounting for fixed header
+                        const widgetTop = expandedWidget.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({
+                            top: widgetTop - headerHeight - 16, // 16px for small margin
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
             });
         });
 
@@ -848,6 +866,24 @@ const WidgetRenderer = (function() {
                 const widgetId = card.dataset.focusWidget;
                 setFocusedWidget(member.id, widgetId);
                 renderKidWidgets(container, member, hasMoreWidgets);
+
+                // Scroll to expanded widget on mobile
+                setTimeout(() => {
+                    const expandedWidget = container.querySelector('.widget-card:not([data-focus-widget])');
+                    if (expandedWidget && window.innerWidth <= 1024) {
+                        // Get header and tabs heights
+                        const header = document.querySelector('.header');
+                        const tabs = document.querySelector('.tabs');
+                        const headerHeight = (header?.offsetHeight || 0) + (tabs?.offsetHeight || 0);
+
+                        // Scroll to widget accounting for fixed header
+                        const widgetTop = expandedWidget.getBoundingClientRect().top + window.scrollY;
+                        window.scrollTo({
+                            top: widgetTop - headerHeight - 16, // 16px for small margin
+                            behavior: 'smooth'
+                        });
+                    }
+                }, 100);
             });
         });
 

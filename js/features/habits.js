@@ -984,24 +984,33 @@ const Habits = (function() {
 
                 <div class="manage-habits__section">
                     <h4>Add New Habit</h4>
+                    <div class="form-group" style="margin-bottom: var(--space-3);">
+                        <label class="form-label">Habit Name</label>
+                        <input type="text" class="form-input" id="newHabitName" placeholder="e.g., Drink water, Exercise..." autocomplete="off">
+                    </div>
                     <div class="manage-habits__add-form">
-                        <input type="text" class="form-input" id="newHabitName" placeholder="Habit name..." autocomplete="off">
-                        <select class="form-select" id="newHabitCategory">
-                            ${Object.entries(CATEGORIES).map(([id, cat]) => `
-                                <option value="${id}">${cat.label}</option>
-                            `).join('')}
-                        </select>
-                        <select class="form-select" id="newHabitSchedule">
-                            ${Object.entries(SCHEDULES).map(([id, sched]) => `
-                                <option value="${id}">${sched.label}</option>
-                            `).join('')}
-                        </select>
-                        <button class="btn btn--primary" id="addCustomHabitBtn">
+                        <div class="form-group" style="min-width: 140px; margin: 0;">
+                            <label class="form-label">Category</label>
+                            <select class="form-select" id="newHabitCategory">
+                                ${Object.entries(CATEGORIES).map(([id, cat]) => `
+                                    <option value="${id}">${cat.label}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <div class="form-group" style="min-width: 180px; margin: 0;">
+                            <label class="form-label">Schedule</label>
+                            <select class="form-select" id="newHabitSchedule">
+                                ${Object.entries(SCHEDULES).map(([id, sched]) => `
+                                    <option value="${id}">${sched.label}</option>
+                                `).join('')}
+                            </select>
+                        </div>
+                        <button class="btn btn--primary" id="addCustomHabitBtn" style="align-self: flex-end; white-space: nowrap;">
                             <i data-lucide="plus"></i>
                             Add
                         </button>
                     </div>
-                    <div class="manage-habits__custom-days" id="customDaysContainer" style="display: none;">
+                    <div class="manage-habits__custom-days" id="customDaysContainer" style="display: none; margin-top: 16px;">
                         <label class="form-label">Select days:</label>
                         <div class="manage-habits__weekdays">
                             ${WEEKDAYS.map(day => `
@@ -1110,6 +1119,12 @@ const Habits = (function() {
 
             addHabit(memberId, name, 'circle', category, schedule, customDays);
             refreshManageHabitsModal(memberId, onClose);
+
+            // Refresh widget immediately
+            const widgetBody = document.getElementById('widget-habits');
+            if (widgetBody) {
+                renderWidget(widgetBody, memberId);
+            }
         };
 
         document.getElementById('addCustomHabitBtn')?.addEventListener('click', addCustomHabit);
@@ -1128,6 +1143,12 @@ const Habits = (function() {
                 const category = btn.dataset.category || 'other';
                 addHabit(memberId, name, icon, category, 'daily', null);
                 refreshManageHabitsModal(memberId, onClose);
+
+                // Refresh widget immediately
+                const widgetBody = document.getElementById('widget-habits');
+                if (widgetBody) {
+                    renderWidget(widgetBody, memberId);
+                }
             });
         });
 
@@ -1151,6 +1172,12 @@ const Habits = (function() {
                 if (confirmed) {
                     archiveHabit(memberId, habitId);
                     refreshManageHabitsModal(memberId, onClose);
+
+                    // Refresh widget immediately
+                    const widgetBody = document.getElementById('widget-habits');
+                    if (widgetBody) {
+                        renderWidget(widgetBody, memberId);
+                    }
                 }
             });
         });

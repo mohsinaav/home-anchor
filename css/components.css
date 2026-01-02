@@ -344,6 +344,30 @@ textarea.form-input {
     background-color: var(--gray-50);
 }
 
+/* Modal responsive fixes for mobile select dropdowns */
+@media (max-width: 768px) {
+    .modal-overlay {
+        align-items: flex-start;
+        padding-top: 20px;
+    }
+
+    .modal {
+        transform: none !important;
+        position: relative;
+        isolation: isolate;
+    }
+
+    .modal-overlay--active .modal {
+        transform: none !important;
+    }
+
+    .modal__content {
+        overflow-y: auto;
+        overflow-x: visible;
+        position: relative;
+    }
+}
+
 /* ==========================================================================
    PIN Modal
    ========================================================================== */
@@ -1272,38 +1296,39 @@ textarea.form-input {
     border: 1px solid var(--gray-200);
 }
 
-.notification-settings__header {
+.notification-settings__options {
     display: flex;
-    align-items: center;
+    flex-direction: column;
     gap: var(--space-2);
-    font-size: var(--text-base);
-    font-weight: var(--font-semibold);
-    color: var(--gray-800);
-    margin-bottom: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-200);
+    padding: var(--space-2) var(--space-4);
 }
 
-.notification-settings__header svg {
-    width: 20px;
-    height: 20px;
-    color: var(--gray-500);
+.notification-settings__options .setting-row {
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--gray-100);
 }
 
-.notification-settings__option {
-    margin-bottom: var(--space-3);
-}
-
-.notification-settings__option:last-child {
-    margin-bottom: 0;
-}
-
-.notification-settings__option .form-helper {
-    margin-left: 30px;
+.notification-settings__options .setting-row:last-child {
+    border-bottom: none;
 }
 
 .notification-settings__actions {
     margin-top: var(--space-4);
     padding-top: var(--space-3);
     border-top: 1px solid var(--gray-200);
+}
+
+/* Disabled toggle state */
+.toggle-switch--disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-switch--disabled input {
+    cursor: not-allowed;
 }
 
 .notification-settings__error {

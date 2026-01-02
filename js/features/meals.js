@@ -2078,7 +2078,11 @@ Tuesday:
      * Import parsed meal plan to storage
      */
     function importMealPlan(memberId, parsed, startThisWeek, applyBothVariants) {
-        const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {} };
+        const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || {};
+        // Ensure weeklyPlan exists
+        if (!widgetData.weeklyPlan) {
+            widgetData.weeklyPlan = {};
+        }
         const weekStart = startThisWeek ? getWeekStartWithOffset(0) : getWeekStartWithOffset(currentWeekOffset);
 
         let importedCount = 0;

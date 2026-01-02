@@ -614,6 +614,7 @@ function applyThemeOnLoad() {
     const settings = Storage.getSettings();
     const theme = settings.theme || 'light';
 
+    // Apply display mode (light/dark/auto)
     if (theme === 'dark') {
         document.documentElement.classList.add('dark-mode');
     } else if (theme === 'light') {
@@ -622,6 +623,28 @@ function applyThemeOnLoad() {
         // Auto - check system preference
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         document.documentElement.classList.toggle('dark-mode', prefersDark);
+    }
+
+    // Apply saved theme color
+    const themeColor = settings.themeColor || 'indigo';
+    const themeColors = {
+        'indigo': { primary: '#6366F1', accent: '#818CF8' },
+        'violet': { primary: '#8B5CF6', accent: '#A78BFA' },
+        'pink': { primary: '#EC4899', accent: '#F472B6' },
+        'rose': { primary: '#F43F5E', accent: '#FB7185' },
+        'orange': { primary: '#F97316', accent: '#FB923C' },
+        'amber': { primary: '#F59E0B', accent: '#FBBF24' },
+        'emerald': { primary: '#10B981', accent: '#34D399' },
+        'teal': { primary: '#14B8A6', accent: '#2DD4BF' },
+        'cyan': { primary: '#06B6D4', accent: '#22D3EE' },
+        'blue': { primary: '#3B82F6', accent: '#60A5FA' }
+    };
+
+    const selectedTheme = themeColors[themeColor];
+    if (selectedTheme) {
+        document.documentElement.style.setProperty('--primary', selectedTheme.primary);
+        document.documentElement.style.setProperty('--primary-dark', selectedTheme.primary);
+        document.documentElement.style.setProperty('--primary-light', selectedTheme.accent);
     }
 }
 
@@ -660,6 +683,11 @@ const App = (function() {
         // Initialize notifications
         if (typeof Notifications !== 'undefined') {
             Notifications.init();
+        }
+
+        // Initialize backup system
+        if (typeof Backup !== 'undefined') {
+            Backup.init();
         }
 
         // Render initial content

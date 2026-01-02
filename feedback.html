@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feedback - Home Anchor</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/pages.css">
+
+    <style>
+        .feedback-page {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 40px 20px;
+        }
+
+        .feedback-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .feedback-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .feedback-header__logo {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 16px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .feedback-header__logo i {
+            width: 32px;
+            height: 32px;
+            color: white;
+        }
+
+        .feedback-header__title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            font-family: 'Nunito', sans-serif;
+        }
+
+        .feedback-header__subtitle {
+            font-size: 1.125rem;
+            opacity: 0.9;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .feedback-content {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+
+        .feedback-intro {
+            padding: 32px;
+            background: linear-gradient(135deg, #f6f9fc 0%, #eef2f7 100%);
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .feedback-intro h2 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #1f2937;
+        }
+
+        .feedback-intro p {
+            color: #6b7280;
+            line-height: 1.6;
+            margin-bottom: 16px;
+        }
+
+        .feedback-intro__highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-top: 24px;
+        }
+
+        .feedback-highlight {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .feedback-highlight__icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .feedback-highlight__icon i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .feedback-highlight__text {
+            font-size: 0.875rem;
+            color: #374151;
+            font-weight: 500;
+        }
+
+        .feedback-form-wrapper {
+            padding: 32px;
+        }
+
+        .form-loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #6b7280;
+        }
+
+        .form-loading i {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 16px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .feedback-footer {
+            text-align: center;
+            margin-top: 32px;
+            color: white;
+        }
+
+        .feedback-footer__links {
+            display: flex;
+            gap: 24px;
+            justify-content: center;
+            margin-bottom: 16px;
+        }
+
+        .feedback-footer__link {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            opacity: 0.9;
+            transition: opacity 0.2s;
+        }
+
+        .feedback-footer__link:hover {
+            opacity: 1;
+        }
+
+        .feedback-footer__link i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .feedback-footer__copyright {
+            opacity: 0.8;
+            font-size: 0.875rem;
+        }
+
+        iframe {
+            width: 100%;
+            min-height: 1200px;
+            border: none;
+        }
+
+        @media (max-width: 768px) {
+            .feedback-header__title {
+                font-size: 2rem;
+            }
+
+            .feedback-intro__highlights {
+                grid-template-columns: 1fr;
+            }
+
+            .feedback-intro,
+            .feedback-form-wrapper {
+                padding: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="feedback-page">
+        <div class="feedback-container">
+            <!-- Header -->
+            <div class="feedback-header">
+                <div class="feedback-header__logo">
+                    <i data-lucide="anchor"></i>
+                </div>
+                <h1 class="feedback-header__title">We'd Love Your Feedback!</h1>
+                <p class="feedback-header__subtitle">
+                    Help us make Home Anchor better for families everywhere. Your insights are invaluable!
+                </p>
+            </div>
+
+            <!-- Content -->
+            <div class="feedback-content">
+                <!-- Intro Section -->
+                <div class="feedback-intro">
+                    <h2>Why Your Feedback Matters</h2>
+                    <p>
+                        Home Anchor is built for families, by listening to families. This quick survey helps us understand:
+                    </p>
+
+                    <div class="feedback-intro__highlights">
+                        <div class="feedback-highlight">
+                            <div class="feedback-highlight__icon">
+                                <i data-lucide="star"></i>
+                            </div>
+                            <div class="feedback-highlight__text">
+                                Which features you love most
+                            </div>
+                        </div>
+
+                        <div class="feedback-highlight">
+                            <div class="feedback-highlight__icon">
+                                <i data-lucide="lightbulb"></i>
+                            </div>
+                            <div class="feedback-highlight__text">
+                                New widgets you'd like to see
+                            </div>
+                        </div>
+
+                        <div class="feedback-highlight">
+                            <div class="feedback-highlight__icon">
+                                <i data-lucide="target"></i>
+                            </div>
+                            <div class="feedback-highlight__text">
+                                What we can improve
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Section -->
+                <div class="feedback-form-wrapper">
+                    <div class="form-loading" id="formLoading">
+                        <i data-lucide="loader-2"></i>
+                        <p>Loading feedback form...</p>
+                    </div>
+
+                    <!-- Google Form Embed -->
+                    <!-- Replace the src URL with your actual Google Form embed URL -->
+                    <iframe
+                        id="feedbackFrame"
+                        src="https://docs.google.com/forms/d/e/1FAIpQLSf4Z0utUqvPCRPLrB35h78Re3Ghc3-CMG1aWJHINnnhFctuVA/viewform?embedded=true" width="640" height="5486" frameborder="0" marginheight="0" marginwidth="0"
+                        style="display: none;"
+                        onload="document.getElementById('formLoading').style.display='none'; this.style.display='block';">
+                        Loading…
+                    </iframe>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="feedback-footer">
+                <div class="feedback-footer__links">
+                    <a href="index.html" class="feedback-footer__link">
+                        <i data-lucide="home"></i>
+                        Back to App
+                    </a>
+                    <a href="landing.html" class="feedback-footer__link">
+                        <i data-lucide="arrow-left"></i>
+                        Landing Page
+                    </a>
+                </div>
+                <p class="feedback-footer__copyright">
+                    &copy; 2025 Home Anchor. Made with <i data-lucide="heart"></i> for families.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>

@@ -143,6 +143,13 @@ const SettingsPage = (function() {
 
         bindEvents(container);
 
+        // Apply current theme color and display mode
+        const currentThemeColor = THEME_COLORS.find(t => t.id === (settings.themeColor || 'indigo'));
+        if (currentThemeColor) {
+            applyThemeColor(currentThemeColor);
+        }
+        applyDisplayMode(settings.theme || 'light');
+
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
@@ -428,6 +435,20 @@ const SettingsPage = (function() {
 
                     <div class="data-action-card" style="margin-top: var(--space-3);">
                         <div class="data-action-card__icon">
+                            <i data-lucide="message-circle"></i>
+                        </div>
+                        <div class="data-action-card__content">
+                            <h4>Give Feedback</h4>
+                            <p>Help us improve Home Anchor by sharing your experience and feature requests.</p>
+                            <button class="btn btn--primary" id="giveFeedbackBtn" onclick="window.open('feedback.html', '_blank')">
+                                <i data-lucide="external-link"></i>
+                                Open Feedback Form
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="data-action-card" style="margin-top: var(--space-3);">
+                        <div class="data-action-card__icon">
                             <i data-lucide="rotate-ccw"></i>
                         </div>
                         <div class="data-action-card__content">
@@ -458,11 +479,71 @@ const SettingsPage = (function() {
             })
             : 'Never';
 
+        // Get backup settings if Backup module is available
+        const backupSettings = typeof Backup !== 'undefined' ? Backup.getBackupSettings() : null;
+        const lastBackupTime = backupSettings?.lastBackupTime;
+        const lastBackupFormatted = lastBackupTime
+            ? (typeof Backup !== 'undefined' ? Backup.formatDateForDisplay(lastBackupTime) : 'Unknown')
+            : 'Never';
+
         return `
             <div class="data-management">
                 <div class="data-info">
                     <p><strong>Last saved:</strong> ${formattedDate}</p>
                 </div>
+
+                <!-- Auto-Backup Section -->
+                ${typeof Backup !== 'undefined' ? `
+                <div class="backup-section">
+                    <h4 class="backup-section__title">
+                        <i data-lucide="shield-check"></i>
+                        Auto-Backup
+                    </h4>
+                    <p class="backup-section__description">
+                        Automatic backups keep your data safe. Backups are stored locally in your browser.
+                    </p>
+
+                    <div class="backup-settings">
+                        <div class="setting-row">
+                            <div class="setting-row__info">
+                                <label class="setting-label">Auto-backup on app open</label>
+                                <p class="setting-description">Creates a backup if last one was over 24 hours ago</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="autoBackupToggle" ${backupSettings?.autoBackupEnabled ? 'checked' : ''}>
+                                <span class="toggle-switch__slider"></span>
+                            </label>
+                        </div>
+
+                        <div class="setting-row">
+                            <div class="setting-row__info">
+                                <label class="setting-label">Backup on close</label>
+                                <p class="setting-description">Saves a backup when you leave the app</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="backupOnCloseToggle" ${backupSettings?.backupOnClose ? 'checked' : ''}>
+                                <span class="toggle-switch__slider"></span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="backup-status">
+                        <span class="backup-status__label">Last backup:</span>
+                        <span class="backup-status__value">${lastBackupFormatted}</span>
+                        <button class="btn btn--sm btn--primary" id="backupNowBtn">
+                            <i data-lucide="save"></i>
+                            Backup Now
+                        </button>
+                    </div>
+
+                    <div class="backup-history" id="backupHistory">
+                        <h5 class="backup-history__title">Backup History (Last 7)</h5>
+                        <div class="backup-history__list" id="backupHistoryList">
+                            <p class="backup-history__loading">Loading backups...</p>
+                        </div>
+                    </div>
+                </div>
+                ` : ''}
 
                 <div class="data-actions">
                     <div class="data-action-card">
@@ -506,6 +587,123 @@ const SettingsPage = (function() {
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Load and render backup history
+     */
+    async function loadBackupHistory() {
+        const historyList = document.getElementById('backupHistoryList');
+        if (!historyList || typeof Backup === 'undefined') return;
+
+        try {
+            const backups = await Backup.getBackupList();
+
+            if (backups.length === 0) {
+                historyList.innerHTML = '<p class="backup-history__empty">No backups yet</p>';
+                return;
+            }
+
+            historyList.innerHTML = backups.map(backup => `
+                <div class="backup-item" data-backup-id="${backup.id}">
+                    <div class="backup-item__info">
+                        <span class="backup-item__date">${Backup.formatDateForDisplay(backup.timestamp)}</span>
+                        <span class="backup-item__meta">
+                            <span class="backup-item__trigger">${Backup.getTriggerLabel(backup.trigger)}</span>
+                            <span class="backup-item__size">${Backup.formatSize(backup.size)}</span>
+                        </span>
+                    </div>
+                    <div class="backup-item__actions">
+                        <button class="btn btn--ghost btn--sm backup-download-btn" title="Download">
+                            <i data-lucide="download"></i>
+                        </button>
+                        <button class="btn btn--ghost btn--sm backup-restore-btn" title="Restore">
+                            <i data-lucide="rotate-ccw"></i>
+                        </button>
+                        <button class="btn btn--ghost btn--sm backup-delete-btn" title="Delete">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                </div>
+            `).join('');
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            // Bind backup item events
+            bindBackupItemEvents(historyList);
+        } catch (error) {
+            console.error('Failed to load backup history:', error);
+            historyList.innerHTML = '<p class="backup-history__error">Failed to load backups</p>';
+        }
+    }
+
+    /**
+     * Bind events for backup history items
+     */
+    function bindBackupItemEvents(container) {
+        // Download buttons
+        container.querySelectorAll('.backup-download-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const backupId = parseInt(e.target.closest('.backup-item').dataset.backupId);
+                try {
+                    await Backup.downloadBackup(backupId);
+                    Toast.show('Backup downloaded', 'success');
+                } catch (error) {
+                    Toast.show('Failed to download backup', 'error');
+                }
+            });
+        });
+
+        // Restore buttons
+        container.querySelectorAll('.backup-restore-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const backupId = parseInt(e.target.closest('.backup-item').dataset.backupId);
+
+                Modal.confirm(
+                    'Restore Backup',
+                    'This will replace all current data with this backup. A backup of your current data will be created first. Continue?',
+                    async () => {
+                        try {
+                            await Backup.restoreBackup(backupId);
+                            Toast.show('Backup restored! Reloading...', 'success');
+                            setTimeout(() => window.location.reload(), 1500);
+                        } catch (error) {
+                            Toast.show('Failed to restore backup: ' + error.message, 'error');
+                        }
+                    }
+                );
+            });
+        });
+
+        // Delete buttons
+        container.querySelectorAll('.backup-delete-btn').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                const backupItem = e.target.closest('.backup-item');
+                const backupId = parseInt(backupItem.dataset.backupId);
+
+                Modal.confirm(
+                    'Delete Backup',
+                    'Are you sure you want to delete this backup? This cannot be undone.',
+                    async () => {
+                        try {
+                            await Backup.deleteBackup(backupId);
+                            backupItem.remove();
+                            Toast.show('Backup deleted', 'success');
+
+                            // Check if list is empty
+                            const remaining = container.querySelectorAll('.backup-item');
+                            if (remaining.length === 0) {
+                                container.innerHTML = '<p class="backup-history__empty">No backups yet</p>';
+                            }
+                        } catch (error) {
+                            Toast.show('Failed to delete backup', 'error');
+                        }
+                    }
+                );
+            });
+        });
     }
 
     /**
@@ -607,6 +805,57 @@ const SettingsPage = (function() {
         const notifContainer = container.querySelector('#notificationSettings .settings-section__content');
         if (notifContainer && typeof Notifications !== 'undefined') {
             Notifications.bindSettingsEvents(notifContainer);
+        }
+
+        // Backup settings
+        if (typeof Backup !== 'undefined') {
+            // Auto-backup toggle
+            container.querySelector('#autoBackupToggle')?.addEventListener('change', (e) => {
+                const settings = Backup.getBackupSettings();
+                settings.autoBackupEnabled = e.target.checked;
+                Backup.saveBackupSettings(settings);
+                Toast.show(e.target.checked ? 'Auto-backup enabled' : 'Auto-backup disabled', 'success');
+            });
+
+            // Backup on close toggle
+            container.querySelector('#backupOnCloseToggle')?.addEventListener('change', (e) => {
+                const settings = Backup.getBackupSettings();
+                settings.backupOnClose = e.target.checked;
+                Backup.saveBackupSettings(settings);
+                Toast.show(e.target.checked ? 'Backup on close enabled' : 'Backup on close disabled', 'success');
+            });
+
+            // Backup now button
+            container.querySelector('#backupNowBtn')?.addEventListener('click', async () => {
+                const btn = container.querySelector('#backupNowBtn');
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="spin"></i> Backing up...';
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                try {
+                    await Backup.createBackup('manual');
+                    Toast.show('Backup created successfully', 'success');
+
+                    // Update last backup display
+                    const statusValue = container.querySelector('.backup-status__value');
+                    if (statusValue) {
+                        statusValue.textContent = 'Just now';
+                    }
+
+                    // Reload backup history
+                    await loadBackupHistory();
+                } catch (error) {
+                    Toast.show('Failed to create backup', 'error');
+                } finally {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            });
+
+            // Load backup history
+            loadBackupHistory();
         }
 
         // Export data
@@ -931,8 +1180,10 @@ const SettingsPage = (function() {
      * Apply theme color
      */
     function applyThemeColor(theme) {
-        document.documentElement.style.setProperty('--color-primary', theme.primary);
-        document.documentElement.style.setProperty('--color-primary-light', theme.accent);
+        // Update CSS custom properties used throughout the app
+        document.documentElement.style.setProperty('--primary', theme.primary);
+        document.documentElement.style.setProperty('--primary-dark', theme.primary);
+        document.documentElement.style.setProperty('--primary-light', theme.accent);
     }
 
     /**

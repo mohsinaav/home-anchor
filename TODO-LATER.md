@@ -289,3 +289,41 @@ Dashboard (synced across all devices)
 
 ### Status
 **Parked** - Validating core product for 15 days first. Will implement before sharing with friends for feedback.
+
+---
+
+## Mobile Dropdown Positioning Issue (Habits Widget)
+
+**Status:** Unresolved
+**Priority:** Medium
+**Affected:** Mobile browsers (iOS/Android)
+**Files:** Manage Habits modal - Category and Schedule dropdowns
+
+### Problem
+When opening the "Manage Habits" modal on mobile devices and clicking on the Category or Schedule dropdowns, the native select dropdown overlay appears in the wrong position (typically top-left area) instead of being properly positioned relative to the select element.
+
+### Root Cause
+Mobile browsers handle native `<select>` elements in system overlays/pickers. When these selects are inside a modal with certain CSS properties (transform, overflow, flexbox centering), the browser's positioning calculation for the native picker breaks.
+
+### Attempts Made
+1. Removed `transform` animations from modal on mobile
+2. Changed modal overflow from `hidden` to `visible`
+3. Adjusted modal-overlay alignment from `center` to `flex-start`
+4. Added `isolation: isolate` to create proper stacking context
+5. Set form-group and select elements to `position: static`
+6. Multiple combinations of positioning and overflow fixes
+
+### Files Modified
+- `css/components.css` (lines 347-369) - Modal mobile fixes
+- `css/widgets.css` (lines 9070-9076, 9147-9159) - Form positioning and mobile layout
+
+### Potential Solutions
+1. **Custom Dropdown Component**: Replace native `<select>` with a custom dropdown built with divs/buttons that we have full control over positioning
+2. **Disable Modal on Mobile**: Use a full-screen view instead of a modal for mobile devices
+3. **Native Mobile UI**: Investigate if using `<select>` with different attributes or within a different container structure works better
+4. **Third-party Library**: Consider using a mobile-friendly select library (e.g., Choices.js, Select2 mobile)
+
+### Next Steps
+- Research best practices for select dropdowns in modals on mobile
+- Consider implementing a custom dropdown component for mobile only
+- Test on actual iOS and Android devices (not just browser simulators)

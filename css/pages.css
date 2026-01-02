@@ -360,6 +360,19 @@
     transform: translateX(20px);
 }
 
+/* Setting Row */
+.setting-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding: var(--space-3) 0;
+}
+
+.setting-row__info {
+    flex: 1;
+}
+
 /* Appearance Settings */
 .appearance-settings {
     display: flex;
@@ -590,6 +603,180 @@
     font-size: var(--text-sm);
     color: var(--gray-600);
     margin: 0;
+}
+
+/* Backup Section */
+.backup-section {
+    padding: var(--space-5);
+    background: linear-gradient(135deg, var(--primary-50) 0%, var(--gray-50) 100%);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--primary-100);
+    margin-bottom: var(--space-4);
+}
+
+.backup-section__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-900);
+    margin: 0 0 var(--space-2) 0;
+}
+
+.backup-section__title svg {
+    width: 20px;
+    height: 20px;
+    color: var(--primary);
+}
+
+.backup-section__description {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    margin: 0 0 var(--space-4) 0;
+}
+
+.backup-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-200);
+    padding: var(--space-2) var(--space-4);
+}
+
+.backup-settings .setting-row {
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.backup-settings .setting-row:last-child {
+    border-bottom: none;
+}
+
+.backup-status {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-200);
+    margin-bottom: var(--space-4);
+}
+
+.backup-status__label {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.backup-status__value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-900);
+    flex: 1;
+}
+
+/* Backup History */
+.backup-history {
+    background: var(--white);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--gray-200);
+    padding: var(--space-4);
+}
+
+.backup-history__title {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.backup-history__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.backup-history__loading,
+.backup-history__empty,
+.backup-history__error {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    text-align: center;
+    padding: var(--space-4);
+}
+
+.backup-history__error {
+    color: var(--error);
+}
+
+.backup-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    transition: background 0.15s ease;
+}
+
+.backup-item:hover {
+    background: var(--gray-100);
+}
+
+.backup-item__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.backup-item__date {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-900);
+}
+
+.backup-item__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+.backup-item__trigger {
+    padding: 2px 6px;
+    background: var(--primary-100);
+    color: var(--primary-700);
+    border-radius: var(--radius-sm);
+    font-weight: var(--font-medium);
+}
+
+.backup-item__actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.backup-item__actions .btn {
+    padding: var(--space-2);
+}
+
+.backup-item__actions svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Spinner animation */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
 }
 
 /* Member Type Selector */

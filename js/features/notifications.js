@@ -323,34 +323,37 @@ const Notifications = (function() {
 
         return `
             <div class="notification-settings">
-                <div class="notification-settings__header">
-                    <i data-lucide="bell"></i>
-                    <span>Notifications</span>
-                </div>
-
                 ${!status.supported ? `
                     <p class="notification-settings__error">
                         Browser notifications are not supported in your browser.
                     </p>
                 ` : `
-                    <div class="notification-settings__option">
-                        <label class="form-checkbox">
-                            <input type="checkbox" id="notifEnabled" ${status.enabled ? 'checked' : ''}>
-                            <span>Enable browser notifications</span>
-                        </label>
-                        <p class="form-helper">Get alerts when activities start for family members</p>
-                    </div>
+                    <div class="notification-settings__options">
+                        <div class="setting-row">
+                            <div class="setting-row__info">
+                                <label class="setting-label">Enable browser notifications</label>
+                                <p class="setting-description">Get alerts when activities start for family members</p>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="notifEnabled" ${status.enabled ? 'checked' : ''}>
+                                <span class="toggle-switch__slider"></span>
+                            </label>
+                        </div>
 
-                    <div class="notification-settings__option">
-                        <label class="form-checkbox">
-                            <input type="checkbox" id="notifSound" ${status.soundEnabled ? 'checked' : ''} ${!status.enabled ? 'disabled' : ''}>
-                            <span>Play sound</span>
-                        </label>
-                        <p class="form-helper">Soft chime when activity changes</p>
+                        <div class="setting-row">
+                            <div class="setting-row__info">
+                                <label class="setting-label">Play sound</label>
+                                <p class="setting-description">Soft chime when activity changes</p>
+                            </div>
+                            <label class="toggle-switch ${!status.enabled ? 'toggle-switch--disabled' : ''}">
+                                <input type="checkbox" id="notifSound" ${status.soundEnabled ? 'checked' : ''} ${!status.enabled ? 'disabled' : ''}>
+                                <span class="toggle-switch__slider"></span>
+                            </label>
+                        </div>
                     </div>
 
                     <div class="notification-settings__actions">
-                        <button class="btn btn--sm btn--secondary" id="testNotifBtn" ${!status.enabled ? 'disabled' : ''}>
+                        <button class="btn btn--sm btn--ghost" id="testNotifBtn" ${!status.enabled ? 'disabled' : ''}>
                             <i data-lucide="bell-ring"></i>
                             Test Notification
                         </button>
