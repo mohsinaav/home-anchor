@@ -110,6 +110,19 @@ const SettingsPage = (function() {
                         </div>
                     </section>
 
+                    <!-- Meal Planning Section -->
+                    <section class="settings-section" id="mealSettings">
+                        <div class="settings-section__header">
+                            <h2 class="settings-section__title">
+                                <i data-lucide="utensils"></i>
+                                Meal Planning
+                            </h2>
+                        </div>
+                        <div class="settings-section__content">
+                            ${renderMealSettings(settings)}
+                        </div>
+                    </section>
+
                     <!-- Help & Tutorials Section -->
                     <section class="settings-section" id="helpSettings">
                         <div class="settings-section__header">
@@ -378,6 +391,33 @@ const SettingsPage = (function() {
     /**
      * Render help and tutorials settings
      */
+    function renderMealSettings(settings) {
+        const meals = settings.meals || {};
+        const kidsMenuEnabled = meals.kidsMenuEnabled !== false; // Default to true
+
+        return `
+            <div class="meal-settings">
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Enable Kids Menu</label>
+                            <p class="setting-description">Show separate meal planning options for kids in the weekly meal planner. When disabled, only adult meals will be displayed.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="kidsMenuToggle" ${kidsMenuEnabled ? 'checked' : ''}>
+                            <span class="toggle-switch__slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="setting-info" style="margin-top: var(--space-4);">
+                    <i data-lucide="info"></i>
+                    <p>The kids menu allows you to plan separate meals for children. You can copy adult meals to kids with one click using the "Same as Adult" button.</p>
+                </div>
+            </div>
+        `;
+    }
+
     function renderHelpSettings(settings) {
         const onboarding = settings.onboarding || {};
         const showTips = !onboarding.skipAllTours;
@@ -937,6 +977,15 @@ const SettingsPage = (function() {
             settings.onboarding.skipAllTours = !e.target.checked;
             Storage.updateSettings(settings);
             Toast.success(e.target.checked ? 'Tips enabled' : 'Tips disabled');
+        });
+
+        // Kids menu toggle
+        container.querySelector('#kidsMenuToggle')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.meals = settings.meals || {};
+            settings.meals.kidsMenuEnabled = e.target.checked;
+            Storage.updateSettings(settings);
+            Toast.success(e.target.checked ? 'Kids menu enabled' : 'Kids menu disabled');
         });
 
         // Reset all tours

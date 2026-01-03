@@ -2777,6 +2777,342 @@
 }
 
 /* ==========================================================================
+   Weekly Planner - Mobile Accordion View
+   ========================================================================== */
+
+/* Hide accordion on desktop, show table */
+.planner-accordion {
+    display: none;
+}
+
+@media (max-width: 768px) {
+    /* Hide table on mobile, show accordion */
+    .planner-table-wrapper {
+        display: none !important;
+    }
+
+    .planner-accordion {
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-3);
+    }
+}
+
+/* Accordion Day Card */
+.accordion-day {
+    background-color: var(--white);
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--day-border, var(--gray-200));
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: all var(--transition-fast);
+}
+
+.accordion-day--today {
+    border-width: 3px;
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--day-border, var(--primary)) 30%, transparent);
+}
+
+.accordion-day__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4);
+    background-color: var(--day-bg, var(--gray-50));
+    border: none;
+    width: 100%;
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    gap: var(--space-3);
+}
+
+.accordion-day__header:active {
+    background-color: color-mix(in srgb, var(--day-bg, var(--gray-50)) 80%, black);
+}
+
+.accordion-day__header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.accordion-day__chevron {
+    width: 20px;
+    height: 20px;
+    color: var(--day-text, var(--gray-600));
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.accordion-day--expanded .accordion-day__chevron {
+    transform: rotate(90deg);
+}
+
+.accordion-day__date {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.accordion-day__day-name {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--day-text, var(--gray-700));
+    letter-spacing: 0.05em;
+}
+
+.accordion-day__day-date {
+    font-size: var(--text-xs);
+    color: var(--day-text, var(--gray-600));
+    opacity: 0.8;
+}
+
+.accordion-day__header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-shrink: 0;
+}
+
+.accordion-day__meal-count {
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--day-text, var(--gray-600));
+    padding: var(--space-1) var(--space-2);
+    background-color: rgba(255, 255, 255, 0.6);
+    border-radius: var(--radius-full);
+}
+
+.accordion-day__meal-count--empty {
+    opacity: 0.6;
+}
+
+.accordion-day__today-badge {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--white);
+    background-color: var(--primary);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+}
+
+/* Accordion Content */
+.accordion-day__content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background-color: var(--white);
+}
+
+/* Variant Section (for "both" view) */
+.accordion-variant {
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.accordion-variant:last-child {
+    border-bottom: none;
+}
+
+.accordion-variant__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 0 var(--space-4) var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-600);
+}
+
+.accordion-variant__header svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Accordion Meal Slot */
+.accordion-meal {
+    padding: var(--space-3) var(--space-4);
+    cursor: pointer;
+    transition: background-color var(--transition-fast);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.accordion-meal:last-child {
+    border-bottom: none;
+}
+
+.accordion-meal:active {
+    background-color: var(--gray-50);
+}
+
+.accordion-meal__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.accordion-meal__label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+}
+
+.accordion-meal__label svg {
+    width: 16px;
+    height: 16px;
+    color: var(--day-text, var(--gray-500));
+}
+
+.accordion-meal__check {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border-radius: var(--radius-md);
+}
+
+.accordion-meal__check svg {
+    width: 20px;
+    height: 20px;
+    color: var(--gray-400);
+}
+
+.accordion-meal__check--done svg {
+    color: var(--success);
+}
+
+.accordion-meal__check:active {
+    background-color: var(--gray-100);
+}
+
+.accordion-meal__items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.accordion-meal__items--done {
+    opacity: 0.5;
+    text-decoration: line-through;
+}
+
+.accordion-meal__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--gray-800);
+    padding: var(--space-1) 0;
+}
+
+.accordion-meal__item svg {
+    width: 14px;
+    height: 14px;
+    color: var(--day-text, var(--gray-500));
+    flex-shrink: 0;
+}
+
+.accordion-meal__prep-icon {
+    width: 14px !important;
+    height: 14px !important;
+    color: var(--warning) !important;
+    margin-left: var(--space-1);
+}
+
+.accordion-meal__protein {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--gray-600);
+    padding: var(--space-1) 0;
+}
+
+.accordion-meal__protein svg {
+    width: 12px;
+    height: 12px;
+}
+
+.accordion-meal__add {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--gray-400);
+    font-style: italic;
+}
+
+.accordion-meal__add svg {
+    width: 16px;
+    height: 16px;
+}
+
+.accordion-meal__same-adult {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--primary-light);
+    color: var(--primary);
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: var(--space-2);
+    width: fit-content;
+}
+
+.accordion-meal__same-adult svg {
+    width: 14px;
+    height: 14px;
+}
+
+.accordion-meal__same-adult:active {
+    background-color: var(--primary);
+    color: var(--white);
+}
+
+.accordion-meal--completed {
+    opacity: 0.6;
+}
+
+/* Accordion Protein Summary */
+.accordion-protein {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background-color: var(--gray-50);
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+    border-top: 1px solid var(--gray-200);
+}
+
+.accordion-protein svg {
+    width: 16px;
+    height: 16px;
+    color: var(--gray-600);
+}
+
+.accordion-protein strong {
+    font-weight: var(--font-bold);
+    color: var(--gray-900);
+}
+
+/* ==========================================================================
    Workout Widget
    ========================================================================== */
 

@@ -80,6 +80,9 @@ const Storage = (function() {
                 enabled: false,
                 sound: false
             },
+            meals: {
+                kidsMenuEnabled: true
+            },
             onboarding: {
                 welcomeTourComplete: false,
                 toursCompleted: [],

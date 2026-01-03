@@ -899,6 +899,148 @@ const Meals = (function() {
     }
 
     /**
+     * Render accordion day card for mobile view
+     */
+    function renderAccordionDay(day, currentView, recipes) {
+        const displayMealTypes = DISPLAY_MEAL_TYPES; // ['breakfast', 'lunch', 'snacks', 'dinner']
+
+        // Count meals for this day
+        const getMealCount = (variantPlan) => {
+            return displayMealTypes.filter(mealType => {
+                const slot = normalizeMealSlot(variantPlan[mealType]);
+                return slot.items.length > 0;
+            }).length;
+        };
+
+        const adultMealCount = getMealCount(day.plan.adult || {});
+        const kidsMealCount = getMealCount(day.plan.kids || {});
+        const totalMealCount = currentView === 'both'
+            ? adultMealCount + kidsMealCount
+            : currentView === 'adult' ? adultMealCount : kidsMealCount;
+
+        return `
+            <div class="accordion-day ${day.isToday ? 'accordion-day--today' : ''}"
+                 data-date="${day.date}"
+                 style="--day-bg: ${day.colors.bg}; --day-border: ${day.colors.border}; --day-text: ${day.colors.text};">
+                <button class="accordion-day__header" data-accordion-toggle="${day.date}">
+                    <div class="accordion-day__header-left">
+                        <i data-lucide="chevron-right" class="accordion-day__chevron"></i>
+                        <div class="accordion-day__date">
+                            <span class="accordion-day__day-name">${day.dayName.toUpperCase()}</span>
+                            <span class="accordion-day__day-date">${day.monthName} ${day.dateNum}</span>
+                        </div>
+                    </div>
+                    <div class="accordion-day__header-right">
+                        ${totalMealCount > 0
+                            ? `<span class="accordion-day__meal-count">${totalMealCount} meal${totalMealCount !== 1 ? 's' : ''}</span>`
+                            : `<span class="accordion-day__meal-count accordion-day__meal-count--empty">No meals</span>`
+                        }
+                        ${day.isToday ? '<span class="accordion-day__today-badge">Today</span>' : ''}
+                    </div>
+                </button>
+                <div class="accordion-day__content" data-accordion-content="${day.date}">
+                    ${currentView === 'both' ? `
+                        <!-- Adult Meals -->
+                        <div class="accordion-variant">
+                            <div class="accordion-variant__header">
+                                <i data-lucide="user"></i>
+                                <span>Adult Meals</span>
+                            </div>
+                            ${displayMealTypes.map(mealType => renderAccordionMeal(day, mealType, 'adult', day.plan.adult || {}, recipes, null)).join('')}
+                        </div>
+                        <!-- Kids Meals -->
+                        <div class="accordion-variant">
+                            <div class="accordion-variant__header">
+                                <i data-lucide="baby"></i>
+                                <span>Kids Meals</span>
+                            </div>
+                            ${displayMealTypes.map(mealType => renderAccordionMeal(day, mealType, 'kids', day.plan.kids || {}, recipes, day.plan.adult || {})).join('')}
+                        </div>
+                    ` : `
+                        ${displayMealTypes.map(mealType => {
+                            const variant = currentView;
+                            const adultPlan = variant === 'kids' ? (day.plan.adult || {}) : null;
+                            return renderAccordionMeal(day, mealType, variant, day.plan[variant] || {}, recipes, adultPlan);
+                        }).join('')}
+                    `}
+                    ${currentView !== 'kids' && day.adultProtein > 0 ? `
+                        <div class="accordion-protein">
+                            <i data-lucide="beef"></i>
+                            <span>Total Protein: <strong>${day.adultProtein}g</strong></span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render individual meal in accordion view
+     */
+    function renderAccordionMeal(day, mealType, variant, variantPlan, recipes, adultPlan = null) {
+        const slot = normalizeMealSlot(variantPlan[mealType]);
+        const hasMeals = slot.items.length > 0;
+        const isCompleted = slot.completed === true;
+        const isPastOrToday = day.date <= DateUtils.today();
+
+        // Check if adult has meals for "Same as Adult" button
+        const adultSlot = adultPlan ? normalizeMealSlot(adultPlan[mealType]) : null;
+        const showSameAsAdult = variant === 'kids' && adultSlot && adultSlot.items.length > 0 && !hasMeals;
+
+        return `
+            <div class="accordion-meal ${hasMeals ? 'accordion-meal--filled' : ''} ${isCompleted ? 'accordion-meal--completed' : ''}"
+                 data-date="${day.date}"
+                 data-meal-type="${mealType}"
+                 data-variant="${variant}">
+                <div class="accordion-meal__header">
+                    <div class="accordion-meal__label">
+                        <i data-lucide="${getMealIcon(mealType)}"></i>
+                        <span>${capitalizeFirst(mealType)}</span>
+                    </div>
+                    ${hasMeals && isPastOrToday ? `
+                        <button class="accordion-meal__check ${isCompleted ? 'accordion-meal__check--done' : ''}"
+                                data-toggle-complete
+                                data-date="${day.date}"
+                                data-meal-type="${mealType}"
+                                data-variant="${variant}"
+                                title="${isCompleted ? 'Mark as not eaten' : 'Mark as eaten'}">
+                            <i data-lucide="${isCompleted ? 'check-circle-2' : 'circle'}"></i>
+                        </button>
+                    ` : ''}
+                </div>
+                ${hasMeals ? `
+                    <div class="accordion-meal__items ${isCompleted ? 'accordion-meal__items--done' : ''}">
+                        ${slot.items.map(item => {
+                            const recipe = recipes.find(r => r.name === item);
+                            const icon = recipe?.icon || null;
+                            return `<span class="accordion-meal__item">
+                                ${icon ? `<i data-lucide="${icon}"></i>` : ''}
+                                ${item}
+                                ${recipe?.requiresPrep ? '<i data-lucide="alert-triangle" class="accordion-meal__prep-icon"></i>' : ''}
+                            </span>`;
+                        }).join('')}
+                    </div>
+                    ${slot.protein ? `<div class="accordion-meal__protein"><i data-lucide="beef"></i>${slot.protein}g protein</div>` : ''}
+                ` : `
+                    ${showSameAsAdult ? `
+                        <button class="accordion-meal__same-adult"
+                                data-copy-adult
+                                data-date="${day.date}"
+                                data-meal-type="${mealType}">
+                            <i data-lucide="copy"></i>
+                            <span>Same as Adult</span>
+                        </button>
+                    ` : ''}
+                    <div class="accordion-meal__add">
+                        <i data-lucide="plus"></i>
+                        <span>Add meal</span>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
      * Get all prep items for the week, grouped by the day before they're needed
      * (because prep happens the day before)
      */
@@ -1075,6 +1217,15 @@ const Meals = (function() {
         const tomorrow = getTomorrowDate();
         const tomorrowPrepNeeded = currentWeekOffset === 0 ? getMealsNeedingPrep(tomorrow, memberId) : [];
 
+        // Check if kids menu is enabled
+        const settings = Storage.getSettings();
+        const kidsMenuEnabled = settings.meals?.kidsMenuEnabled !== false; // Default to true
+
+        // Reset view to 'adult' if kids menu disabled and current view uses kids
+        if (!kidsMenuEnabled && (currentView === 'kids' || currentView === 'both')) {
+            currentView = 'adult';
+        }
+
         // Get week data with offset support
         const weekStart = getWeekStartWithOffset(currentWeekOffset);
         const days = [];
@@ -1148,12 +1299,14 @@ const Meals = (function() {
                             <button class="view-toggle-btn ${currentView === 'adult' ? 'view-toggle-btn--active' : ''}" data-view="adult">
                                 <i data-lucide="user"></i> <span>Adult</span>
                             </button>
-                            <button class="view-toggle-btn ${currentView === 'kids' ? 'view-toggle-btn--active' : ''}" data-view="kids">
-                                <i data-lucide="baby"></i> <span>Kids</span>
-                            </button>
-                            <button class="view-toggle-btn ${currentView === 'both' ? 'view-toggle-btn--active' : ''}" data-view="both">
-                                <i data-lucide="users"></i> <span>Both</span>
-                            </button>
+                            ${kidsMenuEnabled ? `
+                                <button class="view-toggle-btn ${currentView === 'kids' ? 'view-toggle-btn--active' : ''}" data-view="kids">
+                                    <i data-lucide="baby"></i> <span>Kids</span>
+                                </button>
+                                <button class="view-toggle-btn ${currentView === 'both' ? 'view-toggle-btn--active' : ''}" data-view="both">
+                                    <i data-lucide="users"></i> <span>Both</span>
+                                </button>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -1279,6 +1432,11 @@ const Meals = (function() {
                         </table>
                     </div>
 
+                    <!-- Mobile Accordion View -->
+                    <div class="planner-accordion">
+                        ${days.map(day => renderAccordionDay(day, currentView, recipes)).join('')}
+                    </div>
+
                     ${renderPrepSidebar(prepByDay, days, memberId)}
                 </div>
 
@@ -1351,6 +1509,58 @@ const Meals = (function() {
                     currentView = newView;
                     showWeeklyPlannerPage(memberId);
                 }
+            });
+        });
+
+        // Accordion toggle (mobile)
+        document.querySelectorAll('[data-accordion-toggle]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const date = btn.dataset.accordionToggle;
+                const accordionDay = btn.closest('.accordion-day');
+                const content = document.querySelector(`[data-accordion-content="${date}"]`);
+                const chevron = btn.querySelector('.accordion-day__chevron');
+
+                if (!accordionDay || !content) return;
+
+                const isExpanded = accordionDay.classList.contains('accordion-day--expanded');
+
+                if (isExpanded) {
+                    // Collapse
+                    accordionDay.classList.remove('accordion-day--expanded');
+                    content.style.maxHeight = '0px';
+                } else {
+                    // Collapse all others first
+                    document.querySelectorAll('.accordion-day--expanded').forEach(other => {
+                        other.classList.remove('accordion-day--expanded');
+                        const otherContent = other.querySelector('.accordion-day__content');
+                        if (otherContent) otherContent.style.maxHeight = '0px';
+                    });
+
+                    // Expand this one
+                    accordionDay.classList.add('accordion-day--expanded');
+                    content.style.maxHeight = content.scrollHeight + 'px';
+                }
+            });
+        });
+
+        // Auto-expand today's accordion on mobile
+        const todayAccordion = document.querySelector('.accordion-day--today');
+        if (todayAccordion && window.innerWidth <= 768) {
+            const todayButton = todayAccordion.querySelector('[data-accordion-toggle]');
+            if (todayButton) {
+                todayButton.click();
+            }
+        }
+
+        // Accordion meals - click to edit (mobile)
+        document.querySelectorAll('.accordion-meal[data-date]').forEach(meal => {
+            meal.addEventListener('click', (e) => {
+                // Don't trigger if clicking on a button inside
+                if (e.target.closest('button')) return;
+                const date = meal.dataset.date;
+                const mealType = meal.dataset.mealType;
+                const variant = meal.dataset.variant;
+                showMealEditModal(memberId, date, mealType, variant);
             });
         });
 
