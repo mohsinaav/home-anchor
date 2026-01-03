@@ -2627,21 +2627,35 @@ const Workout = (function() {
                 return false;
             }
 
-            const newEntry = {
-                id: `meas-${Date.now()}`,
-                date,
-                values,
-                createdAt: new Date().toISOString()
-            };
+            // Check if measurement already exists for this date
+            const existingIndex = data.log.findIndex(entry => entry.date === date);
+            const isUpdate = existingIndex >= 0;
 
-            // Add to log (newest first)
-            data.log.unshift(newEntry);
+            if (isUpdate) {
+                // Update existing entry
+                data.log[existingIndex] = {
+                    ...data.log[existingIndex],
+                    values,
+                    updatedAt: new Date().toISOString()
+                };
+            } else {
+                // Add new entry
+                const newEntry = {
+                    id: `meas-${Date.now()}`,
+                    date,
+                    values,
+                    createdAt: new Date().toISOString()
+                };
 
-            // Keep only last 365 entries
-            data.log = data.log.slice(0, 365);
+                // Add to log (newest first)
+                data.log.unshift(newEntry);
+
+                // Keep only last 365 entries
+                data.log = data.log.slice(0, 365);
+            }
 
             saveMeasurementsData(memberId, data);
-            Toast.success('Measurements saved!');
+            Toast.success(isUpdate ? 'Measurements updated!' : 'Measurements saved!');
 
             // Reopen main modal
             setTimeout(() => showMeasurementsModal(memberId), 250);
