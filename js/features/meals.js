@@ -904,19 +904,26 @@ const Meals = (function() {
     function renderAccordionDay(day, currentView, recipes) {
         const displayMealTypes = DISPLAY_MEAL_TYPES; // ['breakfast', 'lunch', 'snacks', 'dinner']
 
-        // Count meals for this day
-        const getMealCount = (variantPlan) => {
-            return displayMealTypes.filter(mealType => {
-                const slot = normalizeMealSlot(variantPlan[mealType]);
-                return slot.items.length > 0;
-            }).length;
+        // Count unique meal time slots that have food planned (not total variants)
+        const getMealCount = () => {
+            if (currentView === 'both') {
+                // Count unique meal time slots where EITHER adult OR kids has meals
+                return displayMealTypes.filter(mealType => {
+                    const adultSlot = normalizeMealSlot(day.plan.adult?.[mealType]);
+                    const kidsSlot = normalizeMealSlot(day.plan.kids?.[mealType]);
+                    return adultSlot.items.length > 0 || kidsSlot.items.length > 0;
+                }).length;
+            } else {
+                // Count meals for the specific variant
+                const variantPlan = day.plan[currentView] || {};
+                return displayMealTypes.filter(mealType => {
+                    const slot = normalizeMealSlot(variantPlan[mealType]);
+                    return slot.items.length > 0;
+                }).length;
+            }
         };
 
-        const adultMealCount = getMealCount(day.plan.adult || {});
-        const kidsMealCount = getMealCount(day.plan.kids || {});
-        const totalMealCount = currentView === 'both'
-            ? adultMealCount + kidsMealCount
-            : currentView === 'adult' ? adultMealCount : kidsMealCount;
+        const totalMealCount = getMealCount();
 
         return `
             <div class="accordion-day ${day.isToday ? 'accordion-day--today' : ''}"
