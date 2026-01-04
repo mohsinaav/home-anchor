@@ -29,7 +29,8 @@ Type: Multiple choice (Required)
 Q3: What types of family members are you managing?
 Type: Checkboxes
 ☐ Adults/Parents
-☐ Kids (ages 8+)
+☐ Teens (ages 13-19)
+☐ Kids (ages 4-12)
 ☐ Toddlers
 ☐ Only using for myself
 
@@ -164,19 +165,36 @@ Type: Paragraph
 
 ---
 
-Q18: How likely are you to recommend Home Anchor to other families?
+Q18: If you use the Teen features, how do they compare to the Kids features?
+Type: Multiple choice
+○ Teen features feel age-appropriate and mature
+○ Teen features are good but could be more distinct from kids
+○ Teen features need more customization options
+○ Haven't noticed a difference between teen and kid features
+○ Not applicable / Don't use teen features
+
+---
+
+Q19: What improvements would you suggest for the teen experience?
+Type: Paragraph
+[Long text box]
+Suggestions for making the teen features more engaging, age-appropriate, or useful.
+
+---
+
+Q20: How likely are you to recommend Home Anchor to other families?
 Type: Linear scale (Required)
 1 (Not at all likely) to 10 (Extremely likely)
 
 ---
 
-Q19: Any additional comments, suggestions, or feedback?
+Q21: Any additional comments, suggestions, or feedback?
 Type: Paragraph
 [Long text box]
 
 ---
 
-Q20: May we contact you for follow-up? (Optional)
+Q22: May we contact you for follow-up? (Optional)
 Type: Short answer
 [Text box]
 If yes, please provide your email. We'll only use it for Home Anchor feedback purposes.

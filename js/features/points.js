@@ -4,7 +4,7 @@
  */
 
 const Points = (function() {
-    // Level/XP Configuration
+    // Level/XP Configuration for Kids
     const LEVEL_CONFIG = {
         baseXP: 50,          // XP needed for level 1
         multiplier: 1.5,     // Each level requires 1.5x more XP
@@ -21,6 +21,23 @@ const Points = (function() {
         ]
     };
 
+    // Rank Configuration for Teens (more mature)
+    const TEEN_RANK_CONFIG = {
+        baseXP: 50,
+        multiplier: 1.5,
+        maxLevel: 50,
+        levels: [
+            { level: 1, name: 'Novice', color: '#9CA3AF', icon: 'user' },
+            { level: 5, name: 'Apprentice', color: '#60A5FA', icon: 'zap' },
+            { level: 10, name: 'Skilled', color: '#34D399', icon: 'target' },
+            { level: 15, name: 'Expert', color: '#A78BFA', icon: 'award' },
+            { level: 20, name: 'Elite', color: '#F59E0B', icon: 'star' },
+            { level: 30, name: 'Veteran', color: '#EF4444', icon: 'shield' },
+            { level: 40, name: 'Master', color: '#EC4899', icon: 'gem' },
+            { level: 50, name: 'Legendary', color: '#8B5CF6', icon: 'crown' }
+        ]
+    };
+
     // Activity categories
     const ACTIVITY_CATEGORIES = [
         { id: 'hygiene', name: 'Hygiene', icon: 'droplets', color: '#3B82F6' },
@@ -28,6 +45,16 @@ const Points = (function() {
         { id: 'school', name: 'School', icon: 'book', color: '#8B5CF6' },
         { id: 'health', name: 'Health', icon: 'heart', color: '#EF4444' },
         { id: 'kindness', name: 'Kindness', icon: 'hand-heart', color: '#EC4899' },
+        { id: 'custom', name: 'Other', icon: 'star', color: '#F59E0B' }
+    ];
+
+    // Teen-specific categories (more mature language)
+    const TEEN_ACTIVITY_CATEGORIES = [
+        { id: 'hygiene', name: 'Self-Care', icon: 'droplets', color: '#3B82F6' },
+        { id: 'chores', name: 'Responsibilities', icon: 'home', color: '#10B981' },
+        { id: 'school', name: 'Academics', icon: 'book', color: '#8B5CF6' },
+        { id: 'health', name: 'Wellness', icon: 'heart', color: '#EF4444' },
+        { id: 'kindness', name: 'Social', icon: 'users', color: '#EC4899' },
         { id: 'custom', name: 'Other', icon: 'star', color: '#F59E0B' }
     ];
 
@@ -117,6 +144,11 @@ const Points = (function() {
      * Render the points widget for a member
      */
     function renderWidget(container, memberId) {
+        // Get member info to check if teen
+        const members = Storage.getMembers();
+        const member = members.find(m => m.id === memberId);
+        const isTeen = member && member.type === 'teen';
+
         const widgetData = getWidgetData(memberId);
         const today = DateUtils.today();
         const todayActivities = widgetData.todayCompleted?.filter(c => c.date === today) || [];
@@ -142,7 +174,7 @@ const Points = (function() {
 
         // Calculate level
         const totalXP = getTotalXP(widgetData.history || []);
-        const levelInfo = calculateLevel(totalXP);
+        const levelInfo = calculateLevel(totalXP, isTeen);
 
         // Get font size class
         const fontSizeClass = settings.fontSize === 'large' ? 'points-widget--large-text' : '';
@@ -154,22 +186,22 @@ const Points = (function() {
                 <div class="points-widget__balance-card">
                     <div class="points-widget__balance-main">
                         <div class="points-widget__star-icon">
-                            <i data-lucide="star"></i>
+                            <i data-lucide="${isTeen ? 'coins' : 'star'}"></i>
                         </div>
                         <div class="points-widget__balance-content">
                             <span class="points-widget__count--big" id="pointsBalance">${widgetData.balance || 0}</span>
-                            <span class="points-widget__label--big">Points</span>
+                            <span class="points-widget__label--big">${isTeen ? 'Coins' : 'Points'}</span>
                         </div>
                     </div>
                     <div class="points-widget__balance-badges">
                         <div class="points-widget__level-badge" style="--level-color: ${levelInfo.rankColor}">
-                            <span class="points-widget__level-number">Lv.${levelInfo.level}</span>
+                            <span class="points-widget__level-number">${isTeen ? 'Rank' : 'Lv.'} ${levelInfo.level}</span>
                             <span class="points-widget__level-name">${levelInfo.rankName}</span>
                         </div>
                         ${streak > 0 ? `
                             <div class="points-widget__streak-badge-inline">
                                 <span class="points-widget__streak-flame">🔥</span>
-                                <span class="points-widget__streak-count">${streak}</span>
+                                <span class="points-widget__streak-count">${streak}${isTeen ? ' day streak' : ''}</span>
                             </div>
                         ` : ''}
                     </div>
@@ -189,19 +221,19 @@ const Points = (function() {
                 ${dailyGoalEnabled ? `
                     <div class="points-widget__daily-goal">
                         <div class="points-widget__daily-goal-header">
-                            <span class="points-widget__daily-goal-title">Today's Goal</span>
-                            <span class="points-widget__daily-goal-progress">${todayPoints} / ${dailyGoal} pts</span>
+                            <span class="points-widget__daily-goal-title">${isTeen ? 'Daily Target' : 'Today\'s Goal'}</span>
+                            <span class="points-widget__daily-goal-progress">${todayPoints} / ${dailyGoal} ${isTeen ? 'coins' : 'pts'}</span>
                         </div>
                         <div class="points-widget__daily-goal-bar">
                             <div class="points-widget__daily-goal-fill ${goalProgress >= 100 ? 'points-widget__daily-goal-fill--complete' : ''}" style="width: ${goalProgress}%"></div>
                         </div>
-                        ${goalProgress >= 100 ? '<span class="points-widget__daily-goal-complete">Goal Complete!</span>' : ''}
+                        ${goalProgress >= 100 ? `<span class="points-widget__daily-goal-complete">${isTeen ? 'Target Achieved! 🎯' : 'Goal Complete!'}</span>` : ''}
                     </div>
                 ` : ''}
 
                 <div class="points-widget__activities">
                     <div class="points-widget__activities-header">
-                        <h4 class="points-widget__section-title">Earn Points Today</h4>
+                        <h4 class="points-widget__section-title">${isTeen ? 'Earn Coins Today' : 'Earn Points Today'}</h4>
                         <button class="btn btn--icon btn--ghost btn--sm" data-action="toggle-settings" title="Display Settings">
                             <i data-lucide="sliders-horizontal"></i>
                         </button>
@@ -229,7 +261,7 @@ const Points = (function() {
                             <i data-lucide="layers"></i>
                             All
                         </button>
-                        ${ACTIVITY_CATEGORIES.map(cat => `
+                        ${(isTeen ? TEEN_ACTIVITY_CATEGORIES : ACTIVITY_CATEGORIES).map(cat => `
                             <button class="points-category-pill ${currentFilter === cat.id ? 'points-category-pill--active' : ''}"
                                     data-category="${cat.id}"
                                     style="--pill-color: ${cat.color}">
@@ -243,13 +275,14 @@ const Points = (function() {
                         ${filteredActivities.length === 0 ? `
                             <div class="points-activities-empty">
                                 <i data-lucide="inbox"></i>
-                                <span>No ${currentFilter === 'all' ? '' : ACTIVITY_CATEGORIES.find(c => c.id === currentFilter)?.name + ' '}activities yet</span>
+                                <span>No ${currentFilter === 'all' ? '' : (isTeen ? TEEN_ACTIVITY_CATEGORIES : ACTIVITY_CATEGORIES).find(c => c.id === currentFilter)?.name + ' '}activities yet</span>
                             </div>
                         ` : filteredActivities.map(activity => {
                             const maxPerDay = activity.maxPerDay || 1;
                             const completedCount = todayActivities.filter(c => c.activityId === activity.id).length;
                             const isFullyCompleted = completedCount >= maxPerDay;
-                            const category = ACTIVITY_CATEGORIES.find(c => c.id === activity.category) || ACTIVITY_CATEGORIES[5];
+                            const categories = isTeen ? TEEN_ACTIVITY_CATEGORIES : ACTIVITY_CATEGORIES;
+                            const category = categories.find(c => c.id === activity.category) || categories[5];
                             return `
                                 <button
                                     class="points-activity--kid ${isFullyCompleted ? 'points-activity--completed' : ''} ${activity.required ? 'points-activity--required' : ''}"
@@ -753,7 +786,11 @@ const Points = (function() {
 
                 <!-- Stats Toggle Tabs -->
                 <div class="history-tabs">
-                    <button class="history-tab history-tab--active" data-tab="calendar">
+                    <button class="history-tab history-tab--active" data-tab="history">
+                        <i data-lucide="list"></i>
+                        History
+                    </button>
+                    <button class="history-tab" data-tab="calendar">
                         <i data-lucide="calendar"></i>
                         Calendar
                     </button>
@@ -761,14 +798,45 @@ const Points = (function() {
                         <i data-lucide="bar-chart-3"></i>
                         Stats
                     </button>
-                    <button class="history-tab" data-tab="history">
-                        <i data-lucide="list"></i>
-                        History
-                    </button>
+                </div>
+
+                <!-- History View -->
+                <div class="history-panel history-panel--history" id="panelHistory">
+                    ${sortedDates.length === 0 ? `
+                        <div class="points-empty-history">
+                            <span class="points-empty-history__emoji">🌟</span>
+                            <p>No points history yet!</p>
+                            <p class="points-empty-history__hint">Complete activities to start earning points.</p>
+                        </div>
+                    ` : sortedDates.slice(0, 14).map(date => `
+                        <div class="points-day">
+                            <div class="points-day__header">
+                                <span class="points-day__date">${getDateLabel(date)}</span>
+                                <span class="points-day__stats">
+                                    ${groupedHistory[date].filter(e => e.type === 'earned').reduce((sum, e) => sum + e.points, 0)} earned
+                                    ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
+                                        ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
+                                </span>
+                            </div>
+                            <div class="points-day__activities">
+                                ${groupedHistory[date].map(entry => `
+                                    <div class="points-day__activity points-day__activity--${entry.type}">
+                                        <span class="points-day__icon">
+                                            ${entry.type === 'spent' ? '🎁' : '⭐'}
+                                        </span>
+                                        <span class="points-day__name">${entry.activityName}</span>
+                                        <span class="points-day__points points-day__points--${entry.type}">
+                                            ${entry.type === 'spent' ? '-' : '+'}${entry.points}
+                                        </span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
                 </div>
 
                 <!-- Calendar View -->
-                <div class="history-panel history-panel--calendar" id="panelCalendar">
+                <div class="history-panel history-panel--calendar" id="panelCalendar" style="display: none;">
                     <div class="points-calendar">
                         <div class="points-calendar__header">
                             <h3 class="points-calendar__month">${monthName}</h3>
@@ -873,41 +941,6 @@ const Points = (function() {
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- History View -->
-                <div class="history-panel history-panel--history" id="panelHistory" style="display: none;">
-                    ${sortedDates.length === 0 ? `
-                        <div class="points-empty-history">
-                            <span class="points-empty-history__emoji">🌟</span>
-                            <p>No points history yet!</p>
-                            <p class="points-empty-history__hint">Complete activities to start earning points.</p>
-                        </div>
-                    ` : sortedDates.slice(0, 14).map(date => `
-                        <div class="points-day">
-                            <div class="points-day__header">
-                                <span class="points-day__date">${getDateLabel(date)}</span>
-                                <span class="points-day__stats">
-                                    ${groupedHistory[date].filter(e => e.type === 'earned').reduce((sum, e) => sum + e.points, 0)} earned
-                                    ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
-                                        ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
-                                </span>
-                            </div>
-                            <div class="points-day__activities">
-                                ${groupedHistory[date].map(entry => `
-                                    <div class="points-day__activity points-day__activity--${entry.type}">
-                                        <span class="points-day__icon">
-                                            ${entry.type === 'spent' ? '🎁' : '⭐'}
-                                        </span>
-                                        <span class="points-day__name">${entry.activityName}</span>
-                                        <span class="points-day__points points-day__points--${entry.type}">
-                                            ${entry.type === 'spent' ? '-' : '+'}${entry.points}
-                                        </span>
-                                    </div>
-                                `).join('')}
-                            </div>
-                        </div>
-                    `).join('')}
                 </div>
             </div>
         `;
@@ -1096,26 +1129,27 @@ const Points = (function() {
     /**
      * Calculate level from total XP (total points ever earned)
      */
-    function calculateLevel(totalXP) {
+    function calculateLevel(totalXP, isTeen = false) {
+        const config = isTeen ? TEEN_RANK_CONFIG : LEVEL_CONFIG;
         let level = 1;
         let xpNeeded = 0;
 
-        while (level < LEVEL_CONFIG.maxLevel) {
-            const xpForNextLevel = Math.floor(LEVEL_CONFIG.baseXP * Math.pow(LEVEL_CONFIG.multiplier, level - 1));
+        while (level < config.maxLevel) {
+            const xpForNextLevel = Math.floor(config.baseXP * Math.pow(config.multiplier, level - 1));
             if (xpNeeded + xpForNextLevel > totalXP) break;
             xpNeeded += xpForNextLevel;
             level++;
         }
 
         const currentLevelXP = totalXP - xpNeeded;
-        const nextLevelXP = Math.floor(LEVEL_CONFIG.baseXP * Math.pow(LEVEL_CONFIG.multiplier, level - 1));
+        const nextLevelXP = Math.floor(config.baseXP * Math.pow(config.multiplier, level - 1));
         const progress = Math.min(100, Math.round((currentLevelXP / nextLevelXP) * 100));
 
         // Find rank info
-        let rankInfo = LEVEL_CONFIG.levels[0];
-        for (let i = LEVEL_CONFIG.levels.length - 1; i >= 0; i--) {
-            if (level >= LEVEL_CONFIG.levels[i].level) {
-                rankInfo = LEVEL_CONFIG.levels[i];
+        let rankInfo = config.levels[0];
+        for (let i = config.levels.length - 1; i >= 0; i--) {
+            if (level >= config.levels[i].level) {
+                rankInfo = config.levels[i];
                 break;
             }
         }

@@ -468,7 +468,7 @@ const Content = (function() {
                                     </p>
                                 `}
                             </div>
-                            ${member.type === 'kid' ? renderKidBadge(member.id) : ''}
+                            ${(member.type === 'kid' || member.type === 'teen') ? renderKidBadge(member.id) : ''}
                         </div>
                     `;
                 }).join('')}
@@ -522,6 +522,7 @@ const Content = (function() {
     function renderMember(member) {
         // Determine theme class based on member type
         const themeClass = member.type === 'kid' ? 'tab-content--kid' :
+                          member.type === 'teen' ? 'tab-content--teen' :
                           member.type === 'toddler' ? 'tab-content--toddler' :
                           'tab-content--adult';
 

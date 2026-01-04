@@ -29,6 +29,20 @@ const Storage = (function() {
             { id: 'journal', name: 'Journal', description: 'Private daily journal with mood tracking', icon: 'notebook-pen', default: false },
             { id: 'circuit-timer', name: 'Circuit Timer', description: 'Interval workout timer', icon: 'timer', default: false }
         ],
+        teen: [
+            { id: 'task-list', name: 'My Tasks', description: 'Personal task list', icon: 'check-square', default: true },
+            { id: 'habits', name: 'Habits', description: 'Build positive habits', icon: 'repeat', default: true },
+            { id: 'workout', name: 'Fitness', description: 'Track workouts and progress', icon: 'dumbbell', default: true },
+            { id: 'vision-board', name: 'Goals & Dreams', description: 'Visualize your future', icon: 'target', default: false },
+            { id: 'journal', name: 'Journal', description: 'Reflect and express yourself', icon: 'notebook-pen', default: false },
+            { id: 'gratitude', name: 'Gratitude', description: 'Daily gratitude practice', icon: 'heart', default: false },
+            { id: 'screen-time', name: 'Screen Time', description: 'Manage device usage', icon: 'smartphone', default: false },
+            { id: 'achievements', name: 'Achievements', description: 'Track accomplishments', icon: 'award', default: false },
+            { id: 'chores', name: 'Chores', description: 'Household responsibilities', icon: 'list-checks', default: false },
+            { id: 'routine', name: 'Reminders', description: 'Daily reminders', icon: 'bell', default: false },
+            { id: 'points', name: 'Points', description: 'Earn points for goals', icon: 'star', default: false },
+            { id: 'rewards', name: 'Rewards', description: 'Redeem earned points', icon: 'gift', default: false }
+        ],
         kid: [
             { id: 'points', name: 'Points', description: 'Earn points for activities', icon: 'star', default: true },
             { id: 'rewards', name: 'Rewards', description: 'Redeem points for rewards', icon: 'gift', default: true },

@@ -79,10 +79,10 @@ const KidWorkout = (function() {
     }
 
     /**
-     * Get today's date string
+     * Get today's date string (local timezone)
      */
     function getTodayStr() {
-        return new Date().toISOString().split('T')[0];
+        return DateUtils.today();
     }
 
     /**

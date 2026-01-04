@@ -2112,6 +2112,18 @@ const Workout = (function() {
     }
 
     /**
+     * Format date string (YYYY-MM-DD) to local display format
+     * Avoids timezone shift issues by parsing components manually
+     * @param {string} dateStr - Date string in YYYY-MM-DD format
+     * @returns {string} Formatted date (e.g., "Jan 3, 2026")
+     */
+    function formatDateLocal(dateStr) {
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day); // month is 0-indexed
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    }
+
+    /**
      * Get default measurements settings
      */
     function getDefaultMeasurementSettings() {
@@ -2156,8 +2168,18 @@ const Workout = (function() {
         thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
         const chartData = log
-            .filter(entry => new Date(entry.date) >= thirtyDaysAgo && entry.values[metric.id] !== undefined)
-            .sort((a, b) => new Date(a.date) - new Date(b.date)) // oldest to newest for chart
+            .filter(entry => {
+                const [y, m, d] = entry.date.split('-').map(Number);
+                const entryDate = new Date(y, m - 1, d);
+                return entryDate >= thirtyDaysAgo && entry.values[metric.id] !== undefined;
+            })
+            .sort((a, b) => {
+                const [y1, m1, d1] = a.date.split('-').map(Number);
+                const [y2, m2, d2] = b.date.split('-').map(Number);
+                const date1 = new Date(y1, m1 - 1, d1);
+                const date2 = new Date(y2, m2 - 1, d2);
+                return date1 - date2;
+            }) // oldest to newest for chart
             .map(entry => ({
                 date: entry.date,
                 // Convert stored value to display unit
@@ -2222,8 +2244,8 @@ const Workout = (function() {
                     }).join('')}
                 </svg>
                 <div class="measurements-mini-chart__labels">
-                    <span>${new Date(chartData[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
-                    <span>${new Date(chartData[chartData.length - 1].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                    <span>${formatDateLocal(chartData[0].date)}</span>
+                    <span>${formatDateLocal(chartData[chartData.length - 1].date)}</span>
                 </div>
             </div>
         `;
@@ -2275,7 +2297,7 @@ const Workout = (function() {
                         <div class="measurements-latest__header">
                             <span class="measurements-latest__date">
                                 <i data-lucide="calendar"></i>
-                                ${new Date(latestEntry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                ${formatDateLocal(latestEntry.date)}
                             </span>
                         </div>
                         <div class="measurements-latest__grid">
@@ -2358,7 +2380,7 @@ const Workout = (function() {
                                 ${log.slice(0, 5).map(entry => `
                                     <div class="measurements-history__item" data-entry-id="${entry.id}">
                                         <span class="measurements-history__date">
-                                            ${new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                            ${formatDateLocal(entry.date)}
                                         </span>
                                         <span class="measurements-history__values">
                                             ${enabledMetrics.slice(0, 3).map(m => {
@@ -2498,7 +2520,7 @@ const Workout = (function() {
                     ${log.map(entry => `
                         <div class="measurements-history__item" data-entry-id="${entry.id}">
                             <span class="measurements-history__date">
-                                ${new Date(entry.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                ${formatDateLocal(entry.date)}
                             </span>
                             <span class="measurements-history__values">
                                 ${enabledMetrics.map(m => {
@@ -2632,10 +2654,13 @@ const Workout = (function() {
             const isUpdate = existingIndex >= 0;
 
             if (isUpdate) {
-                // Update existing entry
+                // Update existing entry - merge new values with existing values
                 data.log[existingIndex] = {
                     ...data.log[existingIndex],
-                    values,
+                    values: {
+                        ...data.log[existingIndex].values,
+                        ...values
+                    },
                     updatedAt: new Date().toISOString()
                 };
             } else {
@@ -2657,10 +2682,10 @@ const Workout = (function() {
             saveMeasurementsData(memberId, data);
             Toast.success(isUpdate ? 'Measurements updated!' : 'Measurements saved!');
 
-            // Reopen main modal
-            setTimeout(() => showMeasurementsModal(memberId), 250);
+            // Directly transition to main modal without closing first
+            showMeasurementsModal(memberId);
 
-            return true;
+            return false; // Don't close modal (we're transitioning directly)
         });
     }
 

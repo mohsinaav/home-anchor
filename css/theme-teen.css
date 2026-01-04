@@ -1,0 +1,272 @@
+/* ==========================================================================
+   Teen Theme - Modern & Bold (Vibrant, Cool, Edgy)
+   ========================================================================== */
+
+/* Teen Tab Container */
+.tab-content--teen {
+    --teen-bg-start: #E0E7FF;
+    --teen-bg-end: #F3E8FF;
+    --teen-primary: #7C3AED;
+    --teen-secondary: #EC4899;
+    --teen-accent: #06B6D4;
+    --teen-text: #1E293B;
+    --teen-text-muted: #64748B;
+    --teen-surface: #FFFFFF;
+    --teen-surface-elevated: #F8FAFC;
+    --teen-border: #CBD5E1;
+
+    background: linear-gradient(135deg, var(--teen-bg-start) 0%, var(--teen-bg-end) 100%);
+    min-height: 100vh;
+    padding: 0;
+    overflow-x: hidden;
+    box-sizing: border-box;
+    color: var(--teen-text);
+}
+
+/* Modern widget cards for teens - Light mode with vibrant accents */
+.tab-content--teen .widget-card {
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--teen-border);
+    background: var(--teen-surface);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tab-content--teen .widget-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(124, 58, 237, 0.2), 0 4px 12px rgba(236, 72, 153, 0.1);
+    border-color: var(--teen-primary);
+}
+
+.tab-content--teen .widget-card__header {
+    background: linear-gradient(135deg, var(--teen-surface-elevated) 0%, var(--teen-surface) 100%);
+    border-bottom: 1px solid var(--teen-border);
+    padding: var(--space-4);
+}
+
+.tab-content--teen .widget-card__title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--teen-text);
+}
+
+.tab-content--teen .widget-card__title svg {
+    color: var(--teen-primary);
+    filter: drop-shadow(0 1px 2px rgba(124, 58, 237, 0.3));
+}
+
+.tab-content--teen .widget-card__body {
+    padding: var(--space-4);
+    background: var(--teen-surface);
+    color: var(--teen-text);
+}
+
+/* Modern placeholder style */
+.tab-content--teen .widget-placeholder__icon {
+    background: linear-gradient(135deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius-xl);
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.tab-content--teen .widget-placeholder__icon svg {
+    color: white;
+    width: 28px;
+    height: 28px;
+}
+
+.tab-content--teen .widget-placeholder__title {
+    color: var(--teen-text);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+}
+
+.tab-content--teen .widget-placeholder__text {
+    color: var(--teen-text-muted);
+}
+
+.tab-content--teen .widget-placeholder__badge {
+    background: linear-gradient(135deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    color: white;
+    font-weight: var(--font-semibold);
+    border-radius: var(--radius-md);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);
+}
+
+/* Member layout */
+.tab-content--teen .member-layout {
+    padding: var(--space-2);
+}
+
+/* Teen sidebar styling */
+.tab-content--teen .member-sidebar {
+    border: 1px solid var(--teen-border);
+    border-radius: var(--radius-xl);
+    background: var(--teen-surface);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.1);
+}
+
+/* Button styling with vibrant effects */
+.tab-content--teen .btn {
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-medium);
+    transition: all 0.3s ease;
+}
+
+.tab-content--teen .btn--primary {
+    background: linear-gradient(135deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    border: none;
+    color: white;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+.tab-content--teen .btn--primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(124, 58, 237, 0.4), 0 2px 8px rgba(236, 72, 153, 0.2);
+}
+
+.tab-content--teen .btn--ghost {
+    color: var(--teen-text);
+    border-color: var(--teen-border);
+}
+
+.tab-content--teen .btn--ghost:hover {
+    background: var(--teen-surface-elevated);
+    border-color: var(--teen-primary);
+}
+
+/* Form inputs */
+.tab-content--teen .form-input,
+.tab-content--teen .form-select,
+.tab-content--teen .form-textarea {
+    font-size: var(--text-base);
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--teen-border);
+    background: var(--teen-surface-elevated);
+    color: var(--teen-text);
+    transition: all 0.2s ease;
+}
+
+.tab-content--teen .form-input:focus,
+.tab-content--teen .form-select:focus,
+.tab-content--teen .form-textarea:focus {
+    border-color: var(--teen-primary);
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, 0.15);
+    outline: none;
+}
+
+.tab-content--teen .form-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--teen-text);
+}
+
+.tab-content--teen .form-hint {
+    color: var(--teen-text-muted);
+}
+
+/* Points badge styling */
+.tab-content--teen .family-card__badge {
+    background: linear-gradient(135deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    color: white;
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
+    font-weight: var(--font-semibold);
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+}
+
+/* Achievement/Badge cards */
+.tab-content--teen .achievement-card,
+.tab-content--teen .reward-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--teen-border);
+    background: var(--teen-surface-elevated);
+    transition: all 0.3s ease;
+}
+
+.tab-content--teen .achievement-card:hover,
+.tab-content--teen .reward-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(124, 58, 237, 0.3);
+    border-color: var(--teen-primary);
+}
+
+/* Task/habit cards */
+.tab-content--teen .habit-card,
+.tab-content--teen .task-card {
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--teen-border);
+    background: var(--teen-surface-elevated);
+    color: var(--teen-text);
+}
+
+/* Stats and progress bars */
+.tab-content--teen .progress-bar {
+    border-radius: var(--radius-full);
+    background: var(--teen-border);
+}
+
+.tab-content--teen .progress-bar__fill {
+    background: linear-gradient(90deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    border-radius: var(--radius-full);
+    box-shadow: 0 1px 4px rgba(124, 58, 237, 0.3);
+}
+
+/* Layout toggle buttons */
+.tab-content--teen .layout-toggle-btn {
+    border-radius: var(--radius-lg);
+    font-weight: var(--font-medium);
+    color: var(--teen-text);
+    background: var(--teen-surface);
+    border: 1px solid var(--teen-border);
+}
+
+.tab-content--teen .layout-toggle-btn:hover {
+    background: var(--teen-surface-elevated);
+}
+
+.tab-content--teen .layout-toggle-btn--active {
+    background: linear-gradient(135deg, var(--teen-primary) 0%, var(--teen-secondary) 100%);
+    color: white;
+    border-color: transparent;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.35);
+}
+
+/* Text colors */
+.tab-content--teen p,
+.tab-content--teen span,
+.tab-content--teen div {
+    color: var(--teen-text);
+}
+
+.tab-content--teen .text-muted {
+    color: var(--teen-text-muted);
+}
+
+/* Links */
+.tab-content--teen a {
+    color: var(--teen-primary);
+}
+
+.tab-content--teen a:hover {
+    color: var(--teen-secondary);
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+    .tab-content--teen .member-layout {
+        padding: var(--space-1);
+    }
+
+    .tab-content--teen .widget-card {
+        border-radius: var(--radius-lg);
+    }
+
+    .tab-content--teen .widget-card__header,
+    .tab-content--teen .widget-card__body {
+        padding: var(--space-3);
+    }
+}

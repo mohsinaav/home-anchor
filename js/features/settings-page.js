@@ -1041,6 +1041,13 @@ const SettingsPage = (function() {
                             </div>
                         </label>
                         <label class="member-type-option">
+                            <input type="radio" name="memberType" value="teen">
+                            <div class="member-type-option__content">
+                                <i data-lucide="user-round"></i>
+                                <span>Teen</span>
+                            </div>
+                        </label>
+                        <label class="member-type-option">
                             <input type="radio" name="memberType" value="kid">
                             <div class="member-type-option__content">
                                 <i data-lucide="smile"></i>
@@ -1059,7 +1066,7 @@ const SettingsPage = (function() {
 
                 <div class="form-group" id="ageGroup" style="display: none;">
                     <label class="form-label">Age</label>
-                    <input type="number" class="form-input" id="memberAge" min="4" max="17" value="8">
+                    <input type="number" class="form-input" id="memberAge" min="4" max="19" value="8">
                 </div>
             </form>
         `;
@@ -1074,11 +1081,24 @@ const SettingsPage = (function() {
             lucide.createIcons();
         }
 
-        // Toggle age field for kids
+        // Toggle age field for kids and teens
         document.querySelectorAll('input[name="memberType"]').forEach(radio => {
             radio.addEventListener('change', () => {
                 const ageGroup = document.getElementById('ageGroup');
-                ageGroup.style.display = radio.value === 'kid' ? 'block' : 'none';
+                const ageInput = document.getElementById('memberAge');
+                if (radio.value === 'kid') {
+                    ageGroup.style.display = 'block';
+                    ageInput.min = 4;
+                    ageInput.max = 12;
+                    ageInput.value = 8;
+                } else if (radio.value === 'teen') {
+                    ageGroup.style.display = 'block';
+                    ageInput.min = 13;
+                    ageInput.max = 19;
+                    ageInput.value = 15;
+                } else {
+                    ageGroup.style.display = 'none';
+                }
             });
         });
 
@@ -1095,6 +1115,8 @@ const SettingsPage = (function() {
             const memberData = { name, type };
             if (type === 'kid') {
                 memberData.age = parseInt(age) || 8;
+            } else if (type === 'teen') {
+                memberData.age = parseInt(age) || 15;
             }
 
             Storage.addMember(memberData);

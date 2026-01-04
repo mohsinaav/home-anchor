@@ -210,9 +210,13 @@ const Tabs = (function() {
                             <i data-lucide="user"></i>
                             <span>Adult</span>
                         </button>
+                        <button type="button" class="member-type-btn" data-type="teen">
+                            <i data-lucide="user-round"></i>
+                            <span>Teen (13-19)</span>
+                        </button>
                         <button type="button" class="member-type-btn" data-type="kid">
                             <i data-lucide="star"></i>
-                            <span>Kid (8+)</span>
+                            <span>Kid (4-12)</span>
                         </button>
                         <button type="button" class="member-type-btn" data-type="toddler">
                             <i data-lucide="baby"></i>
@@ -238,7 +242,7 @@ const Tabs = (function() {
 
                 <div class="form-group" id="ageGroup" style="display: none;">
                     <label class="form-label">Age</label>
-                    <input type="number" class="form-input" id="memberAge" min="1" max="17" value="8">
+                    <input type="number" class="form-input" id="memberAge" min="4" max="19" value="8">
                 </div>
 
                 <div class="form-group">
@@ -278,8 +282,21 @@ const Tabs = (function() {
                 btn.classList.add('member-type-btn--selected');
                 selectedType = btn.dataset.type;
 
-                // Show/hide age field
-                ageGroup.style.display = selectedType === 'kid' ? 'block' : 'none';
+                // Show/hide age field and update range
+                const ageInput = document.getElementById('memberAge');
+                if (selectedType === 'kid') {
+                    ageGroup.style.display = 'block';
+                    ageInput.min = 4;
+                    ageInput.max = 12;
+                    ageInput.value = 8;
+                } else if (selectedType === 'teen') {
+                    ageGroup.style.display = 'block';
+                    ageInput.min = 13;
+                    ageInput.max = 19;
+                    ageInput.value = 15;
+                } else {
+                    ageGroup.style.display = 'none';
+                }
 
                 // Update widget preview
                 widgetPreview.innerHTML = renderWidgetPreview(selectedType, registry);
@@ -329,7 +346,7 @@ const Tabs = (function() {
             const newMember = Storage.addMember({
                 name,
                 type: selectedType,
-                ...(selectedType === 'kid' && { age })
+                ...((selectedType === 'kid' || selectedType === 'teen') && { age })
             }, photoData);
 
             if (newMember) {

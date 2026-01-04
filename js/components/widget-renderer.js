@@ -358,8 +358,8 @@ const WidgetRenderer = (function() {
             return;
         }
 
-        // Use focus-based layout for kids and toddlers
-        if (member.type === 'kid' || member.type === 'toddler') {
+        // Use focus-based layout for kids, teens, and toddlers
+        if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
             renderKidWidgets(container, member, hasMoreWidgets);
             return;
         }
@@ -938,20 +938,27 @@ const WidgetRenderer = (function() {
 
         const grid = container.querySelector('#widgetGrid');
 
+        // Store current member for drag operations
+        currentMember = member;
+
         // Render each widget
         widgets.forEach((widgetId, index) => {
             const widgetConfig = widgetComponents[widgetId];
             if (!widgetConfig) return;
 
             const widgetCard = document.createElement('div');
-            widgetCard.className = 'widget-card widget-card--kid-grid';
+            widgetCard.className = 'widget-card widget-card--kid-grid widget-card--draggable';
             widgetCard.dataset.widget = widgetId;
             widgetCard.dataset.index = index;
+            widgetCard.draggable = true;
 
             const isExpandable = EXPANDABLE_WIDGETS.includes(widgetId);
 
             widgetCard.innerHTML = `
                 <div class="widget-card__header">
+                    <div class="widget-card__drag-handle" title="Drag to reorder">
+                        <i data-lucide="grip-vertical"></i>
+                    </div>
                     <div class="widget-card__title">
                         <i data-lucide="${widgetConfig.icon}"></i>
                         <span>${widgetConfig.title}</span>
@@ -997,6 +1004,9 @@ const WidgetRenderer = (function() {
 
         // Bind widget menu events
         bindWidgetMenuEvents(container, member);
+
+        // Bind drag and drop events
+        bindDragDropEvents(grid, member);
 
         // Bind add widget button
         container.querySelector('#addWidgetBtn')?.addEventListener('click', () => {
