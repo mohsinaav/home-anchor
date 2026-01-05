@@ -2114,19 +2114,23 @@ Tuesday:
             const importedCount = importMealPlan(memberId, parsed, startThisWeek, applyBothVariants);
 
             Modal.close();
-            Toast.success(`Imported ${importedCount} days of meals!`);
 
-            // Refresh widget or page
-            const widgetBody = document.getElementById('widget-meal-plan');
-            if (widgetBody) {
-                renderWidget(widgetBody, memberId);
-            }
+            // Wait for modal to close before refreshing and showing toast
+            setTimeout(() => {
+                Toast.success(`Imported ${importedCount} days of meals!`);
 
-            // If we're on the weekly planner page, refresh it
-            const weeklyPlanner = document.querySelector('.weekly-planner');
-            if (weeklyPlanner) {
-                showWeeklyPlannerPage(memberId);
-            }
+                // Refresh widget or page
+                const widgetBody = document.getElementById('widget-meal-plan');
+                if (widgetBody) {
+                    renderWidget(widgetBody, memberId);
+                }
+
+                // If we're on the weekly planner page, refresh it
+                const weeklyPlanner = document.querySelector('.weekly-planner');
+                if (weeklyPlanner) {
+                    showWeeklyPlannerPage(memberId);
+                }
+            }, 250);
         });
     }
 
@@ -2155,22 +2159,26 @@ Tuesday:
 
         let currentDay = null;
         let currentVariant = 'both';
+        let currentMealType = null; // Track current meal type for multi-line entries
 
-        for (const line of lines) {
+        for (let i = 0; i < lines.length; i++) {
+            const line = lines[i];
+
             // Skip separator lines
             if (line.startsWith('---')) continue;
 
             // Check for day name
             const lowerLine = line.toLowerCase();
-            for (let i = 0; i < dayNames.length; i++) {
-                if (lowerLine.startsWith(dayNames[i])) {
+            let foundDay = false;
+            for (let j = 0; j < dayNames.length; j++) {
+                if (lowerLine.startsWith(dayNames[j])) {
                     // New day found
                     if (currentDay) {
                         days.push(currentDay);
                     }
                     currentDay = {
-                        dayIndex: i,
-                        dayName: dayNames[i].charAt(0).toUpperCase() + dayNames[i].slice(1),
+                        dayIndex: j,
+                        dayName: dayNames[j].charAt(0).toUpperCase() + dayNames[j].slice(1),
                         variant: 'both',
                         meals: {
                             breakfast: [],
@@ -2180,51 +2188,89 @@ Tuesday:
                         }
                     };
                     currentVariant = 'both';
+                    currentMealType = null; // Reset meal type on new day
+                    foundDay = true;
                     break;
                 }
             }
 
+            if (foundDay) continue;
             if (!currentDay) continue;
 
             // Check for variant prefix (Adult: or Kids:)
             if (lowerLine.startsWith('adult:') || lowerLine.startsWith('adult -')) {
                 currentVariant = 'adult';
+                currentMealType = null;
                 continue;
             }
             if (lowerLine.startsWith('kids:') || lowerLine.startsWith('kids -') || lowerLine.startsWith('kid:')) {
                 currentVariant = 'kids';
+                currentMealType = null;
                 continue;
             }
 
             // Check for meal type
+            let foundMealType = false;
             for (const [alias, mealType] of Object.entries(mealTypeAliases)) {
-                const regex = new RegExp(`^${alias}[:\\s-]+(.+)`, 'i');
+                // Match meal type with optional content on same line or just the label
+                const regex = new RegExp(`^${alias}[:\\s-]*(.*)`, 'i');
                 const match = line.match(regex);
                 if (match) {
+                    currentMealType = mealType;
+                    foundMealType = true;
+
                     const mealContent = match[1].trim();
-                    // Split by comma to get multiple items
-                    const items = mealContent.split(/[,;]/).map(i => i.trim()).filter(i => i);
 
-                    if (items.length > 0) {
-                        // Store with variant info
-                        if (!currentDay.meals[mealType]) {
-                            currentDay.meals[mealType] = [];
-                        }
+                    // If content exists on same line, add it
+                    if (mealContent) {
+                        // Split by comma to get multiple items
+                        const items = mealContent.split(/[,;]/).map(item => item.trim()).filter(item => item);
 
-                        // If it's a variant-specific entry, mark it
-                        if (currentVariant !== 'both') {
-                            currentDay.meals[mealType].push({
-                                variant: currentVariant,
-                                items: items
-                            });
-                        } else {
-                            currentDay.meals[mealType].push({
-                                variant: 'both',
-                                items: items
-                            });
+                        if (items.length > 0) {
+                            // Store with variant info
+                            if (!currentDay.meals[mealType]) {
+                                currentDay.meals[mealType] = [];
+                            }
+
+                            // If it's a variant-specific entry, mark it
+                            if (currentVariant !== 'both') {
+                                currentDay.meals[mealType].push({
+                                    variant: currentVariant,
+                                    items: items
+                                });
+                            } else {
+                                currentDay.meals[mealType].push({
+                                    variant: 'both',
+                                    items: items
+                                });
+                            }
                         }
                     }
                     break;
+                }
+            }
+
+            // If no meal type found and we have a current meal type, this might be content for it
+            if (!foundMealType && currentMealType && currentDay) {
+                // This line is meal content for the current meal type
+                const items = line.split(/[,;]/).map(item => item.trim()).filter(item => item);
+
+                if (items.length > 0) {
+                    if (!currentDay.meals[currentMealType]) {
+                        currentDay.meals[currentMealType] = [];
+                    }
+
+                    if (currentVariant !== 'both') {
+                        currentDay.meals[currentMealType].push({
+                            variant: currentVariant,
+                            items: items
+                        });
+                    } else {
+                        currentDay.meals[currentMealType].push({
+                            variant: 'both',
+                            items: items
+                        });
+                    }
                 }
             }
         }

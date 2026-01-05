@@ -10,6 +10,37 @@ const Schedule = (function() {
     const SLOT_MINUTES = 30;
     const SLOT_HEIGHT = 48; // pixels per 30-min slot
 
+    /**
+     * Add touch-friendly event listener that works on both desktop and mobile
+     */
+    function addTapEvent(element, handler) {
+        // Use touchend for faster response on mobile, with click as fallback
+        let touchStartY = 0;
+        let hasMoved = false;
+
+        element.addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            hasMoved = false;
+        }, { passive: true });
+
+        element.addEventListener('touchmove', (e) => {
+            const touchY = e.touches[0].clientY;
+            if (Math.abs(touchY - touchStartY) > 10) {
+                hasMoved = true;
+            }
+        }, { passive: true });
+
+        element.addEventListener('touchend', (e) => {
+            if (!hasMoved) {
+                e.preventDefault();
+                handler(e);
+            }
+        });
+
+        // Fallback for desktop
+        element.addEventListener('click', handler);
+    }
+
     // Common schedule icons
     const SCHEDULE_ICONS = [
         { id: 'sun', name: 'Morning' },
@@ -358,7 +389,7 @@ const Schedule = (function() {
         console.log('Found slots:', slots.length);
 
         slots.forEach(slot => {
-            slot.addEventListener('click', (e) => {
+            addTapEvent(slot, (e) => {
                 console.log('Slot clicked:', slot.dataset.time);
                 // Don't trigger if clicking on a block
                 if (e.target.closest('.schedule-timeline__block')) return;
@@ -373,7 +404,7 @@ const Schedule = (function() {
         console.log('Found blocks:', blocks.length);
 
         blocks.forEach(block => {
-            block.addEventListener('click', (e) => {
+            addTapEvent(block, (e) => {
                 console.log('Block clicked:', block.dataset.blockId);
                 e.stopPropagation();
                 const blockId = block.dataset.blockId;

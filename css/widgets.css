@@ -98,6 +98,19 @@
     background-color: var(--primary-light);
 }
 
+/* Touch drag styles */
+.widget-card--placeholder {
+    opacity: 0.3;
+    background: var(--gray-100);
+    border: 2px dashed var(--gray-300);
+}
+
+.widget-card--touch-dragging {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    transform-origin: center;
+    transition: none;
+}
+
 .widget-card__drag-handle {
     display: flex;
     align-items: center;
@@ -121,6 +134,13 @@
 .widget-card__drag-handle svg {
     width: 16px;
     height: 16px;
+}
+
+/* Show drag handle on mobile/touch devices */
+@media (max-width: 768px), (hover: none) {
+    .widget-card__drag-handle {
+        opacity: 1;
+    }
 }
 
 /* Drop zone indicator */
@@ -7274,6 +7294,13 @@
     padding: var(--space-1);
 }
 
+.grocery-widget__checkbox-wrapper {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
 .grocery-widget__checkbox {
     width: 16px;
     height: 16px;
@@ -7281,30 +7308,33 @@
     flex-shrink: 0;
 }
 
-.grocery-widget__store-item span {
+.grocery-widget__item-content {
     flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    cursor: pointer;
+    min-width: 0; /* Allow text truncation */
 }
 
 .grocery-widget__item-text {
-    cursor: pointer;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
     transition: color var(--transition-fast);
 }
 
-.grocery-widget__item-text:hover {
+.grocery-widget__item-content:hover .grocery-widget__item-text {
     color: var(--primary);
 }
 
 .grocery-widget__item-input {
-    flex: 1;
+    width: 100%;
     padding: var(--space-1) var(--space-2);
     border: 1px solid var(--primary);
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
     outline: none;
     background: white;
+    box-sizing: border-box;
 }
 
 .grocery-widget__store-more {
@@ -7629,32 +7659,55 @@
     background: var(--gray-100);
 }
 
-.grocery-store-item__checkbox {
+.grocery-store-item__checkbox-wrapper {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    flex: 1;
+    flex-shrink: 0;
     cursor: pointer;
-    user-select: none;
 }
 
-.grocery-store-item__checkbox input[type="checkbox"] {
+.grocery-store-item__checkbox-wrapper input[type="checkbox"] {
     width: 18px;
     height: 18px;
     cursor: pointer;
     flex-shrink: 0;
 }
 
-.grocery-store-item__name {
+.grocery-store-item__content {
     flex: 1;
+    cursor: pointer;
+    min-width: 0; /* Allow text truncation */
+    margin: 0 var(--space-3);
+}
+
+.grocery-store-item__name {
+    display: block;
     font-size: var(--text-base);
     color: var(--gray-800);
     transition: all var(--transition-fast);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.grocery-store-item__content:hover .grocery-store-item__name {
+    color: var(--primary);
 }
 
 .grocery-store-item__name--checked {
     text-decoration: line-through;
     color: var(--gray-400);
+}
+
+.grocery-store-item__edit-input {
+    width: 100%;
+    padding: var(--space-1) var(--space-2);
+    border: 1px solid var(--primary);
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    outline: none;
+    background: white;
+    box-sizing: border-box;
 }
 
 .grocery-store-item__actions {
@@ -8231,10 +8284,25 @@
     text-align: center;
 }
 
+.grocery-page__back {
+    position: absolute;
+    top: 0;
+    left: 0;
+    color: white;
+}
+
+.grocery-page__back:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.grocery-page__hero-text {
+    margin-bottom: var(--space-4);
+}
+
 .grocery-page__hero-title {
     color: white;
-    font-size: var(--text-2xl);
-    font-weight: var(--font-bold);
+    font-size: var(--text-3xl);
+    font-weight: 700;
     margin: 0 0 var(--space-1) 0;
     display: flex;
     align-items: center;
@@ -8243,26 +8311,32 @@
 }
 
 .grocery-page__hero-title svg {
-    width: 28px;
-    height: 28px;
+    width: 32px;
+    height: 32px;
 }
 
 .grocery-page__hero-subtitle {
-    color: rgba(255,255,255,0.85);
-    font-size: var(--text-sm);
-    margin: 0 0 var(--space-4) 0;
+    color: rgba(255,255,255,0.9);
+    font-size: var(--text-base);
+    margin: 0;
 }
 
 /* Hero Stats */
-.grocery-hero-stats {
+.grocery-page__hero-stats {
     display: flex;
-    justify-content: center;
     gap: var(--space-6);
     margin-bottom: var(--space-4);
+    justify-content: center;
 }
 
 .grocery-hero-stat {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-xl);
 }
 
 .grocery-hero-stat__value {
@@ -8277,6 +8351,23 @@
     color: rgba(255,255,255,0.8);
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* Hero Actions */
+.grocery-page__hero-actions {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.grocery-page__hero-actions .btn--secondary {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.grocery-page__hero-actions .btn--secondary:hover {
+    background: white;
 }
 
 /* Hero Progress Bar */
@@ -16280,9 +16371,40 @@
 
 /* Edit Modal */
 .journal-edit-modal {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            #B8D4E3 31px,
+            #B8D4E3 32px
+        ),
+        linear-gradient(to right, #F8C8C8 0px, #F8C8C8 3px, transparent 3px);
+    background-color: #FFFEF5;
+    padding: var(--space-4);
+    padding-left: calc(var(--space-4) + 20px);
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
+    position: relative;
+}
+
+/* Red margin line */
+.journal-edit-modal::before {
+    content: '';
+    position: absolute;
+    left: 35px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #F8C8C8;
+    z-index: 0;
+}
+
+.journal-edit-modal__mood-section,
+.journal-edit-modal__content,
+.journal-edit-modal__gratitude {
+    position: relative;
+    z-index: 1;
 }
 
 .journal-edit-modal__mood-section label,
@@ -16291,6 +16413,11 @@
     font-weight: var(--font-semibold);
     color: var(--gray-700);
     margin-bottom: var(--space-2);
+}
+
+.journal-edit-modal textarea {
+    font-family: 'Kalam', cursive;
+    line-height: 32px;
 }
 
 /* All Entries Page */

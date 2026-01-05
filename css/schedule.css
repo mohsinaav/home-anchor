@@ -1218,6 +1218,20 @@
         padding-right: var(--space-1);
     }
 
+    .schedule-timeline__slot {
+        /* Improve touch targets on mobile */
+        min-height: 48px;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    .schedule-timeline__block {
+        /* Better touch targets for blocks */
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
+        min-height: 44px; /* iOS recommended minimum */
+    }
+
     .schedule-timeline__block-title {
         font-size: var(--text-xs);
     }

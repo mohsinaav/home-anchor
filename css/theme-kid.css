@@ -304,9 +304,23 @@
     gap: var(--space-4);
 }
 
-@media (max-width: 480px) {
+@media (max-width: 768px) {
     .rewards-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
+        gap: var(--space-3);
+    }
+
+    .tab-content--kid .member-layout,
+    .tab-content--toddler .member-layout {
+        padding: 0 !important;
+    }
+}
+
+/* Minimize main padding on mobile for kids/toddler tabs to prevent widget clipping */
+@media (max-width: 480px) {
+    body:has(.tab-content--kid) .main,
+    body:has(.tab-content--toddler) .main {
+        padding: 4px !important;
     }
 }
 

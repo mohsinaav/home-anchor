@@ -293,6 +293,21 @@ textarea.form-input {
     transform: scale(1);
 }
 
+/* Modal size variants */
+.modal--small {
+    max-width: 360px;
+}
+
+.modal--medium,
+.modal--md {
+    max-width: 600px;
+}
+
+.modal--large,
+.modal--lg {
+    max-width: 800px;
+}
+
 .modal__header {
     display: flex;
     align-items: center;

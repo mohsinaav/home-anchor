@@ -746,7 +746,100 @@ const App = (function() {
     return { init };
 })();
 
+// Swipe Back Gesture Handler for Mobile
+const SwipeBack = (function() {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let isSwiping = false;
+
+    const SWIPE_THRESHOLD = 80; // Minimum distance for swipe
+    const SWIPE_VELOCITY_THRESHOLD = 0.3; // Minimum velocity
+    const MAX_VERTICAL_DEVIATION = 50; // Maximum vertical movement allowed
+    const EDGE_START_ZONE = 50; // Start swipe from edge of screen
+
+    function init() {
+        // Only enable on touch devices
+        if (!('ontouchstart' in window)) return;
+
+        document.addEventListener('touchstart', handleTouchStart, { passive: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchend', handleTouchEnd, { passive: true });
+    }
+
+    function handleTouchStart(e) {
+        // Only start tracking if touch begins near left edge
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+        isSwiping = touchStartX < EDGE_START_ZONE;
+    }
+
+    function handleTouchMove(e) {
+        if (!isSwiping) return;
+
+        const touchCurrentX = e.touches[0].clientX;
+        const touchCurrentY = e.touches[0].clientY;
+
+        const deltaX = touchCurrentX - touchStartX;
+        const deltaY = Math.abs(touchCurrentY - touchStartY);
+
+        // Cancel if moving too much vertically (likely scrolling)
+        if (deltaY > MAX_VERTICAL_DEVIATION) {
+            isSwiping = false;
+        }
+    }
+
+    function handleTouchEnd(e) {
+        if (!isSwiping) return;
+
+        const touchEndX = e.changedTouches[0].clientX;
+        const touchEndY = e.changedTouches[0].clientY;
+        const touchEndTime = Date.now();
+
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = Math.abs(touchEndY - touchStartY);
+        const deltaTime = touchEndTime - touchStartTime;
+        const velocity = deltaX / deltaTime;
+
+        // Check if it's a valid right swipe
+        if (
+            deltaX > SWIPE_THRESHOLD && // Moved right enough
+            deltaY < MAX_VERTICAL_DEVIATION && // Not too much vertical movement
+            velocity > SWIPE_VELOCITY_THRESHOLD // Fast enough
+        ) {
+            triggerBackNavigation();
+        }
+
+        isSwiping = false;
+    }
+
+    function triggerBackNavigation() {
+        // Find the active back button and click it
+        const backButtons = [
+            document.getElementById('backToMemberBtn'),
+            document.getElementById('backToDashboardBtn'),
+            document.querySelector('.btn[data-action="back"]'),
+            document.querySelector('.grocery-page__back'),
+            document.querySelector('.recipes-page__back'),
+            document.querySelector('[id$="BackBtn"]')
+        ];
+
+        for (const btn of backButtons) {
+            if (btn && btn.offsetParent !== null) { // Check if visible
+                btn.click();
+                // Visual feedback
+                Toast.info('Swipe back');
+                return;
+            }
+        }
+    }
+
+    return { init };
+})();
+
 // Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
     App.init();
+    SwipeBack.init();
 });

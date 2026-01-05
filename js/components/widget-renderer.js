@@ -1115,7 +1115,19 @@ const WidgetRenderer = (function() {
     function bindDragDropEvents(grid, member) {
         const widgetCards = grid.querySelectorAll('.widget-card');
 
+        // Touch drag state
+        let touchDragState = {
+            isDragging: false,
+            startY: 0,
+            startX: 0,
+            currentY: 0,
+            currentX: 0,
+            placeholder: null,
+            clone: null
+        };
+
         widgetCards.forEach(card => {
+            // ===== MOUSE DRAG EVENTS =====
             // Drag start
             card.addEventListener('dragstart', (e) => {
                 draggedWidget = card;
@@ -1170,7 +1182,164 @@ const WidgetRenderer = (function() {
                     Toast.success('Widget order updated');
                 }
             });
+
+            // ===== TOUCH EVENTS FOR MOBILE =====
+            const dragHandle = card.querySelector('.widget-card__drag-handle');
+
+            if (dragHandle) {
+                dragHandle.addEventListener('touchstart', (e) => {
+                    const touch = e.touches[0];
+                    touchDragState.isDragging = true;
+                    touchDragState.startY = touch.clientY;
+                    touchDragState.startX = touch.clientX;
+                    touchDragState.currentY = touch.clientY;
+                    touchDragState.currentX = touch.clientX;
+
+                    draggedWidget = card;
+                    draggedIndex = parseInt(card.dataset.index);
+
+                    // Create placeholder
+                    touchDragState.placeholder = card.cloneNode(false);
+                    touchDragState.placeholder.classList.add('widget-card--placeholder');
+                    touchDragState.placeholder.style.height = card.offsetHeight + 'px';
+                    touchDragState.placeholder.innerHTML = '';
+
+                    // Create dragging clone
+                    touchDragState.clone = card.cloneNode(true);
+                    touchDragState.clone.classList.add('widget-card--touch-dragging');
+                    touchDragState.clone.style.position = 'fixed';
+                    touchDragState.clone.style.width = card.offsetWidth + 'px';
+                    touchDragState.clone.style.height = card.offsetHeight + 'px';
+                    touchDragState.clone.style.zIndex = '9999';
+                    touchDragState.clone.style.pointerEvents = 'none';
+                    touchDragState.clone.style.opacity = '0.9';
+                    touchDragState.clone.style.left = card.getBoundingClientRect().left + 'px';
+                    touchDragState.clone.style.top = card.getBoundingClientRect().top + 'px';
+
+                    document.body.appendChild(touchDragState.clone);
+
+                    // Hide original card
+                    card.style.opacity = '0.3';
+
+                    // Prevent scrolling while dragging
+                    e.preventDefault();
+                }, { passive: false });
+
+                dragHandle.addEventListener('touchmove', (e) => {
+                    if (!touchDragState.isDragging) return;
+
+                    const touch = e.touches[0];
+                    touchDragState.currentY = touch.clientY;
+                    touchDragState.currentX = touch.clientX;
+
+                    // Move clone with touch
+                    const deltaY = touchDragState.currentY - touchDragState.startY;
+                    const deltaX = touchDragState.currentX - touchDragState.startX;
+
+                    if (touchDragState.clone) {
+                        touchDragState.clone.style.transform = `translate(${deltaX}px, ${deltaY}px)`;
+                    }
+
+                    // Determine which card we're over
+                    const afterElement = getTouchAfterElement(grid, touchDragState.currentY);
+
+                    if (!touchDragState.placeholder.parentNode) {
+                        if (afterElement == null) {
+                            grid.appendChild(touchDragState.placeholder);
+                        } else {
+                            grid.insertBefore(touchDragState.placeholder, afterElement);
+                        }
+                    } else {
+                        if (afterElement == null) {
+                            grid.appendChild(touchDragState.placeholder);
+                        } else if (afterElement !== touchDragState.placeholder) {
+                            grid.insertBefore(touchDragState.placeholder, afterElement);
+                        }
+                    }
+
+                    // Prevent scrolling
+                    e.preventDefault();
+                }, { passive: false });
+
+                dragHandle.addEventListener('touchend', () => {
+                    if (!touchDragState.isDragging) return;
+
+                    // Find final position
+                    const placeholderIndex = Array.from(grid.children).indexOf(touchDragState.placeholder);
+                    const originalIndex = draggedIndex;
+
+                    // Clean up
+                    if (touchDragState.clone) {
+                        touchDragState.clone.remove();
+                    }
+                    if (touchDragState.placeholder && touchDragState.placeholder.parentNode) {
+                        touchDragState.placeholder.remove();
+                    }
+                    card.style.opacity = '';
+
+                    // Reset state
+                    touchDragState.isDragging = false;
+                    touchDragState.placeholder = null;
+                    touchDragState.clone = null;
+
+                    // Reorder if position changed
+                    if (placeholderIndex !== -1 && placeholderIndex !== originalIndex) {
+                        reorderWidgets(member.id, originalIndex, placeholderIndex);
+
+                        // Re-render widgets
+                        const container = grid.parentElement;
+                        const updatedMember = Storage.getMember(member.id);
+                        renderMemberWidgets(container, updatedMember);
+
+                        Toast.success('Widget order updated');
+                    }
+
+                    draggedWidget = null;
+                    draggedIndex = null;
+                });
+
+                dragHandle.addEventListener('touchcancel', () => {
+                    if (!touchDragState.isDragging) return;
+
+                    // Clean up on cancel
+                    if (touchDragState.clone) {
+                        touchDragState.clone.remove();
+                    }
+                    if (touchDragState.placeholder && touchDragState.placeholder.parentNode) {
+                        touchDragState.placeholder.remove();
+                    }
+                    if (draggedWidget) {
+                        draggedWidget.style.opacity = '';
+                    }
+
+                    touchDragState.isDragging = false;
+                    touchDragState.placeholder = null;
+                    touchDragState.clone = null;
+                    draggedWidget = null;
+                    draggedIndex = null;
+                });
+            }
         });
+    }
+
+    /**
+     * Get the element to insert placeholder after during touch drag
+     */
+    function getTouchAfterElement(container, y) {
+        const draggableElements = [...container.querySelectorAll('.widget-card:not(.widget-card--placeholder)')].filter(
+            el => el !== draggedWidget
+        );
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
 
     /**

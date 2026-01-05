@@ -1176,9 +1176,9 @@ const Points = (function() {
     }
 
     /**
-     * Show manage activities modal (admin) with categories
+     * Generate manage activities HTML
      */
-    function showManageActivitiesModal(memberId) {
+    function generateManageActivitiesHTML(memberId) {
         const widgetData = getWidgetData(memberId);
         const activities = widgetData.activities || [];
         const dailyGoal = widgetData.dailyGoal || 20;
@@ -1190,7 +1190,7 @@ const Points = (function() {
             byCategory[cat.id] = activities.filter(a => a.category === cat.id);
         });
 
-        const content = `
+        return `
             <div class="manage-activities-v2">
                 <!-- Daily Goal Settings -->
                 <div class="daily-goal-settings">
@@ -1349,11 +1349,16 @@ const Points = (function() {
                 </div>
             </div>
         `;
+    }
 
+    /**
+     * Show manage activities modal (admin) with categories
+     */
+    function showManageActivitiesModal(memberId) {
         Modal.open({
             title: 'Manage Point Activities',
-            content,
-            size: 'lg',
+            content: generateManageActivitiesHTML(memberId),
+            size: 'large',
             footer: '<button class="btn btn--primary" data-modal-done>Done</button>'
         });
 
@@ -1361,6 +1366,32 @@ const Points = (function() {
             lucide.createIcons();
         }
 
+        bindManageActivitiesEvents(memberId);
+    }
+
+    /**
+     * Refresh manage activities modal in-place
+     */
+    function refreshManageActivitiesModal(memberId) {
+        const modalContent = document.getElementById('modalContent');
+        if (!modalContent) return;
+
+        modalContent.innerHTML = generateManageActivitiesHTML(memberId);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindManageActivitiesEvents(memberId);
+
+        // Focus on input
+        document.getElementById('newActivityName')?.focus();
+    }
+
+    /**
+     * Bind manage activities events
+     */
+    function bindManageActivitiesEvents(memberId) {
         // State for new activity
         let selectedIcon = ACTIVITY_ICONS[0];
         let selectedCategory = ACTIVITY_CATEGORIES[0].id;
@@ -1489,10 +1520,6 @@ const Points = (function() {
 
             Toast.success('Activity added!');
 
-            // Clear form inputs
-            document.getElementById('newActivityName').value = '';
-            document.getElementById('newActivityPoints').value = '5';
-
             // Refresh the widget in the background
             const widgetBody = document.getElementById('widget-points');
             if (widgetBody) {
@@ -1502,11 +1529,8 @@ const Points = (function() {
                 }
             }
 
-            // Close and reopen modal
-            Modal.close();
-            setTimeout(() => {
-                showManageActivitiesModal(memberId);
-            }, 50);
+            // Refresh modal in-place
+            refreshManageActivitiesModal(memberId);
         });
 
         // Edit activity
@@ -1535,10 +1559,8 @@ const Points = (function() {
                     }
                 }
 
-                Modal.close();
-                setTimeout(() => {
-                    showManageActivitiesModal(memberId);
-                }, 50);
+                // Refresh modal in-place
+                refreshManageActivitiesModal(memberId);
             });
         });
 
@@ -1570,10 +1592,8 @@ const Points = (function() {
                     }
                 }
 
-                Modal.close();
-                setTimeout(() => {
-                    showManageActivitiesModal(memberId);
-                }, 50);
+                // Refresh modal in-place
+                refreshManageActivitiesModal(memberId);
             }
         });
 
