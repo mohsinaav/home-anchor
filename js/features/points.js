@@ -110,14 +110,16 @@ const Points = (function() {
                 activities,
                 balance: 0,
                 todayCompleted: [],
-                history: []
+                history: [],
+                dailyGoal: 20,
+                dailyGoalEnabled: true
             };
             Storage.setWidgetData(memberId, 'points', newData);
             return newData;
         }
 
-        // If stored data exists but activities array is missing, add defaults
-        if (!storedData.activities) {
+        // If stored data exists but activities array is missing OR empty, add defaults
+        if (!storedData.activities || storedData.activities.length === 0) {
             const activities = [];
             Object.entries(DEFAULT_ACTIVITIES).forEach(([category, items]) => {
                 items.forEach(item => {
@@ -136,6 +138,8 @@ const Points = (function() {
         if (!storedData.todayCompleted) storedData.todayCompleted = [];
         if (!storedData.history) storedData.history = [];
         if (storedData.balance === undefined) storedData.balance = 0;
+        if (storedData.dailyGoal === undefined) storedData.dailyGoal = 20;
+        if (storedData.dailyGoalEnabled === undefined) storedData.dailyGoalEnabled = true;
 
         return storedData;
     }
@@ -1705,7 +1709,7 @@ const Points = (function() {
 
         // Cancel
         document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
-            Modal.close();
+            // Instead of closing and reopening, just refresh to manage modal directly
             showManageActivitiesModal(memberId);
         });
 
@@ -1732,7 +1736,7 @@ const Points = (function() {
             }
 
             Toast.success('Activity updated!');
-            Modal.close();
+            // Instead of closing and reopening, just refresh to manage modal directly
             showManageActivitiesModal(memberId);
         });
     }

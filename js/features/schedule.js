@@ -98,8 +98,64 @@ const Schedule = (function() {
     /**
      * Initialize schedule feature
      */
+    /**
+     * Check and send notifications for upcoming schedule activities
+     */
+    function checkScheduleNotifications() {
+        // Only check if notifications are supported and enabled
+        if (typeof NotificationUtils === 'undefined' || !NotificationUtils.areNotificationsEnabled()) {
+            return;
+        }
+
+        const members = Storage.getMembers();
+        const now = new Date();
+        const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+        const currentDayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+        members.forEach(member => {
+            const scheduleData = Storage.getSchedule(member.id);
+
+            // Check both default schedule and today's specific schedule
+            const defaultBlocks = scheduleData.default || [];
+            const dayKey = currentDayOfWeek.toString();
+            const daySpecificBlocks = scheduleData[dayKey] || [];
+
+            // Combine all blocks for today (day-specific overrides default)
+            const allBlocks = [...defaultBlocks, ...daySpecificBlocks];
+
+            allBlocks.forEach(block => {
+                // Skip if notifications not enabled for this block
+                if (!block.notificationEnabled || !block.notificationMinutes) {
+                    return;
+                }
+
+                // Calculate when to send notification (X minutes before activity)
+                const activityStartMinutes = timeToMinutes(block.start);
+                const notificationTimeMinutes = activityStartMinutes - block.notificationMinutes;
+
+                // Check if it's time to send notification (within the current minute)
+                if (currentTimeMinutes === notificationTimeMinutes) {
+                    const startTime12h = formatTime12h(block.start);
+                    const minutesText = block.notificationMinutes === 60
+                        ? '1 hour'
+                        : `${block.notificationMinutes} minutes`;
+
+                    NotificationUtils.send(`Upcoming: ${block.title}`, {
+                        body: `${member.name} - Starts at ${startTime12h} (in ${minutesText})`,
+                        icon: block.icon || 'circle',
+                        tag: `schedule-${member.id}-${block.id}`,
+                        data: { memberId: member.id, blockId: block.id }
+                    });
+                }
+            });
+        });
+    }
+
     function init() {
-        // Nothing to initialize at startup
+        // Check for schedule notifications every minute
+        setInterval(checkScheduleNotifications, 60000);
+        // Also check immediately
+        checkScheduleNotifications();
     }
 
     /**
@@ -263,6 +319,24 @@ const Schedule = (function() {
                             ${ACTIVITY_COLORS.map((color, i) => `
                                 <button type="button" class="color-picker__btn ${i === 0 ? 'color-picker__btn--selected' : ''}" data-color="${color.id}" style="background-color: ${color.id}" title="${color.name}"></button>
                             `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">
+                            <input type="checkbox" id="scheduleNotificationEnabled" class="form-checkbox" style="margin-right: 8px;">
+                            <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                            Remind me before this activity
+                        </label>
+                        <div id="scheduleNotificationTimeGroup" style="display: none; margin-top: 8px;">
+                            <select class="form-input form-select" id="scheduleNotificationMinutes">
+                                <option value="5">5 minutes before</option>
+                                <option value="10">10 minutes before</option>
+                                <option value="15" selected>15 minutes before</option>
+                                <option value="30">30 minutes before</option>
+                                <option value="60">1 hour before</option>
+                            </select>
+                            <span class="form-hint">You'll get a notification before the activity starts</span>
                         </div>
                     </div>
 
@@ -479,6 +553,14 @@ const Schedule = (function() {
             }
         });
 
+        // Notification toggle
+        document.getElementById('scheduleNotificationEnabled')?.addEventListener('change', (e) => {
+            const timeGroup = document.getElementById('scheduleNotificationTimeGroup');
+            if (timeGroup) {
+                timeGroup.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
+
         // Save button
         document.getElementById('saveActivityBtn')?.addEventListener('click', () => {
             saveActivity(memberId);
@@ -530,6 +612,20 @@ const Schedule = (function() {
         document.querySelectorAll('.duration-btn').forEach(b => {
             b.classList.toggle('duration-btn--active', b.dataset.duration === '60');
         });
+
+        // Reset notification fields
+        const notificationCheckbox = document.getElementById('scheduleNotificationEnabled');
+        const notificationTimeGroup = document.getElementById('scheduleNotificationTimeGroup');
+        if (notificationCheckbox) {
+            notificationCheckbox.checked = false;
+        }
+        if (notificationTimeGroup) {
+            notificationTimeGroup.style.display = 'none';
+        }
+        const notificationMinutes = document.getElementById('scheduleNotificationMinutes');
+        if (notificationMinutes) {
+            notificationMinutes.value = '15'; // Default to 15 minutes
+        }
 
         formPanel.style.display = 'flex';
         console.log('Form panel display set to flex');
@@ -586,6 +682,21 @@ const Schedule = (function() {
             b.classList.toggle('duration-btn--active', parseInt(b.dataset.duration) === duration);
         });
 
+        // Populate notification fields
+        const notificationCheckbox = document.getElementById('scheduleNotificationEnabled');
+        const notificationTimeGroup = document.getElementById('scheduleNotificationTimeGroup');
+        const notificationMinutes = document.getElementById('scheduleNotificationMinutes');
+
+        if (notificationCheckbox) {
+            notificationCheckbox.checked = block.notificationEnabled || false;
+        }
+        if (notificationTimeGroup) {
+            notificationTimeGroup.style.display = block.notificationEnabled ? 'block' : 'none';
+        }
+        if (notificationMinutes && block.notificationMinutes) {
+            notificationMinutes.value = block.notificationMinutes.toString();
+        }
+
         formPanel.style.display = 'flex';
         document.getElementById('activityTitle')?.focus();
 
@@ -636,6 +747,10 @@ const Schedule = (function() {
         const icon = document.querySelector('#iconPicker .icon-picker__btn--selected')?.dataset.icon || 'circle';
         const color = document.querySelector('#colorPicker .color-picker__btn--selected')?.dataset.color || '#6366F1';
 
+        // Notification fields
+        const notificationEnabled = document.getElementById('scheduleNotificationEnabled')?.checked || false;
+        const notificationMinutes = notificationEnabled ? parseInt(document.getElementById('scheduleNotificationMinutes')?.value) || 15 : null;
+
         // Validation
         if (!title) {
             Toast.error('Please enter an activity name');
@@ -654,14 +769,14 @@ const Schedule = (function() {
         if (editingId) {
             // Update existing
             Storage.updateScheduleBlock(memberId, currentDay, editingId, {
-                start, end, title, icon, color
+                start, end, title, icon, color, notificationEnabled, notificationMinutes
             });
             Toast.success('Activity updated');
         } else {
             // Add new
             const block = {
                 id: `block-${Date.now()}`,
-                start, end, title, icon, color
+                start, end, title, icon, color, notificationEnabled, notificationMinutes
             };
             Storage.addScheduleBlock(memberId, currentDay, block);
             Toast.success(`Added "${title}"`);

@@ -1090,7 +1090,7 @@ const Workout = (function() {
                                             </div>
                                         ` : ''}
                                     </div>
-                                    ${!isFuture ? `
+                                    ${isToday ? `
                                         <button class="workout-day-card__add" data-action="add-workout" data-date="${dateStr}">
                                             <i data-lucide="plus"></i>
                                             Add
@@ -2355,7 +2355,7 @@ const Workout = (function() {
                         </div>
                         ${enabledMetrics.length > 1 ? `
                             <div class="measurements-chart__legend">
-                                ${enabledMetrics.slice(0, 3).map((m, i) => `
+                                ${enabledMetrics.map((m, i) => `
                                     <button class="measurements-chart__legend-btn ${i === 0 ? 'measurements-chart__legend-btn--active' : ''}"
                                             data-metric="${m.id}">
                                         ${m.name}
@@ -2383,7 +2383,7 @@ const Workout = (function() {
                                             ${formatDateLocal(entry.date)}
                                         </span>
                                         <span class="measurements-history__values">
-                                            ${enabledMetrics.slice(0, 3).map(m => {
+                                            ${enabledMetrics.map(m => {
                                                 if (entry.values[m.id] === undefined) return '';
                                                 const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
                                                 return `${m.name}: ${displayVal}`;

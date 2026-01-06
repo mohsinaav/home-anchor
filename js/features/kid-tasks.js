@@ -55,7 +55,9 @@ const KidTasks = (function() {
                     ${displayTasks.map(task => renderTaskItem(task)).join('')}
 
                     ${hasMore ? `
-                        <p class="kid-tasks-widget__more">+ ${pendingTasks.length - MAX_WIDGET_TASKS} more tasks</p>
+                        <button class="kid-tasks-widget__more-btn" data-view-all-tasks="${memberId}">
+                            +${pendingTasks.length - MAX_WIDGET_TASKS} more task${pendingTasks.length - MAX_WIDGET_TASKS !== 1 ? 's' : ''}
+                        </button>
                     ` : ''}
                 </div>
 
@@ -227,6 +229,11 @@ const KidTasks = (function() {
 
         // View All button
         container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+            showFullPage(memberId);
+        });
+
+        // "+X more" button
+        container.querySelector('[data-view-all-tasks]')?.addEventListener('click', () => {
             showFullPage(memberId);
         });
 
@@ -496,6 +503,11 @@ const KidTasks = (function() {
             saveWidgetData(memberId, widgetData);
             renderFullPage(container, memberId, member);
             Toast.success('Task added!');
+
+            // Re-focus input after re-render
+            setTimeout(() => {
+                document.getElementById('newKidTaskInputPage')?.focus();
+            }, 50);
         };
 
         addBtnPage?.addEventListener('click', addTaskFromPage);

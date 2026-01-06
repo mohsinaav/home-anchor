@@ -3769,6 +3769,24 @@
     margin: var(--space-2) 0 0 0;
 }
 
+.kid-tasks-widget__more-btn {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: var(--space-2);
+    font-size: var(--text-sm);
+    color: #6366F1;
+    cursor: pointer;
+    font-weight: var(--font-medium);
+    transition: color var(--transition-fast);
+    text-align: center;
+}
+
+.kid-tasks-widget__more-btn:hover {
+    color: #4F46E5;
+    text-decoration: underline;
+}
+
 /* Task Item with Checkbox */
 .kid-task-item {
     display: flex;

@@ -8,10 +8,73 @@ const Calendar = (function() {
     let container = null;
 
     /**
+     * Check and send notifications for upcoming calendar events
+     */
+    function checkEventNotifications() {
+        // Only check if notifications are supported and enabled
+        if (typeof NotificationUtils === 'undefined' || !NotificationUtils.areNotificationsEnabled()) {
+            return;
+        }
+
+        const events = Storage.getCalendarEvents();
+        const now = new Date();
+        const today = DateUtils.today(); // Get today's date in YYYY-MM-DD format
+
+        events.forEach(event => {
+            // Skip if no notification enabled or no time set
+            if (!event.notificationEnabled || !event.time || !event.date) {
+                return;
+            }
+
+            // Only check events for today
+            if (event.date !== today) {
+                return;
+            }
+
+            // Parse event time (HH:MM format)
+            const [eventHours, eventMinutes] = event.time.split(':').map(Number);
+            const eventTimeMinutes = eventHours * 60 + eventMinutes;
+
+            // Calculate notification time (15 minutes before by default)
+            const notificationMinutes = event.notificationMinutes || 15;
+            const notificationTimeMinutes = eventTimeMinutes - notificationMinutes;
+
+            // Current time in minutes
+            const currentTimeMinutes = now.getHours() * 60 + now.getMinutes();
+
+            // Check if it's time to send notification (within the current minute)
+            if (currentTimeMinutes === notificationTimeMinutes) {
+                const member = Storage.getMember(event.memberId);
+                const eventTime12h = formatTime12h(event.time);
+
+                NotificationUtils.send(`Upcoming Event: ${event.title}`, {
+                    body: `${member?.name || 'Event'} - ${eventTime12h} (in ${notificationMinutes} minutes)`,
+                    icon: 'calendar',
+                    tag: `calendar-event-${event.id}`,
+                    data: { eventId: event.id, memberId: event.memberId }
+                });
+            }
+        });
+    }
+
+    /**
+     * Format time to 12h format
+     */
+    function formatTime12h(timeStr) {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        const h12 = hours % 12 || 12;
+        return `${h12}:${minutes.toString().padStart(2, '0')} ${ampm}`;
+    }
+
+    /**
      * Initialize calendar
      */
     function init() {
-        // Calendar will be rendered when home tab is active
+        // Check for event notifications every minute
+        setInterval(checkEventNotifications, 60000);
+        // Also check immediately
+        checkEventNotifications();
     }
 
     /**
@@ -190,6 +253,14 @@ const Calendar = (function() {
                         `).join('')}
                     </select>
                 </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="eventNotificationEnabled" class="form-checkbox" style="margin-right: 8px;" checked>
+                        <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                        Remind me 15 minutes before
+                    </label>
+                    <span class="form-hint">Only works for events with a time set</span>
+                </div>
             </form>
         `;
 
@@ -204,6 +275,7 @@ const Calendar = (function() {
             const date = document.getElementById('eventDate')?.value;
             const time = document.getElementById('eventTime')?.value || null;
             const memberId = document.getElementById('eventMember')?.value;
+            const notificationEnabled = document.getElementById('eventNotificationEnabled')?.checked || false;
 
             if (!title || !date) {
                 Toast.error('Please fill in required fields');
@@ -217,7 +289,9 @@ const Calendar = (function() {
                 date,
                 time,
                 memberId,
-                color: member?.avatar?.color || '#6366F1'
+                color: member?.avatar?.color || '#6366F1',
+                notificationEnabled: notificationEnabled && time !== null, // Only enable if time is set
+                notificationMinutes: 15 // Default to 15 minutes before
             });
 
             render(container);

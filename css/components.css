@@ -1476,3 +1476,101 @@ html.dark-mode .data-action-card {
     border-color: #334155;
 }
 
+/* ========================================
+   Footer Component
+   ======================================== */
+
+.footer {
+    background: linear-gradient(135deg, var(--gray-50) 0%, white 100%);
+    border-top: 1px solid var(--gray-200);
+    padding: var(--space-4) var(--space-6);
+    margin-top: auto;
+}
+
+.footer__content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.footer__left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.footer__copy {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.footer__links {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.footer__link {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    text-decoration: none;
+    transition: color var(--transition-fast);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+}
+
+.footer__link i {
+    width: 16px;
+    height: 16px;
+}
+
+.footer__link:hover {
+    color: var(--primary);
+    background: var(--primary-light);
+}
+
+/* Dark mode */
+html.dark-mode .footer {
+    background: #1E293B;
+    border-top-color: #334155;
+}
+
+html.dark-mode .footer__copy {
+    color: #94A3B8;
+}
+
+html.dark-mode .footer__link {
+    color: #CBD5E1;
+}
+
+html.dark-mode .footer__link:hover {
+    color: var(--primary);
+    background: rgba(99, 102, 241, 0.1);
+}
+
+/* Mobile responsive */
+@media (max-width: 768px) {
+    .footer {
+        padding: var(--space-3) var(--space-4);
+    }
+
+    .footer__content {
+        flex-direction: column;
+        text-align: center;
+        gap: var(--space-3);
+    }
+
+    .footer__links {
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+}

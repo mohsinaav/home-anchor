@@ -5,6 +5,9 @@
  */
 
 const Grocery = (function() {
+    // Session cache for store collapsed states (resets on page load)
+    const sessionStoreStates = {};
+
     // Category colors for visual coding
     const CATEGORIES = [
         { id: 'produce', name: 'Produce', icon: 'apple', color: '#22C55E', bgColor: '#DCFCE7' },
@@ -21,10 +24,10 @@ const Grocery = (function() {
     // Default stores for organization
     const DEFAULT_STORES = [
         { id: 'walmart', name: 'Walmart', icon: 'store', color: '#0071CE', sortOrder: 0, collapsed: false },
-        { id: 'target', name: 'Target', icon: 'shopping-bag', color: '#CC0000', sortOrder: 1, collapsed: false },
-        { id: 'costco', name: 'Costco', icon: 'warehouse', color: '#0061B4', sortOrder: 2, collapsed: false },
-        { id: 'trader-joes', name: "Trader Joe's", icon: 'leaf', color: '#D50032', sortOrder: 3, collapsed: false },
-        { id: 'whole-foods', name: 'Whole Foods', icon: 'sprout', color: '#00A862', sortOrder: 4, collapsed: false }
+        { id: 'target', name: 'Target', icon: 'shopping-bag', color: '#CC0000', sortOrder: 1, collapsed: true },
+        { id: 'costco', name: 'Costco', icon: 'warehouse', color: '#0061B4', sortOrder: 2, collapsed: true },
+        { id: 'trader-joes', name: "Trader Joe's", icon: 'leaf', color: '#D50032', sortOrder: 3, collapsed: true },
+        { id: 'whole-foods', name: 'Whole Foods', icon: 'sprout', color: '#00A862', sortOrder: 4, collapsed: true }
     ];
 
     // Unit conversion map
@@ -62,18 +65,25 @@ const Grocery = (function() {
         // Initialize stores with defaults if needed
         let stores = data.stores || DEFAULT_STORES.map(s => ({...s}));
 
-        // Auto-collapse all stores except the first one (by sortOrder)
-        if (stores.length > 0) {
-            // Sort by sortOrder to find the first store
+        // Initialize session cache for this member if not exists
+        if (!sessionStoreStates[memberId]) {
+            // First time in session: set default collapsed state
+            sessionStoreStates[memberId] = {};
             const sortedStores = [...stores].sort((a, b) => a.sortOrder - b.sortOrder);
             const firstStoreId = sortedStores[0]?.id;
 
-            // Set collapsed state: false for first store, true for all others
-            stores = stores.map(store => ({
-                ...store,
-                collapsed: store.id !== firstStoreId
-            }));
+            stores.forEach(store => {
+                sessionStoreStates[memberId][store.id] = store.id !== firstStoreId;
+            });
         }
+
+        // Apply session collapsed states to stores
+        stores = stores.map(store => ({
+            ...store,
+            collapsed: sessionStoreStates[memberId][store.id] !== undefined
+                ? sessionStoreStates[memberId][store.id]
+                : true
+        }));
 
         return {
             items: data.items || [],
@@ -253,12 +263,20 @@ const Grocery = (function() {
      * Toggle store collapsed state
      */
     function toggleStoreCollapsed(memberId, storeId) {
-        const data = getWidgetData(memberId);
-        const store = data.stores.find(s => s.id === storeId);
+        // Toggle in session cache only (doesn't persist to storage)
+        // State will reset when user leaves the grocery list page
+        if (sessionStoreStates[memberId] && sessionStoreStates[memberId][storeId] !== undefined) {
+            sessionStoreStates[memberId][storeId] = !sessionStoreStates[memberId][storeId];
+        }
+    }
 
-        if (store) {
-            store.collapsed = !store.collapsed;
-            saveWidgetData(memberId, data);
+    /**
+     * Reset store collapsed states for a member
+     * Called when leaving the grocery list page
+     */
+    function resetStoreStates(memberId) {
+        if (sessionStoreStates[memberId]) {
+            delete sessionStoreStates[memberId];
         }
     }
 
@@ -378,7 +396,11 @@ const Grocery = (function() {
                                             </li>
                                         `).join('')}
                                         ${items.length > 3 ? `
-                                            <li class="grocery-widget__store-more">+${items.length - 3} more</li>
+                                            <li class="grocery-widget__store-more">
+                                                <button class="grocery-widget__view-all-btn" data-view-full-list="${memberId}" data-store-id="${store.id}">
+                                                    +${items.length - 3} more
+                                                </button>
+                                            </li>
                                         ` : ''}
                                     </ul>
                                 </div>
@@ -405,7 +427,11 @@ const Grocery = (function() {
                                             </li>
                                         `).join('')}
                                         ${unassignedItems.length > 3 ? `
-                                            <li class="grocery-widget__store-more">+${unassignedItems.length - 3} more</li>
+                                            <li class="grocery-widget__store-more">
+                                                <button class="grocery-widget__view-all-btn" data-view-full-list="${memberId}">
+                                                    +${unassignedItems.length - 3} more
+                                                </button>
+                                            </li>
                                         ` : ''}
                                     </ul>
                                 </div>
@@ -424,6 +450,14 @@ const Grocery = (function() {
         // Bind events
         container.querySelector('[data-action="open-grocery"]')?.addEventListener('click', () => {
             showGroceryListPage(memberId);
+        });
+
+        // Bind "+X more" buttons to open full list
+        container.querySelectorAll('[data-view-full-list]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storeId = btn.dataset.storeId || null;
+                showGroceryListPage(memberId, storeId);
+            });
         });
 
         // Bind checkbox toggles
@@ -527,12 +561,33 @@ const Grocery = (function() {
     /**
      * Show full grocery list page
      */
-    function showGroceryListPage(memberId) {
+    function showGroceryListPage(memberId, focusStoreId = null) {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
         renderGroceryPage(main, memberId, member);
+
+        // If a store ID is provided, expand it and scroll to it
+        if (focusStoreId) {
+            // Small delay to ensure DOM is rendered
+            setTimeout(() => {
+                // Expand the store if it's collapsed
+                const data = getWidgetData(memberId);
+                const store = data.stores.find(s => s.id === focusStoreId);
+                if (store && sessionStoreStates[memberId] && sessionStoreStates[memberId][focusStoreId]) {
+                    // Store is collapsed, expand it
+                    toggleStoreCollapsed(memberId, focusStoreId);
+                    renderGroceryPage(main, memberId, member);
+                }
+
+                // Scroll to the store
+                const storeElement = document.querySelector(`[data-store-id="${focusStoreId}"]`);
+                if (storeElement) {
+                    storeElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }, 100);
+        }
     }
 
     /**
@@ -1031,6 +1086,9 @@ const Grocery = (function() {
     function bindGroceryPageEvents(container, memberId, member) {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            // Reset store collapsed states when leaving the page
+            resetStoreStates(memberId);
+
             if (typeof State !== 'undefined') {
                 State.emit('tabChanged', memberId);
             }

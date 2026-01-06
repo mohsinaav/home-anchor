@@ -74,7 +74,9 @@ const Tasks = (function() {
                     ${displayTasks.map(task => renderTaskItem(task, memberId)).join('')}
 
                     ${hasMore ? `
-                        <p class="tasks-widget__more">+ ${pendingTasks.length - MAX_WIDGET_TASKS} more tasks</p>
+                        <button class="tasks-widget__more-btn" data-view-all-tasks="${memberId}">
+                            +${pendingTasks.length - MAX_WIDGET_TASKS} more task${pendingTasks.length - MAX_WIDGET_TASKS !== 1 ? 's' : ''}
+                        </button>
                     ` : ''}
                 </div>
 
@@ -281,6 +283,11 @@ const Tasks = (function() {
 
         // View All button
         container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+            showTasksFullPage(memberId);
+        });
+
+        // "+X more" button
+        container.querySelector('[data-view-all-tasks]')?.addEventListener('click', () => {
             showTasksFullPage(memberId);
         });
 
@@ -586,6 +593,11 @@ const Tasks = (function() {
             Storage.setWidgetData(memberId, 'task-list', widgetData);
             renderTasksFullPage(container, memberId, member);
             Toast.success('Task added!');
+
+            // Re-focus input after re-render
+            setTimeout(() => {
+                document.getElementById('newTaskInputPage')?.focus();
+            }, 50);
         };
 
         addBtnPage?.addEventListener('click', addTaskFromPage);

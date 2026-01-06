@@ -1101,6 +1101,18 @@ const Routine = (function() {
                     <label class="form-label">Notes (optional)</label>
                     <textarea class="form-input form-textarea" id="routineNotes" rows="2" placeholder="Add any helpful notes or instructions..."></textarea>
                 </div>
+
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="notificationEnabled" class="form-checkbox" style="margin-right: 8px;">
+                        <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                        Remind me
+                    </label>
+                    <div id="notificationTimeGroup" style="display: none; margin-top: 8px;">
+                        <input type="time" class="form-input" id="notificationTime" value="09:00">
+                        <span class="form-hint">You'll get a notification at this time when the routine is due</span>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -1118,6 +1130,14 @@ const Routine = (function() {
         let selectedIcon = 'check';
         let selectedColor = ROUTINE_COLORS[0];
         let selectedFreq = 'weekly';
+
+        // Notification toggle
+        document.getElementById('notificationEnabled')?.addEventListener('change', (e) => {
+            const timeGroup = document.getElementById('notificationTimeGroup');
+            if (timeGroup) {
+                timeGroup.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
 
         // Frequency selection
         document.querySelectorAll('.routine-freq-option').forEach(opt => {
@@ -1169,6 +1189,9 @@ const Routine = (function() {
             const notes = document.getElementById('routineNotes')?.value?.trim() || '';
             const customDays = selectedFreq === 'custom' ? parseInt(document.getElementById('customDays')?.value) || 5 : null;
 
+            const notificationEnabled = document.getElementById('notificationEnabled')?.checked || false;
+            const notificationTime = notificationEnabled ? document.getElementById('notificationTime')?.value || null : null;
+
             const data = getWidgetData(memberId);
             const newRoutine = {
                 id: `routine-${Date.now()}`,
@@ -1184,7 +1207,9 @@ const Routine = (function() {
                 createdAt: new Date().toISOString(),
                 streak: 0,
                 bestStreak: 0,
-                snoozedUntil: null
+                snoozedUntil: null,
+                notificationEnabled,
+                notificationTime
             };
 
             data.routines.push(newRoutine);
@@ -1284,6 +1309,18 @@ const Routine = (function() {
                     <textarea class="form-input form-textarea" id="routineNotes" rows="2" placeholder="Add any helpful notes...">${routine.notes || ''}</textarea>
                 </div>
 
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="notificationEnabled" class="form-checkbox" style="margin-right: 8px;" ${routine.notificationEnabled ? 'checked' : ''}>
+                        <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
+                        Remind me
+                    </label>
+                    <div id="notificationTimeGroup" style="display: ${routine.notificationEnabled ? 'block' : 'none'}; margin-top: 8px;">
+                        <input type="time" class="form-input" id="notificationTime" value="${routine.notificationTime || '09:00'}">
+                        <span class="form-hint">You'll get a notification at this time when the routine is due</span>
+                    </div>
+                </div>
+
                 <div class="routine-form__stats">
                     <div class="routine-form__stat">
                         <span class="routine-form__stat-label">Last Completed</span>
@@ -1315,6 +1352,14 @@ const Routine = (function() {
         let selectedIcon = routine.icon;
         let selectedColor = routine.color;
         let selectedFreq = routine.frequency;
+
+        // Notification toggle
+        document.getElementById('notificationEnabled')?.addEventListener('change', (e) => {
+            const timeGroup = document.getElementById('notificationTimeGroup');
+            if (timeGroup) {
+                timeGroup.style.display = e.target.checked ? 'block' : 'none';
+            }
+        });
 
         // Frequency selection
         document.querySelectorAll('.routine-freq-option').forEach(opt => {
@@ -1365,6 +1410,9 @@ const Routine = (function() {
             const notes = document.getElementById('routineNotes')?.value?.trim() || '';
             const customDays = selectedFreq === 'custom' ? parseInt(document.getElementById('customDays')?.value) || 5 : null;
 
+            const notificationEnabled = document.getElementById('notificationEnabled')?.checked || false;
+            const notificationTime = notificationEnabled ? document.getElementById('notificationTime')?.value || null : null;
+
             const idx = data.routines.findIndex(r => r.id === routineId);
             if (idx !== -1) {
                 data.routines[idx] = {
@@ -1376,7 +1424,9 @@ const Routine = (function() {
                     color: selectedColor,
                     category,
                     timeOfDay,
-                    notes
+                    notes,
+                    notificationEnabled,
+                    notificationTime
                 };
                 saveWidgetData(memberId, data);
             }
@@ -1408,8 +1458,53 @@ const Routine = (function() {
         showEditModal(memberId, routineId, onSuccess);
     }
 
+    /**
+     * Check and send notifications for due routines
+     */
+    function checkRoutineNotifications() {
+        // Only check if notifications are supported and enabled
+        if (typeof NotificationUtils === 'undefined' || !NotificationUtils.areNotificationsEnabled()) {
+            return;
+        }
+
+        const members = Storage.getMembers();
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+        members.forEach(member => {
+            const data = getWidgetData(member.id);
+            const routines = data.routines || [];
+
+            routines.forEach(routine => {
+                // Skip if notifications not enabled for this routine
+                if (!routine.notificationEnabled || !routine.notificationTime) {
+                    return;
+                }
+
+                // Check if it's time for this notification
+                if (routine.notificationTime === currentTime) {
+                    // Check if routine is due
+                    const status = getRoutineStatus(routine);
+
+                    // Send notification if overdue, due today, or due soon
+                    if (status.status === 'overdue' || status.status === 'due-soon') {
+                        NotificationUtils.send(`Routine Reminder: ${routine.title}`, {
+                            body: `${member.name} - ${status.message}`,
+                            icon: routine.icon || 'check',
+                            tag: `routine-${routine.id}`,
+                            data: { memberId: member.id, routineId: routine.id }
+                        });
+                    }
+                }
+            });
+        });
+    }
+
     function init() {
-        // Initialize routine feature
+        // Check for routine notifications every minute
+        setInterval(checkRoutineNotifications, 60000);
+        // Also check immediately
+        checkRoutineNotifications();
     }
 
     return {

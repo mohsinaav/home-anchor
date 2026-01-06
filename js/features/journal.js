@@ -591,6 +591,11 @@ const Journal = (function() {
      * Show edit modal for an entry
      */
     function showEditModal(memberId, entry, onSave) {
+        if (!entry) {
+            Toast.error('Entry not found');
+            return;
+        }
+
         const mood = getMoodById(entry.mood);
         const existingGratitude = entry.gratitude || [];
 
@@ -703,6 +708,11 @@ const Journal = (function() {
      * Show modal for viewing a past entry
      */
     function showEntryModal(memberId, entry, onUpdate) {
+        if (!entry) {
+            Toast.error('Entry not found');
+            return;
+        }
+
         const mood = getMoodById(entry.mood);
         const entryDate = new Date(entry.date);
 
@@ -774,7 +784,11 @@ const Journal = (function() {
         // Edit button
         document.getElementById('editEntryBtn')?.addEventListener('click', () => {
             Modal.close();
-            showEditModal(memberId, entry, onUpdate);
+            // Add delay to allow modal to fully close and cleanup before opening edit modal
+            // Must be > 200ms to allow Modal.close() cleanup to finish
+            setTimeout(() => {
+                showEditModal(memberId, entry, onUpdate);
+            }, 250);
         });
 
         // Close button

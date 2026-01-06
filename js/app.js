@@ -649,6 +649,83 @@ function applyThemeOnLoad() {
     }
 }
 
+/**
+ * Show Report Bug modal
+ */
+function showReportBugModal() {
+    const content = `
+        <form id="reportBugForm">
+            <div class="form-group">
+                <label class="form-label">What went wrong?</label>
+                <textarea
+                    class="form-input"
+                    id="bugDescription"
+                    placeholder="Describe what happened..."
+                    rows="5"
+                    required
+                ></textarea>
+                <span class="form-hint">Please describe the issue in detail so we can help fix it.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Steps to reproduce (optional)</label>
+                <textarea
+                    class="form-input"
+                    id="bugSteps"
+                    placeholder="1. Click on...&#10;2. Then I...&#10;3. And then..."
+                    rows="4"
+                ></textarea>
+                <span class="form-hint">Help us recreate the issue by describing what you did.</span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Your email (optional)</label>
+                <input
+                    type="email"
+                    class="form-input"
+                    id="bugEmail"
+                    placeholder="your@email.com"
+                >
+                <span class="form-hint">We'll only use this to follow up on your report.</span>
+            </div>
+        </form>
+    `;
+
+    Modal.open({
+        title: 'Report a Bug',
+        content,
+        footer: Modal.createFooter('Cancel', 'Submit Report')
+    });
+
+    Modal.bindFooterEvents(() => {
+        const description = document.getElementById('bugDescription')?.value?.trim();
+        const steps = document.getElementById('bugSteps')?.value?.trim();
+        const email = document.getElementById('bugEmail')?.value?.trim();
+
+        if (!description) {
+            Toast.error('Please describe what went wrong');
+            return false;
+        }
+
+        // In a real app, this would send to a backend or bug tracking system
+        // For now, we'll just compose an email
+        const subject = encodeURIComponent('Home Anchor - Bug Report');
+        const body = encodeURIComponent(
+            `Bug Description:\n${description}\n\n` +
+            (steps ? `Steps to Reproduce:\n${steps}\n\n` : '') +
+            (email ? `User Email: ${email}\n\n` : '') +
+            `\nBrowser: ${navigator.userAgent}\n` +
+            `Timestamp: ${new Date().toISOString()}`
+        );
+
+        // Open default email client
+        window.location.href = `mailto:support@homeanchor.app?subject=${subject}&body=${body}`;
+
+        Toast.success('Thank you for your report!');
+        return true;
+    });
+}
+
 // Main App
 const App = (function() {
     function init() {
@@ -684,6 +761,11 @@ const App = (function() {
         // Initialize notifications
         if (typeof Notifications !== 'undefined') {
             Notifications.init();
+        }
+
+        // Initialize routine notifications
+        if (typeof Routine !== 'undefined') {
+            Routine.init();
         }
 
         // Initialize backup system
@@ -735,6 +817,11 @@ const App = (function() {
             }
         });
 
+        // Report Bug button
+        document.getElementById('reportBugBtn')?.addEventListener('click', () => {
+            showReportBugModal();
+        });
+
         // Initialize Lucide icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -752,19 +839,65 @@ const SwipeBack = (function() {
     let touchStartY = 0;
     let touchStartTime = 0;
     let isSwiping = false;
+    let swipeIndicator = null;
 
-    const SWIPE_THRESHOLD = 80; // Minimum distance for swipe
-    const SWIPE_VELOCITY_THRESHOLD = 0.3; // Minimum velocity
-    const MAX_VERTICAL_DEVIATION = 50; // Maximum vertical movement allowed
-    const EDGE_START_ZONE = 50; // Start swipe from edge of screen
+    const SWIPE_THRESHOLD = 100; // Minimum distance for swipe (increased from 80)
+    const SWIPE_VELOCITY_THRESHOLD = 0.25; // Minimum velocity (lowered from 0.3 for easier trigger)
+    const MAX_VERTICAL_DEVIATION = 80; // Maximum vertical movement allowed (increased for more tolerance)
+    const EDGE_START_ZONE = 60; // Start swipe from edge of screen (increased from 50)
 
     function init() {
-        // Only enable on touch devices
+        // Only enable on touch-capable devices
+        // Note: Always attach on touch devices, regardless of current viewport width
+        // This ensures swipe-back works even if user rotates device or resizes window
         if (!('ontouchstart' in window)) return;
 
         document.addEventListener('touchstart', handleTouchStart, { passive: true });
-        document.addEventListener('touchmove', handleTouchMove, { passive: true });
+        document.addEventListener('touchmove', handleTouchMove, { passive: false }); // Non-passive to show indicator
         document.addEventListener('touchend', handleTouchEnd, { passive: true });
+        document.addEventListener('touchcancel', handleTouchCancel, { passive: true });
+
+        createSwipeIndicator();
+    }
+
+    function createSwipeIndicator() {
+        swipeIndicator = document.createElement('div');
+        swipeIndicator.className = 'swipe-indicator';
+        swipeIndicator.innerHTML = '<i data-lucide="chevron-right"></i>';
+        swipeIndicator.style.cssText = `
+            position: fixed;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%) translateX(-100%);
+            width: 50px;
+            height: 50px;
+            background: var(--primary);
+            color: white;
+            border-radius: 0 50% 50% 0;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            pointer-events: none;
+            opacity: 0.9;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.2);
+        `;
+        document.body.appendChild(swipeIndicator);
+
+        // Show indicator only on mobile viewports
+        updateIndicatorVisibility();
+        window.addEventListener('resize', updateIndicatorVisibility);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+    }
+
+    function updateIndicatorVisibility() {
+        if (!swipeIndicator) return;
+        const isMobileViewport = window.innerWidth <= 768;
+        swipeIndicator.style.display = isMobileViewport ? 'flex' : 'none';
     }
 
     function handleTouchStart(e) {
@@ -787,6 +920,15 @@ const SwipeBack = (function() {
         // Cancel if moving too much vertically (likely scrolling)
         if (deltaY > MAX_VERTICAL_DEVIATION) {
             isSwiping = false;
+            hideSwipeIndicator();
+            return;
+        }
+
+        // Show visual feedback when swiping right
+        if (deltaX > 0) {
+            showSwipeIndicator(Math.min(deltaX, 150));
+        } else {
+            hideSwipeIndicator();
         }
     }
 
@@ -812,6 +954,23 @@ const SwipeBack = (function() {
         }
 
         isSwiping = false;
+        hideSwipeIndicator();
+    }
+
+    function handleTouchCancel() {
+        isSwiping = false;
+        hideSwipeIndicator();
+    }
+
+    function showSwipeIndicator(distance) {
+        if (!swipeIndicator) return;
+        const translateX = Math.min(distance - 50, 0); // Move indicator with swipe
+        swipeIndicator.style.transform = `translateY(-50%) translateX(${translateX}px)`;
+    }
+
+    function hideSwipeIndicator() {
+        if (!swipeIndicator) return;
+        swipeIndicator.style.transform = 'translateY(-50%) translateX(-100%)';
     }
 
     function triggerBackNavigation() {
@@ -827,9 +986,11 @@ const SwipeBack = (function() {
 
         for (const btn of backButtons) {
             if (btn && btn.offsetParent !== null) { // Check if visible
+                // Add haptic feedback if available
+                if (navigator.vibrate) {
+                    navigator.vibrate(50);
+                }
                 btn.click();
-                // Visual feedback
-                Toast.info('Swipe back');
                 return;
             }
         }
