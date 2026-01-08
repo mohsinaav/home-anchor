@@ -123,6 +123,19 @@ const SettingsPage = (function() {
                         </div>
                     </section>
 
+                    <!-- Points Configuration Section -->
+                    <section class="settings-section" id="pointsConfigSettings">
+                        <div class="settings-section__header">
+                            <h2 class="settings-section__title">
+                                <i data-lucide="star"></i>
+                                Points Configuration
+                            </h2>
+                        </div>
+                        <div class="settings-section__content">
+                            ${renderPointsConfigSettings(settings)}
+                        </div>
+                    </section>
+
                     <!-- Help & Tutorials Section -->
                     <section class="settings-section" id="helpSettings">
                         <div class="settings-section__header">
@@ -393,15 +406,15 @@ const SettingsPage = (function() {
      */
     function renderMealSettings(settings) {
         const meals = settings.meals || {};
-        const kidsMenuEnabled = meals.kidsMenuEnabled !== false; // Default to true
+        const kidsMenuEnabled = meals.kidsMenuEnabled === true; // Default to false
 
         return `
             <div class="meal-settings">
                 <div class="setting-group">
                     <div class="setting-row">
                         <div class="setting-row__info">
-                            <label class="setting-label">Enable Kids Menu</label>
-                            <p class="setting-description">Show separate meal planning options for kids in the weekly meal planner. When disabled, only adult meals will be displayed.</p>
+                            <label class="setting-label">Enable Separate Kids Meals</label>
+                            <p class="setting-description">Plan different meals for kids. When enabled, a "Customize for Kids" option appears next to each meal, allowing you to set kid-specific meals.</p>
                         </div>
                         <label class="toggle-switch">
                             <input type="checkbox" id="kidsMenuToggle" ${kidsMenuEnabled ? 'checked' : ''}>
@@ -412,8 +425,55 @@ const SettingsPage = (function() {
 
                 <div class="setting-info" style="margin-top: var(--space-4);">
                     <i data-lucide="info"></i>
-                    <p>The kids menu allows you to plan separate meals for children. You can copy adult meals to kids with one click using the "Same as Adult" button.</p>
+                    <p>Most families serve the same meals to everyone. Enable this only if you need to plan separate meals for children (e.g., allergies, picky eaters, or different portions).</p>
                 </div>
+            </div>
+        `;
+    }
+
+    function renderPointsConfigSettings(settings) {
+        const pointsConfig = settings.pointsConfig || {};
+        const journalPoints = pointsConfig.journalPoints !== undefined ? pointsConfig.journalPoints : 5;
+        const kidTaskPoints = pointsConfig.kidTaskPoints !== undefined ? pointsConfig.kidTaskPoints : 3;
+        const teenTaskPoints = pointsConfig.teenTaskPoints !== undefined ? pointsConfig.teenTaskPoints : 5;
+
+        return `
+            <div class="points-config-settings">
+                <div class="setting-info" style="margin-bottom: var(--space-4);">
+                    <i data-lucide="info"></i>
+                    <p>Configure how many points are awarded for completing various activities. These points are automatically added to kids' and teens' point balances.</p>
+                </div>
+
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Journal Entry Points</label>
+                            <p class="setting-description">Points awarded when adults complete a journal entry (for tracking their own points).</p>
+                        </div>
+                        <input type="number" class="form-input form-input--sm" id="journalPointsInput" value="${journalPoints}" min="0" max="50" style="width: 80px;">
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Kid Task Points</label>
+                            <p class="setting-description">Default points awarded when kids complete a task from their task list.</p>
+                        </div>
+                        <input type="number" class="form-input form-input--sm" id="kidTaskPointsInput" value="${kidTaskPoints}" min="0" max="50" style="width: 80px;">
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Teen Task Points</label>
+                            <p class="setting-description">Default points awarded when teens complete a task from their task list.</p>
+                        </div>
+                        <input type="number" class="form-input form-input--sm" id="teenTaskPointsInput" value="${teenTaskPoints}" min="0" max="50" style="width: 80px;">
+                    </div>
+                </div>
+
+                <button class="btn btn--primary" id="savePointsConfigBtn" style="margin-top: var(--space-4);">
+                    <i data-lucide="save"></i>
+                    Save Points Configuration
+                </button>
             </div>
         `;
     }
@@ -977,6 +1037,22 @@ const SettingsPage = (function() {
             settings.onboarding.skipAllTours = !e.target.checked;
             Storage.updateSettings(settings);
             Toast.success(e.target.checked ? 'Tips enabled' : 'Tips disabled');
+        });
+
+        // Save points configuration
+        container.querySelector('#savePointsConfigBtn')?.addEventListener('click', () => {
+            const journalPoints = parseInt(container.querySelector('#journalPointsInput')?.value) || 5;
+            const kidTaskPoints = parseInt(container.querySelector('#kidTaskPointsInput')?.value) || 3;
+            const teenTaskPoints = parseInt(container.querySelector('#teenTaskPointsInput')?.value) || 5;
+
+            const settings = Storage.getSettings();
+            settings.pointsConfig = settings.pointsConfig || {};
+            settings.pointsConfig.journalPoints = journalPoints;
+            settings.pointsConfig.kidTaskPoints = kidTaskPoints;
+            settings.pointsConfig.teenTaskPoints = teenTaskPoints;
+
+            Storage.updateSettings(settings);
+            Toast.success('Points configuration saved');
         });
 
         // Kids menu toggle

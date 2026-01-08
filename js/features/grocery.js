@@ -2078,6 +2078,51 @@ const Grocery = (function() {
     }
 
     /**
+     * Normalize day plan to handle both old and new formats
+     * Old format: { breakfast: [...], lunch: [...], dinner: [...] }
+     * New format: { adult: { breakfast: {...}, ... }, kids: { breakfast: {...}, ... } }
+     */
+    function normalizeDayPlan(dayPlan) {
+        if (!dayPlan) return { adult: {}, kids: {} };
+
+        // Check if it's already in new format (has 'adult' or 'kids' key)
+        if (dayPlan.adult || dayPlan.kids) {
+            return {
+                adult: dayPlan.adult || {},
+                kids: dayPlan.kids || {}
+            };
+        }
+
+        // Old format - migrate to new format under 'adult'
+        const adult = {};
+        ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+            if (dayPlan[mealType]) {
+                const mealData = dayPlan[mealType];
+                if (Array.isArray(mealData)) {
+                    adult[mealType] = { items: mealData, protein: null, completed: false };
+                } else if (typeof mealData === 'string') {
+                    adult[mealType] = { items: [mealData], protein: null, completed: false };
+                } else if (mealData && typeof mealData === 'object') {
+                    adult[mealType] = mealData;
+                }
+            }
+        });
+
+        return { adult, kids: {} };
+    }
+
+    /**
+     * Get meal items from a meal slot (handles both old and new formats)
+     */
+    function getMealItems(mealSlot) {
+        if (!mealSlot) return [];
+        if (Array.isArray(mealSlot)) return mealSlot;
+        if (typeof mealSlot === 'string') return [mealSlot];
+        if (mealSlot.items) return Array.isArray(mealSlot.items) ? mealSlot.items : [mealSlot.items];
+        return [];
+    }
+
+    /**
      * Show generate from meals modal
      */
     function showGenerateFromMealsModal(memberId, pageContainer, member) {
@@ -2095,8 +2140,12 @@ const Grocery = (function() {
             const dayPlan = weeklyPlan[dateStr];
 
             if (dayPlan) {
+                // Normalize to handle both old and new formats
+                const normalizedPlan = normalizeDayPlan(dayPlan);
+
+                // Process adult meals
                 ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
-                    const mealItems = normalizeMealData(dayPlan[mealType]);
+                    const mealItems = getMealItems(normalizedPlan.adult?.[mealType]);
                     if (mealItems.length > 0) {
                         // Collect ingredients from all meal items
                         let allIngredients = [];
@@ -2113,7 +2162,33 @@ const Grocery = (function() {
                             mealType,
                             meal: mealItems.join(' & '),
                             mealItems: mealItems,
-                            ingredients: allIngredients
+                            ingredients: allIngredients,
+                            variant: 'adult'
+                        });
+                    }
+                });
+
+                // Process kids meals if they exist
+                ['breakfast', 'lunch', 'dinner'].forEach(mealType => {
+                    const mealItems = getMealItems(normalizedPlan.kids?.[mealType]);
+                    if (mealItems.length > 0) {
+                        // Collect ingredients from all meal items
+                        let allIngredients = [];
+                        mealItems.forEach(mealName => {
+                            const recipe = getRecipeByName(memberId, mealName);
+                            if (recipe?.ingredients) {
+                                allIngredients = allIngredients.concat(recipe.ingredients);
+                            }
+                        });
+
+                        thisWeekMeals.push({
+                            date: dateStr,
+                            day: DateUtils.getDayName(date, true),
+                            mealType: `${mealType} (Kids)`,
+                            meal: mealItems.join(' & '),
+                            mealItems: mealItems,
+                            ingredients: allIngredients,
+                            variant: 'kids'
                         });
                     }
                 });

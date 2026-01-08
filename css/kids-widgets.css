@@ -7445,15 +7445,29 @@
     color: var(--success);
 }
 
+.manage-activity-item__actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.manage-activity-item__edit,
 .manage-activity-item__delete {
     width: 28px;
     height: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
+    border: none;
+    background: transparent;
+    cursor: pointer;
     border-radius: var(--radius-md);
     color: var(--gray-400);
     transition: all 0.2s;
+}
+
+.manage-activity-item__edit:hover {
+    background: rgba(99, 102, 241, 0.1);
+    color: #6366F1;
 }
 
 .manage-activity-item__delete:hover {
@@ -7461,6 +7475,7 @@
     color: var(--danger);
 }
 
+.manage-activity-item__edit svg,
 .manage-activity-item__delete svg {
     width: 16px;
     height: 16px;

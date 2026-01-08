@@ -172,7 +172,7 @@ const Milestones = (function() {
         document.querySelectorAll('[data-toggle]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const milestoneId = btn.dataset.toggle;
-                toggleMilestone(memberId, milestoneId, widgetData);
+                toggleMilestone(memberId, milestoneId);
             });
         });
 
@@ -192,12 +192,20 @@ const Milestones = (function() {
     /**
      * Toggle milestone achievement
      */
-    function toggleMilestone(memberId, milestoneId, widgetData) {
+    function toggleMilestone(memberId, milestoneId) {
+        // Always fetch fresh data from storage to avoid race conditions
+        const widgetData = Storage.getWidgetData(memberId, 'milestones') || {
+            achieved: [],
+            notes: {}
+        };
+
         const achieved = widgetData.achieved || [];
         const existingIndex = achieved.findIndex(m => m.id === milestoneId);
 
         let updatedAchieved;
-        if (existingIndex >= 0) {
+        const wasAchieved = existingIndex >= 0;
+
+        if (wasAchieved) {
             updatedAchieved = achieved.filter(m => m.id !== milestoneId);
         } else {
             updatedAchieved = [{ id: milestoneId, date: DateUtils.today() }, ...achieved];
@@ -207,9 +215,24 @@ const Milestones = (function() {
         const updatedData = { ...widgetData, achieved: updatedAchieved };
         Storage.setWidgetData(memberId, 'milestones', updatedData);
 
-        // Refresh modal
-        Modal.close();
-        showAllMilestonesModal(memberId, updatedData);
+        // Update UI directly without closing modal for instant feedback
+        const milestoneItem = document.querySelector(`[data-milestone-id="${milestoneId}"]`);
+        const checkbox = document.querySelector(`[data-toggle="${milestoneId}"]`);
+
+        if (milestoneItem && checkbox) {
+            if (wasAchieved) {
+                // Remove achieved state
+                milestoneItem.classList.remove('milestone-item--achieved');
+                checkbox.innerHTML = '';
+            } else {
+                // Add achieved state
+                milestoneItem.classList.add('milestone-item--achieved');
+                checkbox.innerHTML = '<i data-lucide="check"></i>';
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            }
+        }
     }
 
     function init() {

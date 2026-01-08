@@ -9,7 +9,7 @@ const Meals = (function() {
     const DISPLAY_MEAL_TYPES = ['breakfast', 'lunch', 'snacks', 'dinner']; // Snacks between lunch and dinner
     const VARIANTS = ['adult', 'kids'];
     let currentMemberId = null;
-    let currentView = 'both'; // 'adult', 'kids', or 'both'
+    let currentView = 'adult'; // 'adult' only now - kids meals handled via customize button
     let currentWeekOffset = 0; // Track which week we're viewing (0 = current week)
 
     // Day colors for the weekly view (matches workout/gratitude)
@@ -605,8 +605,10 @@ const Meals = (function() {
     function showQuickEditModal(memberId, mealType) {
         const today = DateUtils.today();
         const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
-        const currentMealData = widgetData.weeklyPlan?.[today]?.[mealType];
-        let mealItems = normalizeMealData(currentMealData);
+        // Use normalized day plan to handle both old and new formats
+        const dayPlan = normalizeDayPlan(widgetData.weeklyPlan?.[today]);
+        const currentSlot = normalizeMealSlot(dayPlan.adult?.[mealType]);
+        let mealItems = currentSlot.items;
 
         const content = `
             <form id="editMealForm">
@@ -746,16 +748,37 @@ const Meals = (function() {
 
     /**
      * Save a meal to storage and refresh widget
+     * @param {string} memberId - The member ID
+     * @param {string} date - The date string (ISO format)
+     * @param {string} mealType - The meal type (breakfast, lunch, dinner, snacks)
+     * @param {string[]|null} mealItems - Array of meal items or null to clear
+     * @param {string} variant - The variant ('adult' or 'kids'), defaults to 'adult'
      */
-    function saveMeal(memberId, date, mealType, mealName) {
+    function saveMeal(memberId, date, mealType, mealItems, variant = 'adult') {
         const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
+
+        // Get existing day plan and normalize it
+        const existingDayPlan = normalizeDayPlan(widgetData.weeklyPlan?.[date]);
+
+        // Update the specific variant's meal slot
+        if (!existingDayPlan[variant]) {
+            existingDayPlan[variant] = {};
+        }
+
+        if (mealItems && mealItems.length > 0) {
+            existingDayPlan[variant][mealType] = {
+                items: mealItems,
+                protein: null,
+                completed: false
+            };
+        } else {
+            // Clear the meal slot
+            delete existingDayPlan[variant][mealType];
+        }
 
         const updatedPlan = {
             ...widgetData.weeklyPlan,
-            [date]: {
-                ...(widgetData.weeklyPlan?.[date] || {}),
-                [mealType]: mealName
-            }
+            [date]: existingDayPlan
         };
 
         const updatedData = {
@@ -823,11 +846,16 @@ const Meals = (function() {
     /**
      * Render table cell content for a meal slot
      */
-    function renderTableCell(day, mealType, variant, variantPlan, recipes, showCopyFromAdult = false) {
-        const slot = normalizeMealSlot(variantPlan[mealType]);
+    function renderTableCell(day, mealType, variant, variantPlan, recipes, showCopyFromAdult = false, kidsMenuEnabled = false, kidsPlan = null) {
+        const slot = normalizeMealSlot(variantPlan?.[mealType]);
         const hasMeals = slot.items.length > 0;
         const isCompleted = slot.completed === true;
         const isPastOrToday = day.date <= DateUtils.today();
+
+        // Check kids meal status if enabled
+        const kidsSlot = kidsMenuEnabled && kidsPlan ? normalizeMealSlot(kidsPlan[mealType]) : null;
+        const hasKidsMeal = kidsSlot && kidsSlot.items.length > 0;
+        const kidsMealDiffers = hasKidsMeal && JSON.stringify(kidsSlot.items) !== JSON.stringify(slot.items);
 
         // Check if any meal has prep requirement
         const hasPrep = slot.items.some(itemName => {
@@ -876,6 +904,16 @@ const Meals = (function() {
                                 </span>`;
                             }).join('')}
                         </div>
+                        ${kidsMenuEnabled && hasMeals ? `
+                            <button class="planner-cell__kids-btn ${kidsMealDiffers ? 'planner-cell__kids-btn--differs' : ''}"
+                                    data-customize-kids
+                                    data-date="${day.date}"
+                                    data-meal-type="${mealType}"
+                                    title="${kidsMealDiffers ? `Kids: ${kidsSlot.items.join(', ')}` : 'Customize for Kids'}">
+                                <i data-lucide="baby"></i>
+                                ${kidsMealDiffers ? '<span class="planner-cell__kids-indicator"></span>' : ''}
+                            </button>
+                        ` : ''}
                     </div>
                 ` : `
                     <span class="planner-cell__add">
@@ -901,29 +939,15 @@ const Meals = (function() {
     /**
      * Render accordion day card for mobile view
      */
-    function renderAccordionDay(day, currentView, recipes) {
+    function renderAccordionDay(day, _currentView, recipes, kidsMenuEnabled = false) {
         const displayMealTypes = DISPLAY_MEAL_TYPES; // ['breakfast', 'lunch', 'snacks', 'dinner']
 
-        // Count unique meal time slots that have food planned (not total variants)
-        const getMealCount = () => {
-            if (currentView === 'both') {
-                // Count unique meal time slots where EITHER adult OR kids has meals
-                return displayMealTypes.filter(mealType => {
-                    const adultSlot = normalizeMealSlot(day.plan.adult?.[mealType]);
-                    const kidsSlot = normalizeMealSlot(day.plan.kids?.[mealType]);
-                    return adultSlot.items.length > 0 || kidsSlot.items.length > 0;
-                }).length;
-            } else {
-                // Count meals for the specific variant
-                const variantPlan = day.plan[currentView] || {};
-                return displayMealTypes.filter(mealType => {
-                    const slot = normalizeMealSlot(variantPlan[mealType]);
-                    return slot.items.length > 0;
-                }).length;
-            }
-        };
-
-        const totalMealCount = getMealCount();
+        // Count meals for adult view
+        const variantPlan = day.plan.adult || {};
+        const totalMealCount = displayMealTypes.filter(mealType => {
+            const slot = normalizeMealSlot(variantPlan[mealType]);
+            return slot.items.length > 0;
+        }).length;
 
         return `
             <div class="accordion-day ${day.isToday ? 'accordion-day--today' : ''}"
@@ -946,31 +970,8 @@ const Meals = (function() {
                     </div>
                 </button>
                 <div class="accordion-day__content" data-accordion-content="${day.date}">
-                    ${currentView === 'both' ? `
-                        <!-- Adult Meals -->
-                        <div class="accordion-variant">
-                            <div class="accordion-variant__header">
-                                <i data-lucide="user"></i>
-                                <span>Adult Meals</span>
-                            </div>
-                            ${displayMealTypes.map(mealType => renderAccordionMeal(day, mealType, 'adult', day.plan.adult || {}, recipes, null)).join('')}
-                        </div>
-                        <!-- Kids Meals -->
-                        <div class="accordion-variant">
-                            <div class="accordion-variant__header">
-                                <i data-lucide="baby"></i>
-                                <span>Kids Meals</span>
-                            </div>
-                            ${displayMealTypes.map(mealType => renderAccordionMeal(day, mealType, 'kids', day.plan.kids || {}, recipes, day.plan.adult || {})).join('')}
-                        </div>
-                    ` : `
-                        ${displayMealTypes.map(mealType => {
-                            const variant = currentView;
-                            const adultPlan = variant === 'kids' ? (day.plan.adult || {}) : null;
-                            return renderAccordionMeal(day, mealType, variant, day.plan[variant] || {}, recipes, adultPlan);
-                        }).join('')}
-                    `}
-                    ${currentView !== 'kids' && day.adultProtein > 0 ? `
+                    ${displayMealTypes.map(mealType => renderAccordionMeal(day, mealType, 'adult', day.plan.adult || {}, recipes, null, kidsMenuEnabled, day.plan.kids)).join('')}
+                    ${day.adultProtein > 0 ? `
                         <div class="accordion-protein">
                             <i data-lucide="beef"></i>
                             <span>Total Protein: <strong>${day.adultProtein}g</strong></span>
@@ -984,15 +985,16 @@ const Meals = (function() {
     /**
      * Render individual meal in accordion view
      */
-    function renderAccordionMeal(day, mealType, variant, variantPlan, recipes, adultPlan = null) {
+    function renderAccordionMeal(day, mealType, variant, variantPlan, recipes, _adultPlan = null, kidsMenuEnabled = false, kidsPlan = null) {
         const slot = normalizeMealSlot(variantPlan[mealType]);
         const hasMeals = slot.items.length > 0;
         const isCompleted = slot.completed === true;
         const isPastOrToday = day.date <= DateUtils.today();
 
-        // Check if adult has meals for "Same as Adult" button
-        const adultSlot = adultPlan ? normalizeMealSlot(adultPlan[mealType]) : null;
-        const showSameAsAdult = variant === 'kids' && adultSlot && adultSlot.items.length > 0 && !hasMeals;
+        // Check kids meal status if enabled
+        const kidsSlot = kidsMenuEnabled && kidsPlan ? normalizeMealSlot(kidsPlan[mealType]) : null;
+        const hasKidsMeal = kidsSlot && kidsSlot.items.length > 0;
+        const kidsMealDiffers = hasKidsMeal && JSON.stringify(kidsSlot.items) !== JSON.stringify(slot.items);
 
         return `
             <div class="accordion-meal ${hasMeals ? 'accordion-meal--filled' : ''} ${isCompleted ? 'accordion-meal--completed' : ''}"
@@ -1004,16 +1006,28 @@ const Meals = (function() {
                         <i data-lucide="${getMealIcon(mealType)}"></i>
                         <span>${capitalizeFirst(mealType)}</span>
                     </div>
-                    ${hasMeals && isPastOrToday ? `
-                        <button class="accordion-meal__check ${isCompleted ? 'accordion-meal__check--done' : ''}"
-                                data-toggle-complete
-                                data-date="${day.date}"
-                                data-meal-type="${mealType}"
-                                data-variant="${variant}"
-                                title="${isCompleted ? 'Mark as not eaten' : 'Mark as eaten'}">
-                            <i data-lucide="${isCompleted ? 'check-circle-2' : 'circle'}"></i>
-                        </button>
-                    ` : ''}
+                    <div class="accordion-meal__actions">
+                        ${kidsMenuEnabled && hasMeals ? `
+                            <button class="accordion-meal__kids-btn ${kidsMealDiffers ? 'accordion-meal__kids-btn--differs' : ''}"
+                                    data-customize-kids
+                                    data-date="${day.date}"
+                                    data-meal-type="${mealType}"
+                                    title="${kidsMealDiffers ? `Kids: ${kidsSlot.items.join(', ')}` : 'Customize for Kids'}">
+                                <i data-lucide="baby"></i>
+                                ${kidsMealDiffers ? '<span class="accordion-meal__kids-indicator"></span>' : ''}
+                            </button>
+                        ` : ''}
+                        ${hasMeals && isPastOrToday ? `
+                            <button class="accordion-meal__check ${isCompleted ? 'accordion-meal__check--done' : ''}"
+                                    data-toggle-complete
+                                    data-date="${day.date}"
+                                    data-meal-type="${mealType}"
+                                    data-variant="${variant}"
+                                    title="${isCompleted ? 'Mark as not eaten' : 'Mark as eaten'}">
+                                <i data-lucide="${isCompleted ? 'check-circle-2' : 'circle'}"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 </div>
                 ${hasMeals ? `
                     <div class="accordion-meal__items ${isCompleted ? 'accordion-meal__items--done' : ''}">
@@ -1027,17 +1041,14 @@ const Meals = (function() {
                             </span>`;
                         }).join('')}
                     </div>
+                    ${kidsMealDiffers ? `
+                        <div class="accordion-meal__kids-info">
+                            <i data-lucide="baby"></i>
+                            <span>Kids: ${kidsSlot.items.join(', ')}</span>
+                        </div>
+                    ` : ''}
                     ${slot.protein ? `<div class="accordion-meal__protein"><i data-lucide="beef"></i>${slot.protein}g protein</div>` : ''}
                 ` : `
-                    ${showSameAsAdult ? `
-                        <button class="accordion-meal__same-adult"
-                                data-copy-adult
-                                data-date="${day.date}"
-                                data-meal-type="${mealType}">
-                            <i data-lucide="copy"></i>
-                            <span>Same as Adult</span>
-                        </button>
-                    ` : ''}
                     <div class="accordion-meal__add">
                         <i data-lucide="plus"></i>
                         <span>Add meal</span>
@@ -1226,12 +1237,9 @@ const Meals = (function() {
 
         // Check if kids menu is enabled
         const settings = Storage.getSettings();
-        const kidsMenuEnabled = settings.meals?.kidsMenuEnabled !== false; // Default to true
+        const kidsMenuEnabled = settings.meals?.kidsMenuEnabled === true; // Default to false
 
-        // Reset view to 'adult' if kids menu disabled and current view uses kids
-        if (!kidsMenuEnabled && (currentView === 'kids' || currentView === 'both')) {
-            currentView = 'adult';
-        }
+        // View is always 'adult' now - kids meals handled via customize button per meal
 
         // Get week data with offset support
         const weekStart = getWeekStartWithOffset(currentWeekOffset);
@@ -1302,19 +1310,12 @@ const Meals = (function() {
                         Weekly Meal Plan
                     </h1>
                     <div class="weekly-planner__controls">
-                        <div class="weekly-planner__view-toggle">
-                            <button class="view-toggle-btn ${currentView === 'adult' ? 'view-toggle-btn--active' : ''}" data-view="adult">
-                                <i data-lucide="user"></i> <span>Adult</span>
-                            </button>
-                            ${kidsMenuEnabled ? `
-                                <button class="view-toggle-btn ${currentView === 'kids' ? 'view-toggle-btn--active' : ''}" data-view="kids">
-                                    <i data-lucide="baby"></i> <span>Kids</span>
-                                </button>
-                                <button class="view-toggle-btn ${currentView === 'both' ? 'view-toggle-btn--active' : ''}" data-view="both">
-                                    <i data-lucide="users"></i> <span>Both</span>
-                                </button>
-                            ` : ''}
-                        </div>
+                        <button class="btn btn--ghost btn--sm" id="mealPlanSearchBtn" title="Search recipes">
+                            <i data-lucide="search"></i>
+                        </button>
+                        <button class="btn btn--ghost btn--sm" id="mealPlanSettingsBtn" title="Meal plan settings">
+                            <i data-lucide="settings"></i>
+                        </button>
                     </div>
                 </div>
 
@@ -1376,72 +1377,39 @@ const Meals = (function() {
                             </thead>
                             <tbody>
                                 ${displayMealTypes.map(mealType => {
-                                    if (currentView === 'both') {
-                                        // Two rows per meal type: Adult and Kids
-                                        return `
-                                            <tr class="planner-table__row planner-table__row--adult">
-                                                <td class="planner-table__meal-label planner-table__meal-label--type" rowspan="2">
-                                                    <div class="meal-label">
-                                                        <i data-lucide="${getMealIcon(mealType)}"></i>
-                                                        <span>${capitalizeFirst(mealType)}</span>
-                                                    </div>
-                                                </td>
-                                                <td class="planner-table__meal-label planner-table__meal-label--variant planner-table__meal-label--adult">
-                                                    <span class="meal-label__variant">Adult</span>
-                                                </td>
-                                                ${days.map(day => renderTableCell(day, mealType, 'adult', day.plan.adult, recipes)).join('')}
-                                            </tr>
-                                            <tr class="planner-table__row planner-table__row--kids">
-                                                <td class="planner-table__meal-label planner-table__meal-label--variant planner-table__meal-label--kids">
-                                                    <span class="meal-label__variant">Kids</span>
-                                                </td>
-                                                ${days.map(day => {
-                                                    // Show copy from adult button if adult has meal but kids doesn't
-                                                    const adultSlot = normalizeMealSlot(day.plan.adult?.[mealType]);
-                                                    const kidsSlot = normalizeMealSlot(day.plan.kids?.[mealType]);
-                                                    const showCopy = adultSlot.items.length > 0 && kidsSlot.items.length === 0;
-                                                    return renderTableCell(day, mealType, 'kids', day.plan.kids, recipes, showCopy);
-                                                }).join('')}
-                                            </tr>
-                                        `;
-                                    } else {
-                                        // Single row per meal type
-                                        const variant = currentView;
-                                        return `
-                                            <tr class="planner-table__row">
-                                                <td class="planner-table__meal-label planner-table__meal-label--type">
-                                                    <div class="meal-label">
-                                                        <i data-lucide="${getMealIcon(mealType)}"></i>
-                                                        <span>${capitalizeFirst(mealType)}</span>
-                                                    </div>
-                                                </td>
-                                                ${days.map(day => renderTableCell(day, mealType, variant, day.plan[variant], recipes)).join('')}
-                                            </tr>
-                                        `;
-                                    }
-                                }).join('')}
-                                ${currentView !== 'kids' ? `
-                                    <tr class="planner-table__row planner-table__row--protein">
-                                        <td class="planner-table__meal-label planner-table__meal-label--type" ${currentView === 'both' ? 'colspan="2"' : ''}>
-                                            <div class="meal-label meal-label--protein">
-                                                <i data-lucide="beef"></i>
-                                                <span>Protein</span>
-                                            </div>
-                                        </td>
-                                        ${days.map(day => `
-                                            <td class="planner-cell planner-cell--protein-total">
-                                                ${day.adultProtein > 0 ? `<span>${day.adultProtein}g</span>` : '<span class="text-muted">-</span>'}
+                                    // Always show adult meals, with optional kids customization
+                                    return `
+                                        <tr class="planner-table__row">
+                                            <td class="planner-table__meal-label planner-table__meal-label--type">
+                                                <div class="meal-label">
+                                                    <i data-lucide="${getMealIcon(mealType)}"></i>
+                                                    <span>${capitalizeFirst(mealType)}</span>
+                                                </div>
                                             </td>
-                                        `).join('')}
-                                    </tr>
-                                ` : ''}
+                                            ${days.map(day => renderTableCell(day, mealType, 'adult', day.plan.adult, recipes, false, kidsMenuEnabled, day.plan.kids)).join('')}
+                                        </tr>
+                                    `;
+                                }).join('')}
+                                <tr class="planner-table__row planner-table__row--protein">
+                                    <td class="planner-table__meal-label planner-table__meal-label--type">
+                                        <div class="meal-label meal-label--protein">
+                                            <i data-lucide="beef"></i>
+                                            <span>Protein</span>
+                                        </div>
+                                    </td>
+                                    ${days.map(day => `
+                                        <td class="planner-cell planner-cell--protein-total">
+                                            ${day.adultProtein > 0 ? `<span>${day.adultProtein}g</span>` : '<span class="text-muted">-</span>'}
+                                        </td>
+                                    `).join('')}
+                                </tr>
                             </tbody>
                         </table>
                     </div>
 
                     <!-- Mobile Accordion View -->
                     <div class="planner-accordion">
-                        ${days.map(day => renderAccordionDay(day, currentView, recipes)).join('')}
+                        ${days.map(day => renderAccordionDay(day, currentView, recipes, kidsMenuEnabled)).join('')}
                     </div>
 
                     ${renderPrepSidebar(prepByDay, days, memberId)}
@@ -1640,6 +1608,16 @@ const Meals = (function() {
             });
         });
 
+        // Customize for kids buttons
+        document.querySelectorAll('[data-customize-kids]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const date = btn.dataset.date;
+                const mealType = btn.dataset.mealType;
+                showMealEditModal(memberId, date, mealType, 'kids');
+            });
+        });
+
         // Prep sidebar checkboxes
         document.querySelectorAll('.prep-sidebar__checkbox').forEach(checkbox => {
             checkbox.addEventListener('change', (e) => {
@@ -1777,13 +1755,83 @@ const Meals = (function() {
         const proteinInput = document.getElementById('mealProteinInput');
         mealInput?.focus();
 
-        // Variant selector - switch variants
+        // Variant selector - switch variants seamlessly (in-place update)
         document.querySelectorAll('.variant-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 const newVariant = btn.dataset.variant;
                 if (newVariant !== variant) {
-                    Modal.close();
-                    showMealEditModal(memberId, date, mealType, newVariant);
+                    // Update variant state
+                    variant = newVariant;
+
+                    // Update button active states
+                    document.querySelectorAll('.variant-btn').forEach(b => {
+                        b.classList.toggle('variant-btn--active', b.dataset.variant === newVariant);
+                    });
+
+                    // Load new variant's data
+                    const freshData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
+                    const freshDayPlan = normalizeDayPlan(freshData.weeklyPlan?.[date]);
+                    const freshSlot = normalizeMealSlot(freshDayPlan[newVariant]?.[mealType]);
+                    mealItems = [...freshSlot.items];
+                    mealProtein = freshSlot.protein || null;
+
+                    // Update modal title
+                    const newVariantLabel = newVariant === 'adult' ? 'Adult (Low Carb)' : 'Kids';
+                    const modalTitle = document.querySelector('.modal__title');
+                    if (modalTitle) {
+                        modalTitle.textContent = `Edit ${capitalizeFirst(mealType)} - ${newVariantLabel}`;
+                    }
+
+                    // Show/hide protein field based on variant
+                    const proteinGroup = document.querySelector('.meal-protein-group');
+                    if (newVariant === 'adult') {
+                        // Add protein field if not present
+                        if (!proteinGroup) {
+                            const tagsContainer = document.getElementById('mealTagsContainer')?.closest('.form-group');
+                            if (tagsContainer) {
+                                const proteinHtml = `
+                                    <div class="form-group meal-protein-group">
+                                        <label class="form-label">
+                                            <i data-lucide="beef"></i>
+                                            Protein (grams)
+                                        </label>
+                                        <input type="number"
+                                               class="form-input meal-protein-input"
+                                               id="mealProteinInput"
+                                               value="${mealProtein || ''}"
+                                               placeholder="${getDefaultProtein() || 'Auto from recipes'}"
+                                               min="0">
+                                        <p class="form-hint">Leave empty to auto-calculate from recipes</p>
+                                    </div>
+                                `;
+                                tagsContainer.insertAdjacentHTML('afterend', proteinHtml);
+                                if (typeof lucide !== 'undefined') {
+                                    lucide.createIcons();
+                                }
+                            }
+                        } else {
+                            // Update existing protein input
+                            const proteinInputEl = document.getElementById('mealProteinInput');
+                            if (proteinInputEl) {
+                                proteinInputEl.value = mealProtein || '';
+                                proteinInputEl.placeholder = getDefaultProtein() || 'Auto from recipes';
+                            }
+                        }
+                    } else {
+                        // Remove protein field for kids
+                        if (proteinGroup) {
+                            proteinGroup.remove();
+                        }
+                    }
+
+                    // Update meal tags display
+                    updateTagsDisplay();
+
+                    // Update input placeholder
+                    if (mealInput) {
+                        mealInput.placeholder = mealItems.length > 0 ? 'Add another item...' : 'Type a meal and press Enter...';
+                        mealInput.focus();
+                    }
                 }
             });
         });
@@ -1927,6 +1975,35 @@ const Meals = (function() {
     }
 
     /**
+     * Clear prep completion for a specific date and optional recipe
+     */
+    function clearPrepCompletionForDate(memberId, date, recipeName = null) {
+        const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || {};
+        const prepCompleted = widgetData.prepCompleted || {};
+
+        // Clear prep completions that involve this date (either as prep date or target date)
+        Object.keys(prepCompleted).forEach(key => {
+            const keyDate = key.split(':')[0];
+            const keyRecipe = key.split(':')[1];
+
+            // If recipeName specified, only clear that specific recipe's prep
+            if (recipeName) {
+                if (keyDate === date && keyRecipe === recipeName) {
+                    delete prepCompleted[key];
+                }
+            } else {
+                // Clear all prep completions for this date
+                if (keyDate === date) {
+                    delete prepCompleted[key];
+                }
+            }
+        });
+
+        widgetData.prepCompleted = prepCompleted;
+        Storage.setWidgetData(memberId, 'meal-plan', widgetData);
+    }
+
+    /**
      * Save a meal with variant and protein support
      */
     function saveMealWithVariant(memberId, date, mealType, variant, items, protein) {
@@ -1959,6 +2036,10 @@ const Meals = (function() {
         };
 
         Storage.setWidgetData(memberId, 'meal-plan', updatedData);
+
+        // Clear prep completions for the day before (since prep is done day before)
+        const prevDate = DateUtils.formatISO(DateUtils.addDays(new Date(date), -1));
+        clearPrepCompletionForDate(memberId, prevDate);
 
         // Refresh the main widget if visible
         const widgetBody = document.getElementById('widget-meal-plan');
@@ -2338,6 +2419,36 @@ Tuesday:
     }
 
     /**
+     * Clear prep completions for a specific week or all
+     */
+    function clearPrepCompletions(memberId, weekStart = null) {
+        const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || {};
+
+        if (weekStart) {
+            // Clear only prep completions for dates in the target week
+            const prepCompleted = widgetData.prepCompleted || {};
+            const weekEnd = DateUtils.addDays(weekStart, 7);
+
+            Object.keys(prepCompleted).forEach(key => {
+                const dateStr = key.split(':')[0];
+                if (dateStr !== 'before-week') {
+                    const date = new Date(dateStr);
+                    if (date >= weekStart && date < weekEnd) {
+                        delete prepCompleted[key];
+                    }
+                }
+            });
+
+            widgetData.prepCompleted = prepCompleted;
+        } else {
+            // Clear all prep completions
+            widgetData.prepCompleted = {};
+        }
+
+        Storage.setWidgetData(memberId, 'meal-plan', widgetData);
+    }
+
+    /**
      * Import parsed meal plan to storage
      */
     function importMealPlan(memberId, parsed, startThisWeek, applyBothVariants) {
@@ -2348,7 +2459,30 @@ Tuesday:
         }
         const weekStart = startThisWeek ? getWeekStartWithOffset(0) : getWeekStartWithOffset(currentWeekOffset);
 
+        // Clear prep completions for the week being imported (inline to avoid race condition)
+        const prepCompleted = widgetData.prepCompleted || {};
+        const weekEnd = DateUtils.addDays(weekStart, 7);
+        Object.keys(prepCompleted).forEach(key => {
+            const dateStr = key.split(':')[0];
+            if (dateStr !== 'before-week') {
+                const date = new Date(dateStr);
+                if (date >= weekStart && date < weekEnd) {
+                    delete prepCompleted[key];
+                }
+            }
+        });
+        widgetData.prepCompleted = prepCompleted;
+
         let importedCount = 0;
+
+        // First, clear meal data for all days in the target week before importing
+        // This ensures old meals don't persist in the prep schedule
+        for (let i = 0; i < 7; i++) {
+            const targetDate = DateUtils.addDays(weekStart, i);
+            const dateStr = DateUtils.formatISO(targetDate);
+            // Reset to empty day plan
+            widgetData.weeklyPlan[dateStr] = normalizeDayPlan(null);
+        }
 
         parsed.forEach(day => {
             // Calculate the actual date based on day index
@@ -2362,8 +2496,8 @@ Tuesday:
             const targetDate = DateUtils.addDays(weekStart, daysFromStart);
             const dateStr = DateUtils.formatISO(targetDate);
 
-            // Get existing day plan or create new one
-            const dayPlan = normalizeDayPlan(widgetData.weeklyPlan?.[dateStr]);
+            // Get the (now empty) day plan
+            const dayPlan = widgetData.weeklyPlan[dateStr];
 
             // Process each meal type
             MEAL_TYPES.forEach(mealType => {
@@ -2378,27 +2512,26 @@ Tuesday:
                         if (!dayPlan.adult[mealType]) {
                             dayPlan.adult[mealType] = { items: [], protein: null };
                         }
-                        dayPlan.adult[mealType].items = [...(dayPlan.adult[mealType].items || []), ...items];
+                        dayPlan.adult[mealType].items = [...dayPlan.adult[mealType].items, ...items];
 
                         if (!dayPlan.kids[mealType]) {
                             dayPlan.kids[mealType] = { items: [], protein: null };
                         }
-                        dayPlan.kids[mealType].items = [...(dayPlan.kids[mealType].items || []), ...items];
+                        dayPlan.kids[mealType].items = [...dayPlan.kids[mealType].items, ...items];
                     } else if (entry.variant === 'adult') {
                         if (!dayPlan.adult[mealType]) {
                             dayPlan.adult[mealType] = { items: [], protein: null };
                         }
-                        dayPlan.adult[mealType].items = [...(dayPlan.adult[mealType].items || []), ...items];
+                        dayPlan.adult[mealType].items = [...dayPlan.adult[mealType].items, ...items];
                     } else if (entry.variant === 'kids') {
                         if (!dayPlan.kids[mealType]) {
                             dayPlan.kids[mealType] = { items: [], protein: null };
                         }
-                        dayPlan.kids[mealType].items = [...(dayPlan.kids[mealType].items || []), ...items];
+                        dayPlan.kids[mealType].items = [...dayPlan.kids[mealType].items, ...items];
                     }
                 });
             });
 
-            widgetData.weeklyPlan[dateStr] = dayPlan;
             importedCount++;
         });
 

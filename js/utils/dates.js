@@ -24,11 +24,32 @@ const DateUtils = (function() {
     }
 
     /**
+     * Parse a date string as local date (not UTC)
+     * Fixes timezone issues with YYYY-MM-DD strings
+     * @param {string|Date} dateString - Date string in YYYY-MM-DD format or Date object
+     * @returns {Date} - Date object in local timezone
+     */
+    function parseLocalDate(dateString) {
+        if (dateString instanceof Date) {
+            return dateString;
+        }
+
+        // If it's an ISO date string (YYYY-MM-DD), parse as local
+        if (typeof dateString === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+            const [year, month, day] = dateString.split('-').map(Number);
+            return new Date(year, month - 1, day);
+        }
+
+        // Otherwise use standard Date parsing
+        return new Date(dateString);
+    }
+
+    /**
      * Format date as YYYY-MM-DD (in local timezone)
      */
     function formatISO(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -41,7 +62,7 @@ const DateUtils = (function() {
      */
     function formatLong(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         return `${MONTHS[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
     }
@@ -51,7 +72,7 @@ const DateUtils = (function() {
      */
     function formatShort(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         return `${MONTHS_SHORT[date.getMonth()]} ${date.getDate()}`;
     }
@@ -61,7 +82,7 @@ const DateUtils = (function() {
      */
     function formatWithDay(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         return `${DAYS[date.getDay()]}, ${MONTHS_SHORT[date.getMonth()]} ${date.getDate()}`;
     }
@@ -71,7 +92,7 @@ const DateUtils = (function() {
      */
     function getDayName(date, short = false) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         return short ? DAYS_SHORT[date.getDay()] : DAYS[date.getDay()];
     }
@@ -81,7 +102,7 @@ const DateUtils = (function() {
      */
     function getMonthName(date, short = false) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         return short ? MONTHS_SHORT[date.getMonth()] : MONTHS[date.getMonth()];
     }
@@ -91,7 +112,7 @@ const DateUtils = (function() {
      */
     function getWeekNumber(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
         const dayNum = d.getUTCDay() || 7;
@@ -106,7 +127,7 @@ const DateUtils = (function() {
      */
     function getWeekKey(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         const weekNum = getWeekNumber(date);
         const year = date.getFullYear();
@@ -118,7 +139,7 @@ const DateUtils = (function() {
      */
     function getWeekStart(date) {
         if (typeof date === 'string') {
-            date = new Date(date);
+            date = parseLocalDate(date);
         }
         const d = new Date(date);
         const day = d.getDay();
@@ -200,8 +221,8 @@ const DateUtils = (function() {
      * Check if two dates are the same day
      */
     function isSameDay(date1, date2) {
-        if (typeof date1 === 'string') date1 = new Date(date1);
-        if (typeof date2 === 'string') date2 = new Date(date2);
+        if (typeof date1 === 'string') date1 = parseLocalDate(date1);
+        if (typeof date2 === 'string') date2 = parseLocalDate(date2);
         return (
             date1.getFullYear() === date2.getFullYear() &&
             date1.getMonth() === date2.getMonth() &&
@@ -220,7 +241,7 @@ const DateUtils = (function() {
      * Check if date is in the past
      */
     function isPast(date) {
-        if (typeof date === 'string') date = new Date(date);
+        if (typeof date === 'string') date = parseLocalDate(date);
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         return date < today;
@@ -230,7 +251,7 @@ const DateUtils = (function() {
      * Add days to a date
      */
     function addDays(date, days) {
-        if (typeof date === 'string') date = new Date(date);
+        if (typeof date === 'string') date = parseLocalDate(date);
         const result = new Date(date);
         result.setDate(result.getDate() + days);
         return result;
@@ -240,7 +261,7 @@ const DateUtils = (function() {
      * Add months to a date
      */
     function addMonths(date, months) {
-        if (typeof date === 'string') date = new Date(date);
+        if (typeof date === 'string') date = parseLocalDate(date);
         const result = new Date(date);
         result.setMonth(result.getMonth() + months);
         return result;
@@ -250,7 +271,7 @@ const DateUtils = (function() {
      * Get relative time (e.g., "2 days ago", "in 3 hours")
      */
     function relativeTime(date) {
-        if (typeof date === 'string') date = new Date(date);
+        if (typeof date === 'string') date = parseLocalDate(date);
         const now = new Date();
         const diff = date - now;
         const absDiff = Math.abs(diff);
@@ -293,6 +314,7 @@ const DateUtils = (function() {
         MONTHS,
         MONTHS_SHORT,
         today,
+        parseLocalDate,
         formatISO,
         formatLong,
         formatShort,

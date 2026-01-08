@@ -34,6 +34,15 @@ const Habits = (function() {
         { short: 'S', full: 'Sat', index: 6 }
     ];
 
+    // Common habit icons
+    const HABIT_ICONS = [
+        'circle', 'check-circle', 'star', 'heart', 'zap', 'flame',
+        'droplet', 'dumbbell', 'book-open', 'brain', 'moon', 'sun',
+        'sunrise', 'sunset', 'coffee', 'apple', 'leaf', 'flower',
+        'pill', 'pen-line', 'calendar-check', 'bed', 'monitor-off',
+        'headphones', 'smile', 'music', 'camera', 'utensils', 'glass-water'
+    ];
+
     // Motivational quotes about habits
     const HABIT_QUOTES = [
         { text: "We are what we repeatedly do. Excellence is not an act, but a habit.", author: "Aristotle" },
@@ -796,9 +805,19 @@ const Habits = (function() {
                                 <div class="habits-archived-list" style="display: none;">
                                     ${archivedHabits.map(habit => `
                                         <div class="habits-archived-item">
-                                            <i data-lucide="${habit.icon || 'circle'}"></i>
-                                            <span>${habit.name}</span>
-                                            <button class="btn btn--xs btn--ghost" data-restore="${habit.id}">Restore</button>
+                                            <div class="habits-archived-item__info">
+                                                <i data-lucide="${habit.icon || 'circle'}"></i>
+                                                <span>${habit.name}</span>
+                                            </div>
+                                            <div class="habits-archived-item__actions">
+                                                <button class="btn btn--xs btn--ghost" data-restore="${habit.id}" title="Restore habit">
+                                                    <i data-lucide="rotate-ccw"></i>
+                                                    Restore
+                                                </button>
+                                                <button class="btn btn--xs btn--ghost btn--danger" data-delete-archived="${habit.id}" title="Delete permanently">
+                                                    <i data-lucide="trash-2"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     `).join('')}
                                 </div>
@@ -879,10 +898,39 @@ const Habits = (function() {
 
         // Restore archived habit
         container.querySelectorAll('[data-restore]').forEach(btn => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', async () => {
                 const habitId = btn.dataset.restore;
-                restoreHabit(memberId, habitId);
-                renderStatsPage(container, memberId, member, currentDate);
+                const widgetData = getWidgetData(memberId);
+                const habit = widgetData.archivedHabits?.find(h => h.id === habitId);
+
+                const confirmed = await Modal.confirm(
+                    `Restore "${habit?.name || 'this habit'}"? Your streak will be reset.`,
+                    'Restore Habit'
+                );
+
+                if (confirmed) {
+                    restoreHabit(memberId, habitId);
+                    renderStatsPage(container, memberId, member, currentDate);
+                }
+            });
+        });
+
+        // Delete archived habit permanently
+        container.querySelectorAll('[data-delete-archived]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const habitId = btn.dataset.deleteArchived;
+                const widgetData = getWidgetData(memberId);
+                const habit = widgetData.archivedHabits?.find(h => h.id === habitId);
+
+                const confirmed = await Modal.confirm(
+                    `Permanently delete "${habit?.name || 'this habit'}"? This cannot be undone and all historical data will be lost.`,
+                    'Delete Habit'
+                );
+
+                if (confirmed) {
+                    deleteArchivedHabit(memberId, habitId);
+                    renderStatsPage(container, memberId, member, currentDate);
+                }
             });
         });
     }
@@ -988,6 +1036,18 @@ const Habits = (function() {
                         <label class="form-label">Habit Name</label>
                         <input type="text" class="form-input" id="newHabitName" placeholder="e.g., Drink water, Exercise..." autocomplete="off">
                     </div>
+                    <div class="form-group" style="margin-bottom: var(--space-3);">
+                        <label class="form-label">Icon</label>
+                        <div class="icon-picker">
+                            <input type="hidden" id="newHabitIcon" value="circle">
+                            ${HABIT_ICONS.map(icon => `
+                                <button type="button" class="icon-picker__icon ${icon === 'circle' ? 'icon-picker__icon--selected' : ''}"
+                                        data-icon="${icon}" title="${icon}">
+                                    <i data-lucide="${icon}"></i>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
                     <div class="manage-habits__add-form">
                         <div class="form-group" style="min-width: 140px; margin: 0;">
                             <label class="form-label">Category</label>
@@ -1084,6 +1144,23 @@ const Habits = (function() {
      * Bind events for manage habits modal
      */
     function bindManageHabitsEvents(memberId, onClose) {
+        // Icon picker for new habit
+        document.querySelectorAll('.manage-habits__section .icon-picker__icon').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove selection from all icons
+                document.querySelectorAll('.manage-habits__section .icon-picker__icon').forEach(b => {
+                    b.classList.remove('icon-picker__icon--selected');
+                });
+                // Select clicked icon
+                btn.classList.add('icon-picker__icon--selected');
+                // Update hidden input
+                const iconInput = document.getElementById('newHabitIcon');
+                if (iconInput) {
+                    iconInput.value = btn.dataset.icon;
+                }
+            });
+        });
+
         // Show/hide custom days selector
         document.getElementById('newHabitSchedule')?.addEventListener('change', (e) => {
             const customDaysContainer = document.getElementById('customDaysContainer');
@@ -1095,10 +1172,12 @@ const Habits = (function() {
         // Add custom habit
         const addCustomHabit = () => {
             const nameInput = document.getElementById('newHabitName');
+            const iconInput = document.getElementById('newHabitIcon');
             const categorySelect = document.getElementById('newHabitCategory');
             const scheduleSelect = document.getElementById('newHabitSchedule');
 
             const name = nameInput?.value?.trim();
+            const icon = iconInput?.value || 'circle';
             const category = categorySelect?.value || 'other';
             const schedule = scheduleSelect?.value || 'daily';
 
@@ -1117,7 +1196,7 @@ const Habits = (function() {
                 }
             }
 
-            addHabit(memberId, name, 'circle', category, schedule, customDays);
+            addHabit(memberId, name, icon, category, schedule, customDays);
             refreshManageHabitsModal(memberId, onClose);
 
             // Refresh widget immediately
@@ -1211,6 +1290,18 @@ const Habits = (function() {
                     <input type="text" class="form-input" id="editHabitName" value="${habit.name}">
                 </div>
                 <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-picker">
+                        <input type="hidden" id="editHabitIcon" value="${habit.icon || 'circle'}">
+                        ${HABIT_ICONS.map(icon => `
+                            <button type="button" class="icon-picker__icon ${icon === (habit.icon || 'circle') ? 'icon-picker__icon--selected' : ''}"
+                                    data-icon="${icon}" title="${icon}">
+                                <i data-lucide="${icon}"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="form-group">
                     <label class="form-label">Category</label>
                     <select class="form-select" id="editHabitCategory">
                         ${Object.entries(CATEGORIES).map(([id, cat]) => `
@@ -1261,6 +1352,27 @@ const Habits = (function() {
             `
         });
 
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Icon picker for edit habit
+        document.querySelectorAll('.edit-habit-form .icon-picker__icon').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove selection from all icons
+                document.querySelectorAll('.edit-habit-form .icon-picker__icon').forEach(b => {
+                    b.classList.remove('icon-picker__icon--selected');
+                });
+                // Select clicked icon
+                btn.classList.add('icon-picker__icon--selected');
+                // Update hidden input
+                const iconInput = document.getElementById('editHabitIcon');
+                if (iconInput) {
+                    iconInput.value = btn.dataset.icon;
+                }
+            });
+        });
+
         // Show/hide custom days
         document.getElementById('editHabitSchedule')?.addEventListener('change', (e) => {
             const container = document.getElementById('editCustomDaysContainer');
@@ -1272,6 +1384,7 @@ const Habits = (function() {
         // Save
         document.getElementById('saveHabitBtn')?.addEventListener('click', () => {
             const name = document.getElementById('editHabitName')?.value?.trim();
+            const icon = document.getElementById('editHabitIcon')?.value || 'circle';
             const category = document.getElementById('editHabitCategory')?.value;
             const schedule = document.getElementById('editHabitSchedule')?.value;
 
@@ -1290,7 +1403,7 @@ const Habits = (function() {
                 }
             }
 
-            updateHabit(memberId, habitId, { name, category, schedule, customDays });
+            updateHabit(memberId, habitId, { name, icon, category, schedule, customDays });
             Modal.close();
             showManageHabitsModal(memberId, onManageClose);
         });
@@ -1408,6 +1521,35 @@ const Habits = (function() {
 
         saveWidgetData(memberId, updatedData);
         Toast.success('Habit deleted');
+    }
+
+    /**
+     * Delete an archived habit permanently
+     */
+    function deleteArchivedHabit(memberId, habitId) {
+        const widgetData = getWidgetData(memberId);
+
+        // Remove from archived habits
+        const updatedData = {
+            ...widgetData,
+            archivedHabits: (widgetData.archivedHabits || []).filter(h => h.id !== habitId)
+        };
+
+        // Also clean up any log entries for this habit
+        const log = { ...widgetData.log };
+        Object.keys(log).forEach(dateKey => {
+            if (log[dateKey]) {
+                delete log[dateKey][habitId];
+                // Remove date entry if empty
+                if (Object.keys(log[dateKey]).length === 0) {
+                    delete log[dateKey];
+                }
+            }
+        });
+        updatedData.log = log;
+
+        saveWidgetData(memberId, updatedData);
+        Toast.success('Habit permanently deleted');
     }
 
     // Helper functions

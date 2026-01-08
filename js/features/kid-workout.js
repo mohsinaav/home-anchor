@@ -839,13 +839,18 @@ const KidWorkout = (function() {
                             ${data.activities.map(activity => {
                                 const emoji = activity.emoji || ACTIVITY_EMOJIS[activity.id] || '🏃';
                                 return `
-                                    <div class="manage-activity-item ${activity.isCustom ? 'manage-activity-item--custom' : ''}" data-activity-id="${activity.id}">
+                                    <div class="manage-activity-item" data-activity-id="${activity.id}">
                                         <span class="manage-activity-item__emoji">${emoji}</span>
                                         <span class="manage-activity-item__name">${activity.name}</span>
                                         <span class="manage-activity-item__points">+${activity.points}</span>
-                                        <button class="manage-activity-item__delete" data-delete-activity="${activity.id}" title="Delete">
-                                            <i data-lucide="trash-2"></i>
-                                        </button>
+                                        <div class="manage-activity-item__actions">
+                                            <button class="manage-activity-item__edit" data-edit-activity="${activity.id}" title="Edit">
+                                                <i data-lucide="edit-2"></i>
+                                            </button>
+                                            <button class="manage-activity-item__delete" data-delete-activity="${activity.id}" title="Delete">
+                                                <i data-lucide="trash-2"></i>
+                                            </button>
+                                        </div>
                                     </div>
                                 `;
                             }).join('')}
@@ -917,6 +922,15 @@ const KidWorkout = (function() {
             }
         });
 
+        // Edit activity buttons
+        modal.querySelectorAll('[data-edit-activity]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const activityId = btn.dataset.editActivity;
+                closeModal();
+                showEditActivityModal(memberId, activityId, widgetContainer);
+            });
+        });
+
         // Delete activity buttons
         modal.querySelectorAll('[data-delete-activity]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -938,6 +952,143 @@ const KidWorkout = (function() {
         modal.querySelector('#closeManageModal')?.addEventListener('click', closeModal);
         modal.addEventListener('click', (e) => {
             if (e.target === modal) closeModal();
+        });
+    }
+
+    /**
+     * Show edit activity modal
+     */
+    function showEditActivityModal(memberId, activityId, widgetContainer) {
+        const data = getWidgetData(memberId);
+        const activity = data.activities.find(a => a.id === activityId);
+
+        if (!activity) {
+            if (typeof Toast !== 'undefined') {
+                Toast.error('Activity not found');
+            }
+            return;
+        }
+
+        const emojiOptions = ['🏃', '🏊', '🚴', '⚽', '🏀', '💃', '🧘', '🥾', '⛸️', '🎾', '🏓', '🎯', '🤸', '🏋️', '🚶', '🛹', '⚾', '🏈', '🎳', '🧗', '🤾', '🏇', '🥊', '🤼'];
+        const currentEmoji = activity.emoji || ACTIVITY_EMOJIS[activity.id] || '🏃';
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay modal-overlay--active';
+        modal.innerHTML = `
+            <div class="modal kid-workout-modal">
+                <div class="modal__header">
+                    <h3 class="modal__title">✏️ Edit Activity</h3>
+                    <button class="modal__close" id="closeEditModal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal__body">
+                    <div class="form-group">
+                        <label class="form-label">Emoji</label>
+                        <div class="manage-add-form__emoji-picker">
+                            <button class="manage-emoji-selected" id="editSelectedEmoji">${currentEmoji}</button>
+                            <div class="manage-emoji-dropdown" id="editEmojiDropdown">
+                                ${emojiOptions.map(e => `<button class="manage-emoji-option" data-emoji="${e}">${e}</button>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Activity Name</label>
+                        <input type="text" class="form-input" id="editActivityName" value="${activity.name}" maxlength="25">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Points</label>
+                        <input type="number" class="form-input" id="editActivityPoints" value="${activity.points}" min="1" max="50">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Duration (minutes)</label>
+                        <input type="number" class="form-input" id="editActivityDuration" value="${activity.duration || 15}" min="5" max="120">
+                    </div>
+                    <div class="modal__footer">
+                        <button class="btn btn--secondary" id="cancelEditBtn">Cancel</button>
+                        <button class="btn btn--primary" id="saveEditBtn">Save Changes</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        const closeModal = () => modal.remove();
+
+        // Emoji picker
+        const selectedEmojiBtn = modal.querySelector('#editSelectedEmoji');
+        const emojiDropdown = modal.querySelector('#editEmojiDropdown');
+        let selectedEmoji = currentEmoji;
+
+        selectedEmojiBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            emojiDropdown.classList.toggle('manage-emoji-dropdown--open');
+        });
+
+        modal.querySelectorAll('.manage-emoji-option').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                selectedEmoji = btn.dataset.emoji;
+                selectedEmojiBtn.textContent = selectedEmoji;
+                emojiDropdown.classList.remove('manage-emoji-dropdown--open');
+            });
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (!e.target.closest('.manage-add-form__emoji-picker')) {
+                emojiDropdown.classList.remove('manage-emoji-dropdown--open');
+            }
+        });
+
+        // Save button
+        modal.querySelector('#saveEditBtn').addEventListener('click', () => {
+            const name = modal.querySelector('#editActivityName').value.trim();
+            const points = parseInt(modal.querySelector('#editActivityPoints').value) || 10;
+            const duration = parseInt(modal.querySelector('#editActivityDuration').value) || 15;
+
+            if (!name) {
+                modal.querySelector('#editActivityName').focus();
+                return;
+            }
+
+            updateActivity(memberId, activityId, {
+                name,
+                points,
+                duration,
+                emoji: selectedEmoji
+            });
+
+            closeModal();
+            showManageModal(memberId, widgetContainer);
+            refreshWidget(memberId);
+
+            if (typeof Toast !== 'undefined') {
+                Toast.success('Activity updated!');
+            }
+        });
+
+        // Cancel button
+        modal.querySelector('#cancelEditBtn').addEventListener('click', () => {
+            closeModal();
+            showManageModal(memberId, widgetContainer);
+        });
+
+        // Close modal
+        modal.querySelector('#closeEditModal')?.addEventListener('click', () => {
+            closeModal();
+            showManageModal(memberId, widgetContainer);
+        });
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+                showManageModal(memberId, widgetContainer);
+            }
         });
     }
 

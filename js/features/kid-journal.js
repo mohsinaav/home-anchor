@@ -296,14 +296,28 @@ const KidJournal = (function() {
             widgetData.entries = [newEntry, ...(widgetData.entries || [])];
             saveWidgetData(memberId, widgetData);
 
-            // Award +5 points for daily journal entry
+            // Award points for daily journal entry based on member type
+            const member = Storage.getMember(memberId);
+            const settings = Storage.getSettings();
+            const pointsConfig = settings.pointsConfig || {};
+
+            // Determine points based on member type
+            let journalPoints = 5; // Default fallback
+            if (member) {
+                if (member.type === 'kid') {
+                    journalPoints = pointsConfig.kidTaskPoints !== undefined ? pointsConfig.kidTaskPoints : 3;
+                } else if (member.type === 'teen') {
+                    journalPoints = pointsConfig.teenTaskPoints !== undefined ? pointsConfig.teenTaskPoints : 5;
+                }
+            }
+
             const pointsData = Storage.getWidgetData(memberId, 'points');
-            if (pointsData) {
+            if (pointsData && journalPoints > 0) {
                 const updatedPointsData = {
                     ...pointsData,
-                    balance: (pointsData.balance || 0) + 5,
+                    balance: (pointsData.balance || 0) + journalPoints,
                     history: [
-                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: 5, type: 'earned' },
+                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: journalPoints, type: 'earned' },
                         ...(pointsData.history || []).slice(0, 99)
                     ]
                 };
@@ -931,14 +945,28 @@ const KidJournal = (function() {
             widgetData.entries = [newEntry, ...(widgetData.entries || [])];
             saveWidgetData(memberId, widgetData);
 
-            // Award +5 points for daily journal entry
+            // Award points for daily journal entry based on member type
+            const member = Storage.getMember(memberId);
+            const settings = Storage.getSettings();
+            const pointsConfig = settings.pointsConfig || {};
+
+            // Determine points based on member type
+            let journalPoints = 5; // Default fallback
+            if (member) {
+                if (member.type === 'kid') {
+                    journalPoints = pointsConfig.kidTaskPoints !== undefined ? pointsConfig.kidTaskPoints : 3;
+                } else if (member.type === 'teen') {
+                    journalPoints = pointsConfig.teenTaskPoints !== undefined ? pointsConfig.teenTaskPoints : 5;
+                }
+            }
+
             const pointsData = Storage.getWidgetData(memberId, 'points');
-            if (pointsData) {
+            if (pointsData && journalPoints > 0) {
                 const updatedPointsData = {
                     ...pointsData,
-                    balance: (pointsData.balance || 0) + 5,
+                    balance: (pointsData.balance || 0) + journalPoints,
                     history: [
-                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: 5, type: 'earned' },
+                        { activityId: newEntry.id, activityName: 'Daily Journal Entry', date: today, points: journalPoints, type: 'earned' },
                         ...(pointsData.history || []).slice(0, 99)
                     ]
                 };
