@@ -635,7 +635,7 @@ const Workout = (function() {
     /**
      * Show the full page history view
      */
-    function showHistoryPage(memberId, viewMode = 'weekly') {
+    function showHistoryPage(memberId, viewMode = 'weekly', activeTab = 'history') {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
@@ -643,7 +643,7 @@ const Workout = (function() {
         if (viewMode === 'monthly') {
             renderMonthlyHistoryPage(main, memberId, member, new Date());
         } else {
-            renderHistoryPage(main, memberId, member, new Date());
+            renderHistoryPage(main, memberId, member, new Date(), activeTab);
         }
     }
 
@@ -914,9 +914,267 @@ const Workout = (function() {
     }
 
     /**
+     * Render the calendar heatmap tab (GitHub-style activity calendar)
+     */
+    function renderCalendarHeatmap(memberId, logs, stepsLog) {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+
+        // Get the last 12 months of data
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            months.push({
+                year: d.getFullYear(),
+                month: d.getMonth(),
+                name: d.toLocaleDateString('en-US', { month: 'short' })
+            });
+        }
+
+        // Create a map of date -> workout count and total duration
+        const workoutMap = {};
+        logs.forEach(log => {
+            if (!workoutMap[log.date]) {
+                workoutMap[log.date] = { count: 0, duration: 0 };
+            }
+            workoutMap[log.date].count++;
+            workoutMap[log.date].duration += log.duration || 0;
+        });
+
+        // Get all dates for the last year
+        const startDate = new Date(today);
+        startDate.setFullYear(startDate.getFullYear() - 1);
+        startDate.setDate(startDate.getDate() - startDate.getDay()); // Start from Sunday
+
+        const weeks = [];
+        let currentWeek = [];
+        const current = new Date(startDate);
+        const endDate = new Date(today);
+
+        while (current <= endDate) {
+            const dateStr = DateUtils.formatISO(current);
+            const workout = workoutMap[dateStr];
+            const steps = stepsLog[dateStr] || 0;
+
+            // Calculate intensity level (0-4) based on workout count or duration
+            let level = 0;
+            if (workout) {
+                if (workout.duration >= 60) level = 4;
+                else if (workout.duration >= 45) level = 3;
+                else if (workout.duration >= 30) level = 2;
+                else level = 1;
+            }
+
+            currentWeek.push({
+                date: dateStr,
+                dayNum: current.getDate(),
+                month: current.getMonth(),
+                level,
+                workout,
+                steps,
+                isToday: dateStr === DateUtils.today()
+            });
+
+            if (current.getDay() === 6 || current >= endDate) {
+                weeks.push([...currentWeek]);
+                currentWeek = [];
+            }
+
+            current.setDate(current.getDate() + 1);
+        }
+
+        // Calculate totals
+        const totalWorkouts = logs.length;
+        const totalDuration = logs.reduce((sum, l) => sum + (l.duration || 0), 0);
+        const daysWithWorkouts = Object.keys(workoutMap).length;
+
+        return `
+            <div class="workout-heatmap">
+                <div class="workout-heatmap__header">
+                    <h3 class="workout-heatmap__title">
+                        <i data-lucide="calendar-range"></i>
+                        Activity Calendar
+                    </h3>
+                    <div class="workout-heatmap__stats">
+                        <span>${totalWorkouts} workouts</span>
+                        <span>${daysWithWorkouts} active days</span>
+                        <span>${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m total</span>
+                    </div>
+                </div>
+
+                <div class="workout-heatmap__months">
+                    ${months.map(m => `<span>${m.name}</span>`).join('')}
+                </div>
+
+                <div class="workout-heatmap__grid">
+                    <div class="workout-heatmap__days">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
+                    <div class="workout-heatmap__weeks">
+                        ${weeks.map(week => `
+                            <div class="workout-heatmap__week">
+                                ${week.map(day => `
+                                    <div class="workout-heatmap__cell workout-heatmap__cell--level-${day.level} ${day.isToday ? 'workout-heatmap__cell--today' : ''}"
+                                         data-date="${day.date}"
+                                         title="${day.date}${day.workout ? `: ${day.workout.count} workout(s), ${day.workout.duration}m` : ''}">
+                                    </div>
+                                `).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="workout-heatmap__legend">
+                    <span>Less</span>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-0"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-1"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-2"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-3"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-4"></div>
+                    <span>More</span>
+                </div>
+
+                <div class="workout-heatmap__detail" id="heatmapDetail" style="display: none;">
+                    <div class="workout-heatmap__detail-header">
+                        <span id="heatmapDetailDate"></span>
+                        <button class="btn btn--icon btn--ghost btn--sm" id="closeHeatmapDetail">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="workout-heatmap__detail-content" id="heatmapDetailContent">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the body measurements tab
+     */
+    function renderBodyMeasurementsTab(memberId) {
+        const data = getMeasurementsData(memberId);
+        const { settings, log } = data;
+        const sortedLog = [...(log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const enabledMetrics = MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id));
+
+        // Calculate trends for each metric
+        const getMetricTrend = (metricId) => {
+            const entries = sortedLog.filter(e => e.values[metricId] !== undefined);
+            if (entries.length < 2) return null;
+            const latest = entries[0].values[metricId];
+            const earliest = entries[entries.length - 1].values[metricId];
+            const diff = latest - earliest;
+            return {
+                diff: convertForDisplay(diff, metricId, settings.unit),
+                direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same',
+                entries: entries.length
+            };
+        };
+
+        return `
+            <div class="workout-body-tab">
+                <div class="workout-body-tab__header">
+                    <h3 class="workout-body-tab__title">
+                        <i data-lucide="ruler"></i>
+                        Body Measurements
+                    </h3>
+                    <div class="workout-body-tab__actions">
+                        <div class="measurements-modal__unit-toggle">
+                            <button class="measurements-unit-btn ${settings.unit === 'metric' ? 'measurements-unit-btn--active' : ''}"
+                                    data-unit="metric">Metric</button>
+                            <button class="measurements-unit-btn ${settings.unit === 'imperial' ? 'measurements-unit-btn--active' : ''}"
+                                    data-unit="imperial">Imperial</button>
+                        </div>
+                        <button class="btn btn--primary btn--sm" id="bodyTabLogBtn">
+                            <i data-lucide="plus"></i>
+                            Log
+                        </button>
+                    </div>
+                </div>
+
+                ${sortedLog.length > 0 ? `
+                    <div class="workout-body-tab__summary">
+                        ${enabledMetrics.map(metric => {
+                            const latestEntry = sortedLog.find(e => e.values[metric.id] !== undefined);
+                            const latestValue = latestEntry ? convertForDisplay(latestEntry.values[metric.id], metric.id, settings.unit) : null;
+                            const trend = getMetricTrend(metric.id);
+                            const unit = metric.unit[settings.unit];
+
+                            return `
+                                <div class="workout-body-card">
+                                    <div class="workout-body-card__header">
+                                        <span class="workout-body-card__label">${metric.name}</span>
+                                        ${trend ? `
+                                            <span class="workout-body-card__trend workout-body-card__trend--${trend.direction}">
+                                                <i data-lucide="${trend.direction === 'up' ? 'trending-up' : trend.direction === 'down' ? 'trending-down' : 'minus'}"></i>
+                                                ${Math.abs(trend.diff).toFixed(1)} ${unit}
+                                            </span>
+                                        ` : ''}
+                                    </div>
+                                    <div class="workout-body-card__value">
+                                        ${latestValue !== null ? formatDisplayValue(latestValue, metric.id) : '-'}
+                                        <span class="workout-body-card__unit">${unit}</span>
+                                    </div>
+                                    ${latestEntry ? `
+                                        <div class="workout-body-card__date">
+                                            Last updated: ${formatDateLocal(latestEntry.date)}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div class="workout-body-tab__history">
+                        <h4 class="workout-body-tab__subtitle">
+                            <i data-lucide="history"></i>
+                            History (${sortedLog.length} entries)
+                        </h4>
+                        <div class="workout-body-tab__list">
+                            ${sortedLog.map(entry => `
+                                <div class="workout-body-history-item">
+                                    <div class="workout-body-history-item__date">
+                                        ${formatDateLocal(entry.date)}
+                                    </div>
+                                    <div class="workout-body-history-item__values">
+                                        ${enabledMetrics.map(m => {
+                                            if (entry.values[m.id] === undefined) return '';
+                                            const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
+                                            return `<span><strong>${m.name}:</strong> ${displayVal} ${m.unit[settings.unit]}</span>`;
+                                        }).filter(Boolean).join('')}
+                                    </div>
+                                    <button class="btn btn--icon btn--ghost btn--sm workout-body-history-item__delete" data-delete-entry="${entry.id}">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : `
+                    <div class="workout-body-tab__empty">
+                        <i data-lucide="ruler"></i>
+                        <p>No measurements logged yet</p>
+                        <p class="text-muted">Start tracking your body measurements!</p>
+                        <button class="btn btn--primary" id="bodyTabLogBtn">
+                            <i data-lucide="plus"></i>
+                            Log Measurements
+                        </button>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
      * Render the history page with weekly view
      */
-    function renderHistoryPage(container, memberId, member, currentWeekDate) {
+    function renderHistoryPage(container, memberId, member, currentWeekDate, activeTab = 'history') {
         const widgetData = getWidgetData(memberId);
         const logs = widgetData.log;
         const routines = widgetData.routines;
@@ -962,6 +1220,22 @@ const Workout = (function() {
                     </div>
                 </div>
 
+                <div class="workout-page__tabs">
+                    <button class="workout-tab-btn ${activeTab === 'history' ? 'workout-tab-btn--active' : ''}" data-tab="history">
+                        <i data-lucide="list"></i>
+                        History
+                    </button>
+                    <button class="workout-tab-btn ${activeTab === 'calendar' ? 'workout-tab-btn--active' : ''}" data-tab="calendar">
+                        <i data-lucide="calendar-range"></i>
+                        Calendar
+                    </button>
+                    <button class="workout-tab-btn ${activeTab === 'body' ? 'workout-tab-btn--active' : ''}" data-tab="body">
+                        <i data-lucide="ruler"></i>
+                        Body
+                    </button>
+                </div>
+
+                ${activeTab === 'history' ? `
                 <div class="workout-page__nav">
                     <button class="workout-page__nav-btn" id="prevWeekBtn" title="Previous week">
                         <i data-lucide="chevron-left"></i>
@@ -1060,7 +1334,7 @@ const Workout = (function() {
                                                         <i data-lucide="clock"></i>
                                                         <span>Upcoming</span>
                                                     ` : `
-                                                        <i data-lucide="plus-circle"></i>
+                                                        <i data-lucide="circle-dashed"></i>
                                                         <span>No workout</span>
                                                     `}
                                                 </div>
@@ -1090,7 +1364,7 @@ const Workout = (function() {
                                             </div>
                                         ` : ''}
                                     </div>
-                                    ${isToday ? `
+                                    ${!isFuture ? `
                                         <button class="workout-day-card__add" data-action="add-workout" data-date="${dateStr}">
                                             <i data-lucide="plus"></i>
                                             Add
@@ -1143,6 +1417,11 @@ const Workout = (function() {
                         </button>
                     </div>
                 </div>
+                ` : ''}
+
+                ${activeTab === 'calendar' ? renderCalendarHeatmap(memberId, logs, stepsLog) : ''}
+
+                ${activeTab === 'body' ? renderBodyMeasurementsTab(memberId) : ''}
             </div>
         `;
 
@@ -1242,6 +1521,148 @@ const Workout = (function() {
                     markSuggestionDone(memberId, routineId, date);
                     renderHistoryPage(container, memberId, member, weekStart);
                 }
+            });
+        });
+
+        // Tab switching
+        container.querySelectorAll('.workout-tab-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                renderHistoryPage(container, memberId, member, weekStart, tab);
+            });
+        });
+
+        // Calendar heatmap cell click
+        container.querySelectorAll('.workout-heatmap__cell').forEach(cell => {
+            cell.addEventListener('click', () => {
+                const date = cell.dataset.date;
+                showHeatmapDetail(container, memberId, date);
+            });
+        });
+
+        // Close heatmap detail
+        document.getElementById('closeHeatmapDetail')?.addEventListener('click', () => {
+            const detail = document.getElementById('heatmapDetail');
+            if (detail) detail.style.display = 'none';
+        });
+
+        // Body tab - Unit toggle
+        container.querySelectorAll('.workout-body-tab .measurements-unit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const unit = btn.dataset.unit;
+                const data = getMeasurementsData(memberId);
+                data.settings.unit = unit;
+                saveMeasurementsData(memberId, data);
+                renderHistoryPage(container, memberId, member, weekStart, 'body');
+            });
+        });
+
+        // Body tab - Log button
+        document.getElementById('bodyTabLogBtn')?.addEventListener('click', () => {
+            showLogMeasurementsModal(memberId, () => {
+                renderHistoryPage(container, memberId, member, weekStart, 'body');
+            });
+        });
+
+        // Body tab - Delete entry buttons
+        container.querySelectorAll('.workout-body-history-item__delete').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const entryId = btn.dataset.deleteEntry;
+                const data = getMeasurementsData(memberId);
+                data.log = data.log.filter(entry => entry.id !== entryId);
+                saveMeasurementsData(memberId, data);
+                Toast.success('Entry deleted');
+                renderHistoryPage(container, memberId, member, weekStart, 'body');
+            });
+        });
+    }
+
+    /**
+     * Show heatmap detail for a specific date
+     */
+    function showHeatmapDetail(container, memberId, date) {
+        const widgetData = getWidgetData(memberId);
+        const logs = widgetData.log.filter(l => l.date === date);
+        const stepsLog = widgetData.stepsLog || {};
+        const steps = stepsLog[date] || 0;
+        const today = DateUtils.today();
+        const isFuture = date > today;
+
+        const detail = document.getElementById('heatmapDetail');
+        const dateSpan = document.getElementById('heatmapDetailDate');
+        const content = document.getElementById('heatmapDetailContent');
+
+        if (!detail || !dateSpan || !content) return;
+
+        const dateObj = new Date(date);
+        dateSpan.textContent = dateObj.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+
+        let html = '';
+        if (logs.length > 0) {
+            html += `<div class="workout-heatmap__detail-workouts">`;
+            logs.forEach(log => {
+                html += `
+                    <div class="workout-heatmap__detail-item">
+                        <i data-lucide="${log.icon || 'dumbbell'}"></i>
+                        <span>${log.routineName}</span>
+                        <span>${log.duration}m</span>
+                        <button class="btn btn--icon btn--ghost btn--sm" data-delete-workout="${log.id}" title="Delete">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                `;
+            });
+            html += `</div>`;
+        } else {
+            html += `<p class="text-muted">No workouts logged</p>`;
+        }
+
+        if (steps > 0) {
+            html += `
+                <div class="workout-heatmap__detail-steps">
+                    <i data-lucide="footprints"></i>
+                    <span>${steps.toLocaleString()} steps</span>
+                </div>
+            `;
+        }
+
+        // Add workout button for past/current dates
+        if (!isFuture) {
+            html += `
+                <button class="btn btn--primary btn--sm workout-heatmap__detail-add" data-add-workout-date="${date}">
+                    Add Workout
+                </button>
+            `;
+        }
+
+        content.innerHTML = html;
+        detail.style.display = 'block';
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind add workout button
+        const addBtn = content.querySelector('[data-add-workout-date]');
+        if (addBtn) {
+            addBtn.addEventListener('click', () => {
+                const member = Storage.getMember(memberId);
+                detail.style.display = 'none';
+                showAddWorkoutModal(memberId, date, container, member, new Date(), 'weekly');
+            });
+        }
+
+        // Bind delete buttons
+        content.querySelectorAll('[data-delete-workout]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const workoutId = btn.dataset.deleteWorkout;
+                deleteWorkout(memberId, workoutId);
+                Toast.success('Workout deleted');
+                // Refresh the heatmap detail
+                showHeatmapDetail(container, memberId, date);
+                // Re-render the page to update the heatmap
+                const member = Storage.getMember(memberId);
+                renderHistoryPage(container, memberId, member, new Date(), 'calendar');
             });
         });
     }
@@ -2409,7 +2830,13 @@ const Workout = (function() {
         Modal.open({
             title: 'Body Measurements',
             content,
-            footer: '<button class="btn btn--secondary" data-modal-close>Close</button>'
+            footer: `
+                <button class="btn btn--ghost" id="viewBodyHistoryBtn">
+                    <i data-lucide="history"></i>
+                    View Full History
+                </button>
+                <button class="btn btn--secondary" data-modal-close>Close</button>
+            `
         });
 
         if (typeof lucide !== 'undefined') {
@@ -2493,10 +2920,16 @@ const Workout = (function() {
             });
         });
 
-        // View all history button
+        // View all history button (in modal)
         document.getElementById('viewAllHistoryBtn')?.addEventListener('click', () => {
             Modal.close();
             setTimeout(() => showFullHistoryModal(memberId), 250);
+        });
+
+        // View full history button (navigates to history page with Body tab)
+        document.getElementById('viewBodyHistoryBtn')?.addEventListener('click', () => {
+            Modal.close();
+            setTimeout(() => showHistoryPage(memberId, 'weekly', 'body'), 250);
         });
 
         // Close button

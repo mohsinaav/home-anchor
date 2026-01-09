@@ -1,6 +1,6 @@
 # Home Anchor - Widget Test Cases
 
-> **Last Updated:** 2026-01-07
+> **Last Updated:** 2026-01-08
 > **Testing Order:** Adults → Teens → Kids → Toddlers
 > **Status Legend:** ✅ Pass | ❌ Fail | ⏳ Untested | ⚠️ Partial
 
@@ -64,26 +64,26 @@
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 2.1 | Widget renders correctly in dashboard | ⏳ | |
-| 2.2 | Displays task list | ⏳ | |
-| 2.3 | Can add new task (inline) | ⏳ | |
-| 2.4 | Can add task via modal | ⏳ | |
-| 2.5 | Can mark task as complete (checkbox) | ⏳ | |
-| 2.6 | Completed tasks show strikethrough | ⏳ | |
-| 2.7 | Can edit task text inline | ⏳ | |
-| 2.8 | Can delete task | ⏳ | |
-| 2.9 | Can set task priority (low/medium/high) | ⏳ | |
-| 2.10 | Can set due date | ⏳ | |
-| 2.11 | Overdue tasks show indicator | ⏳ | |
-| 2.12 | Can reorder tasks via drag-drop | ⏳ | |
-| 2.13 | Can clear all completed tasks | ⏳ | |
-| 2.14 | Shows "+X more" when >10 tasks | ⏳ | |
-| 2.15 | Full-page view opens correctly | ⏳ | |
-| 2.16 | Full-page shows To Do / Completed sections | ⏳ | |
-| 2.17 | Task statistics display correctly | ⏳ | |
-| 2.18 | Refresh button works | ⏳ | |
-| 2.19 | Data persists after page refresh | ⏳ | |
-| 2.20 | Hide widget works (PIN required) | ⏳ | |
+| 2.1 | Widget renders correctly in dashboard | ✅ | Desktop & Mobile |
+| 2.2 | Displays task list | ✅ | Desktop & Mobile |
+| 2.3 | Can add new task (inline) | ✅ | Desktop & Mobile |
+| 2.4 | Can add task via modal | ✅ | Desktop & Mobile |
+| 2.5 | Can mark task as complete (checkbox) | ✅ | Desktop & Mobile |
+| 2.6 | Completed tasks show strikethrough | ✅ | Desktop & Mobile - shown in Completed section |
+| 2.7 | Can edit task text inline | ✅ | Desktop & Mobile |
+| 2.8 | Can delete task | ✅ | Desktop & Mobile |
+| 2.9 | Can set task priority (low/medium/high) | ✅ | Desktop & Mobile - via Add Task modal only (not editable after) |
+| 2.10 | Can set due date | ✅ | Desktop & Mobile - optional field in modal |
+| 2.11 | Overdue tasks show indicator | ⏳ | Not tested - requires time-based scenario |
+| 2.12 | Can reorder tasks via drag-drop | ✅ | Desktop & Mobile - drag handles visible |
+| 2.13 | Can clear all completed tasks | ✅ | Desktop & Mobile - Clear All button in full-page |
+| 2.14 | Shows "+X more" when >10 tasks | ✅ | Desktop & Mobile - shows "+2 more tasks" button |
+| 2.15 | Full-page view opens correctly | ✅ | Desktop & Mobile |
+| 2.16 | Full-page shows To Do / Completed sections | ✅ | Desktop & Mobile |
+| 2.17 | Task statistics display correctly | ✅ | Desktop & Mobile - Pending/Completed/Total |
+| 2.18 | Refresh button works | ✅ | Desktop & Mobile |
+| 2.19 | Data persists after page refresh | ✅ | Desktop & Mobile |
+| 2.20 | Hide widget works (PIN required) | ✅ | Desktop & Mobile |
 
 ---
 
@@ -91,26 +91,44 @@
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 3.1 | Widget renders correctly in dashboard | ⏳ | |
-| 3.2 | Displays workout tracker | ⏳ | |
-| 3.3 | Can quick log workout | ⏳ | |
-| 3.4 | Can select workout/exercise type | ⏳ | |
-| 3.5 | Can set reps and sets | ⏳ | |
-| 3.6 | Can set duration | ⏳ | |
-| 3.7 | Can set weight | ⏳ | |
-| 3.8 | Can add notes to workout | ⏳ | |
-| 3.9 | Can edit workout entry | ⏳ | |
-| 3.10 | Can delete workout entry | ⏳ | |
-| 3.11 | Exercise templates display correctly | ⏳ | |
-| 3.12 | Can create custom exercise | ⏳ | |
-| 3.13 | Workout history displays correctly | ⏳ | |
-| 3.14 | Weekly/monthly stats display | ⏳ | |
-| 3.15 | Full-page view opens correctly | ⏳ | |
-| 3.16 | Full-page shows detailed history | ⏳ | |
-| 3.17 | Muscle group breakdown displays | ⏳ | |
-| 3.18 | Refresh button works | ⏳ | |
-| 3.19 | Data persists after page refresh | ⏳ | |
-| 3.20 | Hide widget works (PIN required) | ⏳ | |
+| 3.1 | Widget renders correctly in dashboard | ✅ | Desktop & Mobile |
+| 3.2 | Displays workout tracker | ✅ | Desktop & Mobile - streak, weekly goal, day indicators |
+| 3.3 | Can quick log workout | ✅ | Desktop & Mobile - celebration animation shows |
+| 3.4 | Can select workout/exercise type | ✅ | Desktop & Mobile - 6 preset routines |
+| 3.5 | Can set reps and sets | ⏳ | Not applicable - uses preset routines with durations |
+| 3.6 | Can set duration | ✅ | Desktop & Mobile - each routine has preset duration |
+| 3.7 | Can set weight | ⏳ | Not applicable - focused on cardio/activity tracking |
+| 3.8 | Can add notes to workout | ⏳ | Feature not available in current UI |
+| 3.9 | Can edit workout entry | ⏳ | Not directly - can delete and re-add |
+| 3.10 | Can delete workout entry | ✅ | Desktop & Mobile - Remove button on logged workouts |
+| 3.11 | Exercise templates display correctly | ✅ | Desktop & Mobile - 6 preset routines with icons |
+| 3.12 | Can create custom exercise | ✅ | Desktop & Mobile - via Routines modal |
+| 3.13 | Workout history displays correctly | ✅ | Desktop & Mobile - History tab shows day cards |
+| 3.14 | Weekly/monthly stats display | ✅ | Desktop & Mobile - streak, goal, time, total workouts |
+| 3.15 | Full-page view opens correctly | ✅ | Desktop & Mobile |
+| 3.16 | Full-page shows detailed history | ✅ | Desktop & Mobile - week view with day cards |
+| 3.17 | Muscle group breakdown displays | ⏳ | Not available in current UI |
+| 3.18 | Refresh button works | ✅ | Desktop & Mobile |
+| 3.19 | Data persists after page refresh | ✅ | Desktop & Mobile |
+| 3.20 | Hide widget works (PIN required) | ⏳ | Not tested |
+| 3.21 | Measurements modal opens correctly | ✅ | Desktop & Mobile |
+| 3.22 | Can log body measurements (weight, etc.) | ✅ | Desktop & Mobile - weight, waist, chest |
+| 3.23 | Can toggle metric/imperial units | ✅ | Desktop & Mobile - conversion works correctly |
+| 3.24 | Measurements show trend indicators | ⏳ | Requires multiple entries to test |
+| 3.25 | Can set measurement goals | ⏳ | Not tested |
+| 3.26 | Can customize enabled metrics | ✅ | Desktop & Mobile - Customize button available |
+| 3.27 | Can delete measurement entry | ✅ | Desktop & Mobile - delete button in history |
+| 3.28 | View Full History button navigates to Body tab | ✅ | Desktop & Mobile |
+| 3.29 | Body tab displays measurements history | ✅ | Desktop & Mobile - current values + history |
+| 3.30 | Calendar tab shows heatmap view | ✅ | Desktop & Mobile - GitHub-style activity heatmap |
+| 3.31 | Can add workout for past days | ✅ | Desktop & Mobile - Add button on past day cards |
+| 3.32 | Steps tracking works | ✅ | Desktop & Mobile - input with goal display |
+| 3.33 | Timer feature works | ✅ | Desktop & Mobile - shows message to add Circuit Timer widget |
+| 3.34 | Routines management works | ✅ | Desktop & Mobile - can add/delete routines |
+| 3.35 | Suggest Workout Plan button works | ✅ | Desktop & Mobile - opens wizard modal |
+| 3.36 | Can set fitness goal, days, rest days, time | ✅ | Desktop & Mobile - 4-step wizard |
+| 3.37 | Generated plan preview shows | ✅ | Desktop & Mobile - review step shows schedule |
+| 3.38 | Can apply suggested plan to schedule | ✅ | Desktop & Mobile - plan saved, shows on day cards |
 
 ---
 
@@ -799,11 +817,11 @@
 
 | Member Type | Widgets | Test Cases | ✅ Pass | ❌ Fail | ⏳ Untested |
 |-------------|---------|------------|---------|---------|-------------|
-| Adult | 11 | 273 | 23 | 0 | 250 |
+| Adult | 11 | 273 | 70 | 0 | 203 |
 | Teen | 5 | 68 | 0 | 0 | 68 |
 | Kid | 10 | 136 | 0 | 0 | 136 |
 | Toddler | 5 | 67 | 0 | 0 | 67 |
-| **TOTAL** | **31** | **544** | **23** | **0** | **521** |
+| **TOTAL** | **31** | **544** | **70** | **0** | **474** |
 
 ---
 
@@ -825,6 +843,8 @@
 | 2026-01-06 | Playwright | 1. Meal Plan | 16 | 0 | All tests pass after bug fixes (BUG-001, BUG-002, BUG-004) |
 | 2026-01-07 | Playwright | 1. Meal Plan | 23 | 0 | Added sync tests (1.17-1.20) and kids meal tests (1.21-1.23) - Desktop |
 | 2026-01-07 | Playwright | 1. Meal Plan | 23 | 0 | Mobile testing: All sync and kids meal tests pass (1.17-1.23) |
+| 2026-01-07 | Playwright | 2. Task List | 19 | 0 | Desktop & Mobile: All tests pass (2.1-2.10, 2.12-2.20). Only 2.11 (overdue indicator) untested |
+| 2026-01-08 | Playwright | 3. Workout | 28 | 0 | Desktop & Mobile: Core features, measurements, calendar heatmap, steps, routines, suggest workout plan all pass. 10 tests N/A or not tested |
 
 ---
 

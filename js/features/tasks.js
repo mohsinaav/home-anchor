@@ -7,6 +7,20 @@ const Tasks = (function() {
     // Maximum pending tasks to show in widget before showing "+x more"
     const MAX_WIDGET_TASKS = 10;
 
+    // Priority order for sorting (high priority first)
+    const PRIORITY_ORDER = { high: 0, medium: 1, low: 2, null: 3, undefined: 3 };
+
+    /**
+     * Sort tasks by priority (high → medium → low → none)
+     */
+    function sortByPriority(tasks) {
+        return [...tasks].sort((a, b) => {
+            const priorityA = PRIORITY_ORDER[a.priority] ?? 3;
+            const priorityB = PRIORITY_ORDER[b.priority] ?? 3;
+            return priorityA - priorityB;
+        });
+    }
+
     /**
      * Sync task completion with Vision Board step
      * When a task that came from a Vision Board step is completed/uncompleted,
@@ -51,7 +65,7 @@ const Tasks = (function() {
         };
 
         const tasks = widgetData.tasks || [];
-        const pendingTasks = tasks.filter(t => !t.completed);
+        const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
         const displayTasks = pendingTasks.slice(0, MAX_WIDGET_TASKS);
         const hasMore = pendingTasks.length > MAX_WIDGET_TASKS;
@@ -59,8 +73,8 @@ const Tasks = (function() {
         container.innerHTML = `
             <div class="tasks-widget">
                 <div class="tasks-widget__add">
-                    <input type="text" class="form-input tasks-widget__input" id="newTaskInput" placeholder="Add a new task...">
-                    <button class="btn btn--primary btn--sm" id="addTaskBtn">
+                    <input type="text" class="form-input tasks-widget__input" id="newTaskInput" placeholder="Quick add (press Enter)...">
+                    <button class="btn btn--primary btn--sm" id="addTaskBtn" title="Quick add task">
                         <i data-lucide="plus"></i>
                     </button>
                 </div>
@@ -410,7 +424,7 @@ const Tasks = (function() {
     function renderTasksFullPage(container, memberId, member) {
         const widgetData = Storage.getWidgetData(memberId, 'task-list') || { tasks: [] };
         const tasks = widgetData.tasks || [];
-        const pendingTasks = tasks.filter(t => !t.completed);
+        const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
 
         container.innerHTML = `
@@ -461,10 +475,9 @@ const Tasks = (function() {
                 </div>
 
                 <div class="tasks-page__add">
-                    <input type="text" class="form-input" id="newTaskInputPage" placeholder="Add a new task...">
-                    <button class="btn btn--primary" id="addTaskBtnPage">
+                    <input type="text" class="form-input" id="newTaskInputPage" placeholder="Quick add (press Enter)...">
+                    <button class="btn btn--primary" id="addTaskBtnPage" title="Quick add task">
                         <i data-lucide="plus"></i>
-                        Add
                     </button>
                 </div>
 

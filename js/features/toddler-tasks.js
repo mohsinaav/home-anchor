@@ -8,6 +8,20 @@ const ToddlerTasks = (function() {
     // Maximum pending tasks to show in widget before "View All"
     const MAX_WIDGET_TASKS = 5;
 
+    // Priority order for sorting (high priority first)
+    const PRIORITY_ORDER = { high: 0, medium: 1, low: 2, null: 3, undefined: 3 };
+
+    /**
+     * Sort tasks by priority (high → medium → low → none)
+     */
+    function sortByPriority(tasks) {
+        return [...tasks].sort((a, b) => {
+            const priorityA = PRIORITY_ORDER[a.priority] ?? 3;
+            const priorityB = PRIORITY_ORDER[b.priority] ?? 3;
+            return priorityA - priorityB;
+        });
+    }
+
     /**
      * Get widget data with defaults
      */
@@ -32,7 +46,7 @@ const ToddlerTasks = (function() {
     function renderWidget(container, memberId) {
         const widgetData = getWidgetData(memberId);
         const tasks = widgetData.tasks || [];
-        const pendingTasks = tasks.filter(t => !t.completed);
+        const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
         const displayTasks = pendingTasks.slice(0, MAX_WIDGET_TASKS);
         const hasMore = pendingTasks.length > MAX_WIDGET_TASKS;
@@ -193,7 +207,7 @@ const ToddlerTasks = (function() {
     function renderFullPage(container, memberId, member) {
         const widgetData = getWidgetData(memberId);
         const tasks = widgetData.tasks || [];
-        const pendingTasks = tasks.filter(t => !t.completed);
+        const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
 
         container.innerHTML = `

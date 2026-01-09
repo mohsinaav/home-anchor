@@ -273,7 +273,7 @@ const CircuitTimer = (function() {
                         </label>
                         <div class="create-timer-block__input">
                             <input type="number" class="form-input" id="restDuration"
-                                   value="${restBlock.duration}" min="5" max="120">
+                                   value="${restBlock.duration}" min="0" max="120">
                             <span class="create-timer-block__unit">sec</span>
                         </div>
                     </div>
@@ -324,8 +324,10 @@ const CircuitTimer = (function() {
 
         // Update preview on input change
         const updatePreview = () => {
-            const workDuration = parseInt(document.getElementById('workDuration')?.value) || 30;
-            const restDuration = parseInt(document.getElementById('restDuration')?.value) || 15;
+            const workVal = parseInt(document.getElementById('workDuration')?.value);
+            const restVal = parseInt(document.getElementById('restDuration')?.value);
+            const workDuration = isNaN(workVal) ? 30 : workVal;
+            const restDuration = isNaN(restVal) ? 15 : restVal;
             const rounds = parseInt(document.getElementById('timerRounds')?.value) || 8;
             const warmup = parseInt(document.getElementById('timerWarmup')?.value) || 0;
             const cooldown = parseInt(document.getElementById('timerCooldown')?.value) || 0;
@@ -346,8 +348,10 @@ const CircuitTimer = (function() {
         // Save button
         document.getElementById('saveTimerBtn')?.addEventListener('click', () => {
             const name = document.getElementById('timerName')?.value?.trim() || 'My Workout';
-            const workDuration = parseInt(document.getElementById('workDuration')?.value) || 30;
-            const restDuration = parseInt(document.getElementById('restDuration')?.value) || 15;
+            const workVal = parseInt(document.getElementById('workDuration')?.value);
+            const restVal = parseInt(document.getElementById('restDuration')?.value);
+            const workDuration = isNaN(workVal) ? 30 : workVal;
+            const restDuration = isNaN(restVal) ? 15 : restVal;
             const rounds = parseInt(document.getElementById('timerRounds')?.value) || 8;
             const warmup = parseInt(document.getElementById('timerWarmup')?.value) || 0;
             const cooldown = parseInt(document.getElementById('timerCooldown')?.value) || 0;
@@ -609,14 +613,14 @@ const CircuitTimer = (function() {
             timerState.timeRemaining = preset.blocks[0].duration;
             playPhaseChange('work');
         } else if (currentPhase === 'work') {
-            // Move to rest
+            // Move to rest (only if rest duration > 0)
             const restBlock = preset.blocks.find(b => b.type === 'rest');
-            if (restBlock) {
+            if (restBlock && restBlock.duration > 0) {
                 timerState.currentPhase = 'rest';
                 timerState.timeRemaining = restBlock.duration;
                 playPhaseChange('rest');
             } else {
-                // No rest, go to next round or complete
+                // No rest or rest is 0, go to next round or complete
                 if (currentRound < preset.rounds) {
                     timerState.currentRound++;
                     timerState.timeRemaining = preset.blocks[0].duration;
