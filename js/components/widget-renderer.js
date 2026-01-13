@@ -113,11 +113,11 @@ const WidgetRenderer = (function() {
                 if (typeof Routine !== 'undefined' && Routine.renderWidget) {
                     Routine.renderWidget(container, member.id);
                 } else {
-                    renderPlaceholder(container, 'Reminders', 'bell', 'Recurring reminders and tasks');
+                    renderPlaceholder(container, 'Routines', 'repeat', 'Track recurring tasks and build habits');
                 }
             },
-            title: 'Reminders',
-            icon: 'bell'
+            title: 'Routines',
+            icon: 'repeat'
         },
         'vision-board': {
             render: (container, member) => {
@@ -673,8 +673,8 @@ const WidgetRenderer = (function() {
             }
             case 'routine': {
                 const data = Storage.getWidgetData(memberId, 'routine') || {};
-                const count = data.blocks?.length || 0;
-                return `${count} reminders`;
+                const count = data.routines?.length || 0;
+                return `${count} routines`;
             }
             case 'vision-board': {
                 const data = Storage.getWidgetData(memberId, 'vision-board') || {};

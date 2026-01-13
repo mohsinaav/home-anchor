@@ -470,17 +470,21 @@ const Workout = (function() {
             showMeasurementsModal(memberId);
         });
 
-        // Open timer - scroll to Circuit Timer widget or switch focus to it
+        // Open timer - scroll to Circuit Timer widget, switch focus, or auto-add it
         container.querySelector('[data-action="open-timer"]')?.addEventListener('click', () => {
-            const timerWidget = document.getElementById('widget-circuit-timer');
-            if (timerWidget) {
-                // Widget is already rendered/focused, scroll to it
-                const widgetCard = timerWidget.closest('.widget-card');
+            const scrollToAndHighlight = (widget) => {
+                const widgetCard = widget.closest('.widget-card');
                 if (widgetCard) {
                     widgetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     widgetCard.classList.add('widget-card--highlight');
                     setTimeout(() => widgetCard.classList.remove('widget-card--highlight'), 2000);
                 }
+            };
+
+            const timerWidget = document.getElementById('widget-circuit-timer');
+            if (timerWidget) {
+                // Widget is already rendered/focused, scroll to it
+                scrollToAndHighlight(timerWidget);
             } else {
                 // Try to find the collapsed widget card and click it to focus
                 const collapsedCard = document.querySelector('[data-focus-widget="circuit-timer"]');
@@ -490,16 +494,24 @@ const Workout = (function() {
                     setTimeout(() => {
                         const newWidget = document.getElementById('widget-circuit-timer');
                         if (newWidget) {
-                            const widgetCard = newWidget.closest('.widget-card');
-                            if (widgetCard) {
-                                widgetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                                widgetCard.classList.add('widget-card--highlight');
-                                setTimeout(() => widgetCard.classList.remove('widget-card--highlight'), 2000);
-                            }
+                            scrollToAndHighlight(newWidget);
                         }
                     }, 100);
                 } else {
-                    Toast.info('Circuit Timer widget not added. Add it from the widget settings!');
+                    // Widget not added - auto-add it to the dashboard
+                    Storage.addWidgetToMember(memberId, 'circuit-timer');
+                    Toast.success('Circuit Timer added to your dashboard!');
+
+                    // Re-render dashboard to show the new widget
+                    State.emit('tabChanged', memberId);
+
+                    // After re-render, scroll to the new widget
+                    setTimeout(() => {
+                        const newWidget = document.getElementById('widget-circuit-timer');
+                        if (newWidget) {
+                            scrollToAndHighlight(newWidget);
+                        }
+                    }, 200);
                 }
             }
         });
@@ -877,25 +889,31 @@ const Workout = (function() {
      * Bind monthly history page events
      */
     function bindMonthlyHistoryPageEvents(container, memberId, member, monthStart) {
-        // Back button
-        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
-            State.emit('tabChanged', memberId);
-        });
+        // Back button - use onclick property for reliable replacement on re-render
+        const backBtn = container.querySelector('#backToMemberBtn');
+        if (backBtn) {
+            backBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                State.emit('tabChanged', memberId);
+            };
+            backBtn.style.cursor = 'pointer';
+        }
 
         // Switch to weekly view
-        document.getElementById('weeklyViewBtn')?.addEventListener('click', () => {
+        container.querySelector('#weeklyViewBtn')?.addEventListener('click', () => {
             renderHistoryPage(container, memberId, member, new Date());
         });
 
         // Previous month
-        document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
+        container.querySelector('#prevMonthBtn')?.addEventListener('click', () => {
             const prevMonth = new Date(monthStart);
             prevMonth.setMonth(prevMonth.getMonth() - 1);
             renderMonthlyHistoryPage(container, memberId, member, prevMonth);
         });
 
         // Next month
-        document.getElementById('nextMonthBtn')?.addEventListener('click', () => {
+        container.querySelector('#nextMonthBtn')?.addEventListener('click', () => {
             const nextMonth = new Date(monthStart);
             nextMonth.setMonth(nextMonth.getMonth() + 1);
             renderMonthlyHistoryPage(container, memberId, member, nextMonth);
@@ -916,20 +934,10 @@ const Workout = (function() {
     /**
      * Render the calendar heatmap tab (GitHub-style activity calendar)
      */
-    function renderCalendarHeatmap(memberId, logs, stepsLog) {
+    function renderCalendarHeatmap(memberId, logs, stepsLog, calendarView = 'year', viewMonth = null, viewYear = null) {
         const today = new Date();
-        const currentYear = today.getFullYear();
-
-        // Get the last 12 months of data
-        const months = [];
-        for (let i = 11; i >= 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            months.push({
-                year: d.getFullYear(),
-                month: d.getMonth(),
-                name: d.toLocaleDateString('en-US', { month: 'short' })
-            });
-        }
+        const currentMonth = viewMonth !== null ? viewMonth : today.getMonth();
+        const currentYear = viewYear !== null ? viewYear : today.getFullYear();
 
         // Create a map of date -> workout count and total duration
         const workoutMap = {};
@@ -940,6 +948,179 @@ const Workout = (function() {
             workoutMap[log.date].count++;
             workoutMap[log.date].duration += log.duration || 0;
         });
+
+        // Calculate totals
+        const totalWorkouts = logs.length;
+        const totalDuration = logs.reduce((sum, l) => sum + (l.duration || 0), 0);
+        const daysWithWorkouts = Object.keys(workoutMap).length;
+
+        return `
+            <div class="workout-calendar-container">
+                <div class="workout-calendar__header">
+                    <h3 class="workout-calendar__title">
+                        <i data-lucide="calendar-range"></i>
+                        Activity Calendar
+                    </h3>
+                    <div class="workout-calendar__view-toggle">
+                        <button class="workout-calendar__view-btn ${calendarView === 'month' ? 'workout-calendar__view-btn--active' : ''}" data-calendar-view="month">
+                            Month
+                        </button>
+                        <button class="workout-calendar__view-btn ${calendarView === 'year' ? 'workout-calendar__view-btn--active' : ''}" data-calendar-view="year">
+                            Year
+                        </button>
+                    </div>
+                </div>
+
+                <div class="workout-calendar__stats">
+                    <span>${totalWorkouts} workouts</span>
+                    <span>${daysWithWorkouts} active days</span>
+                    <span>${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m total</span>
+                </div>
+
+                ${calendarView === 'month' ? renderMonthlyCalendar(workoutMap, stepsLog, currentMonth, currentYear) : renderYearlyHeatmap(workoutMap, stepsLog, today)}
+
+                <div class="workout-heatmap__detail" id="heatmapDetail" style="display: none;">
+                    <div class="workout-heatmap__detail-header">
+                        <span id="heatmapDetailDate"></span>
+                        <button class="btn btn--icon btn--ghost btn--sm" id="closeHeatmapDetail">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="workout-heatmap__detail-content" id="heatmapDetailContent">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render monthly calendar view
+     */
+    function renderMonthlyCalendar(workoutMap, stepsLog, month, year) {
+        const today = DateUtils.today();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const startPadding = firstDay.getDay(); // Days to pad at start (0 = Sunday)
+        const daysInMonth = lastDay.getDate();
+
+        const monthName = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+        // Build calendar grid
+        const days = [];
+
+        // Add padding for days before the first of the month
+        for (let i = 0; i < startPadding; i++) {
+            days.push({ empty: true });
+        }
+
+        // Add actual days
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            const workout = workoutMap[dateStr];
+            const steps = stepsLog[dateStr] || 0;
+            const isToday = dateStr === today;
+            const isFuture = dateStr > today;
+
+            let level = 0;
+            if (workout) {
+                if (workout.duration >= 60) level = 4;
+                else if (workout.duration >= 45) level = 3;
+                else if (workout.duration >= 30) level = 2;
+                else level = 1;
+            }
+
+            days.push({
+                date: dateStr,
+                dayNum: d,
+                level,
+                workout,
+                steps,
+                isToday,
+                isFuture
+            });
+        }
+
+        // Calculate month stats
+        const monthWorkouts = Object.entries(workoutMap)
+            .filter(([date]) => date.startsWith(`${year}-${String(month + 1).padStart(2, '0')}`));
+        const monthTotal = monthWorkouts.reduce((sum, [, w]) => sum + w.duration, 0);
+        const monthActiveDays = monthWorkouts.length;
+
+        return `
+            <div class="workout-month-calendar">
+                <div class="workout-month-calendar__nav">
+                    <button class="workout-month-calendar__nav-btn" id="prevMonthBtn">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="workout-month-calendar__month">${monthName}</span>
+                    <button class="workout-month-calendar__nav-btn" id="nextMonthBtn" ${month === new Date().getMonth() && year === new Date().getFullYear() ? 'disabled' : ''}>
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="workout-month-calendar__summary">
+                    <span><strong>${monthActiveDays}</strong> active days</span>
+                    <span><strong>${Math.floor(monthTotal / 60)}h ${monthTotal % 60}m</strong> total</span>
+                </div>
+
+                <div class="workout-month-calendar__grid">
+                    <div class="workout-month-calendar__header">
+                        <span>Sun</span>
+                        <span>Mon</span>
+                        <span>Tue</span>
+                        <span>Wed</span>
+                        <span>Thu</span>
+                        <span>Fri</span>
+                        <span>Sat</span>
+                    </div>
+                    <div class="workout-month-calendar__days">
+                        ${days.map(day => {
+                            if (day.empty) {
+                                return `<div class="workout-month-calendar__day workout-month-calendar__day--empty"></div>`;
+                            }
+                            return `
+                                <div class="workout-month-calendar__day workout-month-calendar__day--level-${day.level} ${day.isToday ? 'workout-month-calendar__day--today' : ''} ${day.isFuture ? 'workout-month-calendar__day--future' : ''}"
+                                     data-date="${day.date}">
+                                    <span class="workout-month-calendar__day-num">${day.dayNum}</span>
+                                    ${day.workout ? `
+                                        <div class="workout-month-calendar__day-info">
+                                            <i data-lucide="dumbbell"></i>
+                                            <span>${day.workout.duration}m</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <div class="workout-heatmap__legend">
+                    <span>Less</span>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-0"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-1"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-2"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-3"></div>
+                    <div class="workout-heatmap__cell workout-heatmap__cell--level-4"></div>
+                    <span>More</span>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render yearly heatmap view
+     */
+    function renderYearlyHeatmap(workoutMap, stepsLog, today) {
+        // Get the last 12 months of data
+        const months = [];
+        for (let i = 11; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            months.push({
+                year: d.getFullYear(),
+                month: d.getMonth(),
+                name: d.toLocaleDateString('en-US', { month: 'short' })
+            });
+        }
 
         // Get all dates for the last year
         const startDate = new Date(today);
@@ -983,25 +1164,8 @@ const Workout = (function() {
             current.setDate(current.getDate() + 1);
         }
 
-        // Calculate totals
-        const totalWorkouts = logs.length;
-        const totalDuration = logs.reduce((sum, l) => sum + (l.duration || 0), 0);
-        const daysWithWorkouts = Object.keys(workoutMap).length;
-
         return `
             <div class="workout-heatmap">
-                <div class="workout-heatmap__header">
-                    <h3 class="workout-heatmap__title">
-                        <i data-lucide="calendar-range"></i>
-                        Activity Calendar
-                    </h3>
-                    <div class="workout-heatmap__stats">
-                        <span>${totalWorkouts} workouts</span>
-                        <span>${daysWithWorkouts} active days</span>
-                        <span>${Math.floor(totalDuration / 60)}h ${totalDuration % 60}m total</span>
-                    </div>
-                </div>
-
                 <div class="workout-heatmap__months">
                     ${months.map(m => `<span>${m.name}</span>`).join('')}
                 </div>
@@ -1040,15 +1204,9 @@ const Workout = (function() {
                     <span>More</span>
                 </div>
 
-                <div class="workout-heatmap__detail" id="heatmapDetail" style="display: none;">
-                    <div class="workout-heatmap__detail-header">
-                        <span id="heatmapDetailDate"></span>
-                        <button class="btn btn--icon btn--ghost btn--sm" id="closeHeatmapDetail">
-                            <i data-lucide="x"></i>
-                        </button>
-                    </div>
-                    <div class="workout-heatmap__detail-content" id="heatmapDetailContent">
-                    </div>
+                <div class="workout-heatmap__mobile-hint">
+                    <i data-lucide="hand"></i>
+                    Swipe to scroll • Switch to Month view for better detail
                 </div>
             </div>
         `;
@@ -1131,6 +1289,28 @@ const Workout = (function() {
                         }).join('')}
                     </div>
 
+                    ${sortedLog.length >= 2 ? `
+                        <div class="workout-body-tab__chart">
+                            <div class="measurements-chart">
+                                <h4 class="measurements-chart__title">
+                                    <i data-lucide="trending-up"></i>
+                                    Progress (Last 30 days)
+                                </h4>
+                                <div class="measurements-chart__container" id="bodyTabChart">
+                                    ${renderMiniChart(sortedLog, enabledMetrics[0], settings.unit)}
+                                </div>
+                                ${enabledMetrics.length > 1 ? `
+                                    <div class="measurements-chart__legend">
+                                        ${enabledMetrics.map((m, i) => `
+                                            <button class="measurements-chart__legend-btn ${i === 0 ? 'measurements-chart__legend-btn--active' : ''}"
+                                                    data-metric="${m.id}">${m.name}</button>
+                                        `).join('')}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    ` : ''}
+
                     <div class="workout-body-tab__history">
                         <h4 class="workout-body-tab__subtitle">
                             <i data-lucide="history"></i>
@@ -1174,7 +1354,7 @@ const Workout = (function() {
     /**
      * Render the history page with weekly view
      */
-    function renderHistoryPage(container, memberId, member, currentWeekDate, activeTab = 'history') {
+    function renderHistoryPage(container, memberId, member, currentWeekDate, activeTab = 'history', calendarView = 'year', calendarMonth = null, calendarYear = null) {
         const widgetData = getWidgetData(memberId);
         const logs = widgetData.log;
         const routines = widgetData.routines;
@@ -1197,95 +1377,72 @@ const Workout = (function() {
         const currentWeekStart = getWeekStart(new Date());
         const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime();
 
+        // Calculate total workout time
+        const totalWorkoutMinutes = logs.reduce((sum, l) => sum + (l.duration || 0), 0);
+        const totalHours = Math.floor(totalWorkoutMinutes / 60);
+        const totalMins = totalWorkoutMinutes % 60;
+
         container.innerHTML = `
-            <div class="workout-page">
-                <div class="workout-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+            <div class="workout-page workout-page--tabbed">
+                <!-- Hero Header -->
+                <div class="workout-page__hero">
+                    <button class="btn btn--ghost workout-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="workout-page__title">
-                        <i data-lucide="dumbbell"></i>
-                        Workout History
-                    </h1>
-                    <div class="workout-page__view-toggle">
-                        <button class="workout-view-btn workout-view-btn--active" id="weeklyViewBtn">
-                            <i data-lucide="calendar-days"></i>
-                            Week
-                        </button>
-                        <button class="workout-view-btn" id="monthlyViewBtn">
-                            <i data-lucide="calendar"></i>
-                            Month
-                        </button>
+                    <div class="workout-page__hero-content">
+                        <h1 class="workout-page__hero-title">
+                            <i data-lucide="dumbbell"></i>
+                            Workout Tracker
+                        </h1>
+                        <p class="workout-page__hero-subtitle">Stay active, stay strong</p>
+                    </div>
+                    <div class="workout-page__hero-stats">
+                        <div class="workout-hero-stat">
+                            <span class="workout-hero-stat__value">${streak}</span>
+                            <span class="workout-hero-stat__label">Day Streak</span>
+                        </div>
+                        <div class="workout-hero-stat">
+                            <span class="workout-hero-stat__value">${logs.length}</span>
+                            <span class="workout-hero-stat__label">Total Workouts</span>
+                        </div>
+                        <div class="workout-hero-stat">
+                            <span class="workout-hero-stat__value">${daysWithWorkouts}/${weeklyGoal}</span>
+                            <span class="workout-hero-stat__label">This Week</span>
+                        </div>
                     </div>
                 </div>
 
+                <!-- Tab Navigation -->
                 <div class="workout-page__tabs">
-                    <button class="workout-tab-btn ${activeTab === 'history' ? 'workout-tab-btn--active' : ''}" data-tab="history">
+                    <button class="workout-tab ${activeTab === 'history' ? 'workout-tab--active' : ''}" data-tab="history">
                         <i data-lucide="list"></i>
-                        History
+                        <span>History</span>
                     </button>
-                    <button class="workout-tab-btn ${activeTab === 'calendar' ? 'workout-tab-btn--active' : ''}" data-tab="calendar">
+                    <button class="workout-tab ${activeTab === 'calendar' ? 'workout-tab--active' : ''}" data-tab="calendar">
                         <i data-lucide="calendar-range"></i>
-                        Calendar
+                        <span>Calendar</span>
                     </button>
-                    <button class="workout-tab-btn ${activeTab === 'body' ? 'workout-tab-btn--active' : ''}" data-tab="body">
+                    <button class="workout-tab ${activeTab === 'body' ? 'workout-tab--active' : ''}" data-tab="body">
                         <i data-lucide="ruler"></i>
-                        Body
+                        <span>Body</span>
                     </button>
                 </div>
 
-                ${activeTab === 'history' ? `
-                <div class="workout-page__nav">
-                    <button class="workout-page__nav-btn" id="prevWeekBtn" title="Previous week">
-                        <i data-lucide="chevron-left"></i>
-                    </button>
-                    <span class="workout-page__week">${weekRangeText}</span>
-                    <button class="workout-page__nav-btn" id="nextWeekBtn" title="Next week" ${isCurrentWeek ? 'disabled' : ''}>
-                        <i data-lucide="chevron-right"></i>
-                    </button>
-                </div>
-
-                <div class="workout-page__stats">
-                    <div class="workout-stat-card">
-                        <div class="workout-stat-card__icon workout-stat-card__icon--flame">
-                            <i data-lucide="flame"></i>
-                        </div>
-                        <div class="workout-stat-card__info">
-                            <span class="workout-stat-card__value">${streak}</span>
-                            <span class="workout-stat-card__label">Day Streak</span>
-                        </div>
-                    </div>
-                    <div class="workout-stat-card">
-                        <div class="workout-stat-card__icon workout-stat-card__icon--target">
-                            <i data-lucide="target"></i>
-                        </div>
-                        <div class="workout-stat-card__info">
-                            <span class="workout-stat-card__value">${daysWithWorkouts}/${weeklyGoal}</span>
-                            <span class="workout-stat-card__label">Weekly Goal</span>
-                        </div>
-                    </div>
-                    <div class="workout-stat-card">
-                        <div class="workout-stat-card__icon workout-stat-card__icon--clock">
-                            <i data-lucide="clock"></i>
-                        </div>
-                        <div class="workout-stat-card__info">
-                            <span class="workout-stat-card__value">${Math.floor(totalMinutesThisWeek / 60)}h ${totalMinutesThisWeek % 60}m</span>
-                            <span class="workout-stat-card__label">This Week</span>
-                        </div>
-                    </div>
-                    <div class="workout-stat-card">
-                        <div class="workout-stat-card__icon workout-stat-card__icon--total">
-                            <i data-lucide="trophy"></i>
-                        </div>
-                        <div class="workout-stat-card__info">
-                            <span class="workout-stat-card__value">${logs.length}</span>
-                            <span class="workout-stat-card__label">Total Workouts</span>
-                        </div>
-                    </div>
-                </div>
-
+                <!-- Tab Content -->
                 <div class="workout-page__content">
+                ${activeTab === 'history' ? `
+                <div class="workout-history-section">
+                    <div class="workout-week-nav">
+                        <button class="workout-week-nav__btn" id="prevWeekBtn" title="Previous week">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="workout-week-nav__text">${weekRangeText}</span>
+                        <button class="workout-week-nav__btn" id="nextWeekBtn" title="Next week" ${isCurrentWeek ? 'disabled' : ''}>
+                            <i data-lucide="chevron-right"></i>
+                        </button>
+                    </div>
+
                     <div class="workout-week">
                         ${[0, 1, 2, 3, 4, 5, 6].map(dayOffset => {
                             const dayDate = new Date(weekStart);
@@ -1374,54 +1531,56 @@ const Workout = (function() {
                             `;
                         }).join('')}
                     </div>
+                </div>
 
-                    <div class="workout-goal-box">
-                        <div class="workout-goal-box__header">
-                            <i data-lucide="target"></i>
-                            <span>Weekly Goal</span>
-                        </div>
-                        <div class="workout-goal-box__content">
-                            <div class="workout-goal-box__progress">
-                                <div class="workout-goal-box__bar">
-                                    <div class="workout-goal-box__fill" style="width: ${Math.min(100, (daysWithWorkouts / weeklyGoal) * 100)}%"></div>
-                                </div>
-                                <span class="workout-goal-box__text">
-                                    ${daysWithWorkouts >= weeklyGoal ? '🎉 Goal reached!' : `${weeklyGoal - daysWithWorkouts} more days to go`}
-                                </span>
+                <div class="workout-goal-box">
+                    <div class="workout-goal-box__header">
+                        <i data-lucide="target"></i>
+                        <span>Weekly Goal</span>
+                    </div>
+                    <div class="workout-goal-box__content">
+                        <div class="workout-goal-box__progress">
+                            <div class="workout-goal-box__bar">
+                                <div class="workout-goal-box__fill" style="width: ${Math.min(100, (daysWithWorkouts / weeklyGoal) * 100)}%"></div>
                             </div>
-                            <div class="workout-goal-box__setting">
-                                <label>Days per week:</label>
-                                <select class="form-input form-input--sm" id="weeklyGoalSelect">
-                                    ${[2, 3, 4, 5, 6, 7].map(n => `
-                                        <option value="${n}" ${weeklyGoal === n ? 'selected' : ''}>${n}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
+                            <span class="workout-goal-box__text">
+                                ${daysWithWorkouts >= weeklyGoal ? '🎉 Goal reached!' : `${weeklyGoal - daysWithWorkouts} more days to go`}
+                            </span>
                         </div>
-
-                        <div class="workout-quick-add">
-                            <h4 class="workout-quick-add__title">Quick Add Today</h4>
-                            <div class="workout-quick-add__list">
-                                ${routines.map(routine => `
-                                    <button class="workout-quick-add__btn" data-routine-id="${routine.id}" data-date="${today}">
-                                        <i data-lucide="${routine.icon || 'dumbbell'}"></i>
-                                        <span>${routine.name}</span>
-                                    </button>
+                        <div class="workout-goal-box__setting">
+                            <label>Days per week:</label>
+                            <div class="workout-goal-buttons">
+                                ${[2, 3, 4, 5, 6, 7].map(n => `
+                                    <button class="workout-goal-btn ${weeklyGoal === n ? 'workout-goal-btn--active' : ''}"
+                                            data-goal="${n}">${n}</button>
                                 `).join('')}
                             </div>
                         </div>
-
-                        <button class="btn btn--primary workout-suggest-btn" id="suggestWorkoutBtn">
-                            <i data-lucide="sparkles"></i>
-                            Suggest Workout Plan
-                        </button>
                     </div>
+
+                    <div class="workout-quick-add">
+                        <h4 class="workout-quick-add__title">Quick Add Today</h4>
+                        <div class="workout-quick-add__list">
+                            ${routines.map(routine => `
+                                <button class="workout-quick-add__btn" data-routine-id="${routine.id}" data-date="${today}">
+                                    <i data-lucide="${routine.icon || 'dumbbell'}"></i>
+                                    <span>${routine.name}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <button class="btn btn--primary workout-suggest-btn" id="suggestWorkoutBtn">
+                        <i data-lucide="sparkles"></i>
+                        Suggest Workout Plan
+                    </button>
                 </div>
                 ` : ''}
 
-                ${activeTab === 'calendar' ? renderCalendarHeatmap(memberId, logs, stepsLog) : ''}
+                ${activeTab === 'calendar' ? renderCalendarHeatmap(memberId, logs, stepsLog, calendarView, calendarMonth, calendarYear) : ''}
 
                 ${activeTab === 'body' ? renderBodyMeasurementsTab(memberId) : ''}
+                </div>
             </div>
         `;
 
@@ -1437,25 +1596,31 @@ const Workout = (function() {
      * Bind history page events
      */
     function bindHistoryPageEvents(container, memberId, member, weekStart) {
-        // Back button
-        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
-            State.emit('tabChanged', memberId);
-        });
+        // Back button - use onclick property for reliable replacement on re-render
+        const backBtn = container.querySelector('#backToMemberBtn');
+        if (backBtn) {
+            backBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                State.emit('tabChanged', memberId);
+            };
+            backBtn.style.cursor = 'pointer';
+        }
 
         // Switch to monthly view
-        document.getElementById('monthlyViewBtn')?.addEventListener('click', () => {
+        container.querySelector('#monthlyViewBtn')?.addEventListener('click', () => {
             renderMonthlyHistoryPage(container, memberId, member, new Date());
         });
 
         // Previous week
-        document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
+        container.querySelector('#prevWeekBtn')?.addEventListener('click', () => {
             const prevWeek = new Date(weekStart);
             prevWeek.setDate(prevWeek.getDate() - 7);
             renderHistoryPage(container, memberId, member, prevWeek);
         });
 
         // Next week
-        document.getElementById('nextWeekBtn')?.addEventListener('click', () => {
+        container.querySelector('#nextWeekBtn')?.addEventListener('click', () => {
             const nextWeek = new Date(weekStart);
             nextWeek.setDate(nextWeek.getDate() + 7);
             renderHistoryPage(container, memberId, member, nextWeek);
@@ -1492,21 +1657,23 @@ const Workout = (function() {
             });
         });
 
-        // Weekly goal change
-        document.getElementById('weeklyGoalSelect')?.addEventListener('change', (e) => {
-            const newGoal = parseInt(e.target.value);
-            const widgetData = getWidgetData(memberId);
-            const updatedData = {
-                ...widgetData,
-                weeklyGoal: newGoal
-            };
-            Storage.setWidgetData(memberId, 'workout', updatedData);
-            Toast.success(`Weekly goal set to ${newGoal} days`);
-            renderHistoryPage(container, memberId, member, weekStart);
+        // Weekly goal change via buttons
+        container.querySelectorAll('.workout-goal-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newGoal = parseInt(btn.dataset.goal);
+                const widgetData = getWidgetData(memberId);
+                const updatedData = {
+                    ...widgetData,
+                    weeklyGoal: newGoal
+                };
+                Storage.setWidgetData(memberId, 'workout', updatedData);
+                Toast.success(`Weekly goal set to ${newGoal} days`);
+                renderHistoryPage(container, memberId, member, weekStart);
+            });
         });
 
         // Suggest Workout button
-        document.getElementById('suggestWorkoutBtn')?.addEventListener('click', () => {
+        container.querySelector('#suggestWorkoutBtn')?.addEventListener('click', () => {
             showSuggestionSetupModal(memberId);
         });
 
@@ -1525,7 +1692,7 @@ const Workout = (function() {
         });
 
         // Tab switching
-        container.querySelectorAll('.workout-tab-btn').forEach(btn => {
+        container.querySelectorAll('.workout-tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tab = btn.dataset.tab;
                 renderHistoryPage(container, memberId, member, weekStart, tab);
@@ -1540,10 +1707,45 @@ const Workout = (function() {
             });
         });
 
+        // Monthly calendar day click
+        container.querySelectorAll('.workout-month-calendar__day:not(.workout-month-calendar__day--empty)').forEach(cell => {
+            cell.addEventListener('click', () => {
+                const date = cell.dataset.date;
+                showHeatmapDetail(container, memberId, date);
+            });
+        });
+
         // Close heatmap detail
-        document.getElementById('closeHeatmapDetail')?.addEventListener('click', () => {
-            const detail = document.getElementById('heatmapDetail');
+        container.querySelector('#closeHeatmapDetail')?.addEventListener('click', () => {
+            const detail = container.querySelector('#heatmapDetail');
             if (detail) detail.style.display = 'none';
+        });
+
+        // Calendar view toggle (Month/Year)
+        container.querySelectorAll('.workout-calendar__view-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const view = btn.dataset.calendarView;
+                renderHistoryPage(container, memberId, member, weekStart, 'calendar', view);
+            });
+        });
+
+        // Month navigation (prev/next)
+        container.querySelector('#prevMonthBtn')?.addEventListener('click', () => {
+            const currentMonthEl = container.querySelector('.workout-month-calendar__month');
+            if (currentMonthEl) {
+                const currentDate = new Date(currentMonthEl.textContent);
+                const prevMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1);
+                renderHistoryPage(container, memberId, member, weekStart, 'calendar', 'month', prevMonth.getMonth(), prevMonth.getFullYear());
+            }
+        });
+
+        container.querySelector('#nextMonthBtn')?.addEventListener('click', () => {
+            const currentMonthEl = container.querySelector('.workout-month-calendar__month');
+            if (currentMonthEl) {
+                const currentDate = new Date(currentMonthEl.textContent);
+                const nextMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1);
+                renderHistoryPage(container, memberId, member, weekStart, 'calendar', 'month', nextMonth.getMonth(), nextMonth.getFullYear());
+            }
         });
 
         // Body tab - Unit toggle
@@ -1558,7 +1760,7 @@ const Workout = (function() {
         });
 
         // Body tab - Log button
-        document.getElementById('bodyTabLogBtn')?.addEventListener('click', () => {
+        container.querySelector('#bodyTabLogBtn')?.addEventListener('click', () => {
             showLogMeasurementsModal(memberId, () => {
                 renderHistoryPage(container, memberId, member, weekStart, 'body');
             });
@@ -1575,6 +1777,40 @@ const Workout = (function() {
                 renderHistoryPage(container, memberId, member, weekStart, 'body');
             });
         });
+
+        // Body tab - Chart metric toggle
+        container.querySelectorAll('.workout-body-tab__chart .measurements-chart__legend-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const metricId = btn.dataset.metric;
+                const data = getMeasurementsData(memberId);
+                const sortedLog = [...(data.log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
+                const metric = MEASUREMENT_METRICS.find(m => m.id === metricId);
+
+                if (metric) {
+                    // Update active state
+                    container.querySelectorAll('.workout-body-tab__chart .measurements-chart__legend-btn').forEach(b =>
+                        b.classList.remove('measurements-chart__legend-btn--active'));
+                    btn.classList.add('measurements-chart__legend-btn--active');
+
+                    // Re-render chart
+                    const chartContainer = container.querySelector('#bodyTabChart');
+                    if (chartContainer) {
+                        chartContainer.innerHTML = renderMiniChart(sortedLog, metric, data.settings.unit);
+                    }
+                }
+            });
+        });
+
+        // Body tab - Unit toggle
+        container.querySelectorAll('.workout-body-tab .measurements-unit-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const unit = btn.dataset.unit;
+                const data = getMeasurementsData(memberId);
+                data.settings.unit = unit;
+                saveMeasurementsData(memberId, data);
+                renderHistoryPage(container, memberId, member, weekStart, 'body');
+            });
+        });
     }
 
     /**
@@ -1588,9 +1824,9 @@ const Workout = (function() {
         const today = DateUtils.today();
         const isFuture = date > today;
 
-        const detail = document.getElementById('heatmapDetail');
-        const dateSpan = document.getElementById('heatmapDetailDate');
-        const content = document.getElementById('heatmapDetailContent');
+        const detail = container.querySelector('#heatmapDetail');
+        const dateSpan = container.querySelector('#heatmapDetailDate');
+        const content = container.querySelector('#heatmapDetailContent');
 
         if (!detail || !dateSpan || !content) return;
 
@@ -2787,43 +3023,6 @@ const Workout = (function() {
                     </div>
                 ` : ''}
 
-                ${log.length > 1 ? `
-                    <div class="measurements-history measurements-history--collapsed">
-                        <button class="measurements-history__toggle" id="toggleHistoryBtn">
-                            <span class="measurements-history__toggle-text">
-                                <i data-lucide="history"></i>
-                                History (${log.length} entries)
-                            </span>
-                            <i data-lucide="chevron-down" class="measurements-history__toggle-icon"></i>
-                        </button>
-                        <div class="measurements-history__content">
-                            <div class="measurements-history__list">
-                                ${log.slice(0, 5).map(entry => `
-                                    <div class="measurements-history__item" data-entry-id="${entry.id}">
-                                        <span class="measurements-history__date">
-                                            ${formatDateLocal(entry.date)}
-                                        </span>
-                                        <span class="measurements-history__values">
-                                            ${enabledMetrics.map(m => {
-                                                if (entry.values[m.id] === undefined) return '';
-                                                const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
-                                                return `${m.name}: ${displayVal}`;
-                                            }).filter(Boolean).join(' · ')}
-                                        </span>
-                                        <button class="btn btn--icon btn--ghost btn--sm measurements-history__delete" data-delete="${entry.id}">
-                                            <i data-lucide="trash-2"></i>
-                                        </button>
-                                    </div>
-                                `).join('')}
-                            </div>
-                            ${log.length > 5 ? `
-                                <button class="btn btn--ghost btn--sm measurements-history__view-all" id="viewAllHistoryBtn">
-                                    View all ${log.length} entries
-                                </button>
-                            ` : ''}
-                        </div>
-                    </div>
-                ` : ''}
             </div>
         `;
 
@@ -2873,28 +3072,6 @@ const Workout = (function() {
         document.getElementById('logMeasurementBtn')?.addEventListener('click', () => {
             Modal.close();
             setTimeout(() => showLogMeasurementsModal(memberId), 250);
-        });
-
-        // Delete history entries
-        document.querySelectorAll('.measurements-history__delete').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const entryId = btn.dataset.delete;
-                const data = getMeasurementsData(memberId);
-                data.log = data.log.filter(entry => entry.id !== entryId);
-                saveMeasurementsData(memberId, data);
-                Toast.success('Entry deleted');
-                Modal.close();
-                setTimeout(() => showMeasurementsModal(memberId), 250);
-            });
-        });
-
-        // Toggle history collapse
-        document.getElementById('toggleHistoryBtn')?.addEventListener('click', () => {
-            const historySection = document.querySelector('.measurements-history');
-            if (historySection) {
-                historySection.classList.toggle('measurements-history--collapsed');
-            }
         });
 
         // Chart metric toggle

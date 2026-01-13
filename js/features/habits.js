@@ -1276,18 +1276,44 @@ const Habits = (function() {
     }
 
     /**
+     * Escape HTML attribute values to prevent XSS and broken HTML
+     */
+    function escapeAttr(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    /**
      * Show edit habit modal
      */
     function showEditHabitModal(memberId, habitId, onManageClose) {
         const widgetData = getWidgetData(memberId);
         const habit = widgetData.habits.find(h => h.id === habitId);
-        if (!habit) return;
 
+        if (!habit) {
+            console.error('Habit not found!', habitId);
+            return;
+        }
+
+        // Open edit modal directly (Modal.open cancels any pending cleanup)
+        openEditHabitModalContent(memberId, habit, onManageClose);
+    }
+
+    /**
+     * Open the actual edit habit modal content
+     */
+    function openEditHabitModalContent(memberId, habit, onManageClose) {
+        const habitId = habit.id;
         const content = `
             <div class="edit-habit-form">
                 <div class="form-group">
                     <label class="form-label">Habit Name</label>
-                    <input type="text" class="form-input" id="editHabitName" value="${habit.name}">
+                    <input type="text" class="form-input" id="editHabitName" value="${escapeAttr(habit.name)}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Icon</label>
@@ -1404,26 +1430,23 @@ const Habits = (function() {
             }
 
             updateHabit(memberId, habitId, { name, icon, category, schedule, customDays });
-            Modal.close();
             showManageHabitsModal(memberId, onManageClose);
         });
 
         // Delete
         document.getElementById('deleteHabitBtn')?.addEventListener('click', async () => {
-            const confirmed = await Modal.confirm(
+            const confirmed = await Modal.dangerConfirm(
                 `Permanently delete "${habit.name}"? This cannot be undone.`,
                 'Delete Habit'
             );
             if (confirmed) {
                 deleteHabit(memberId, habitId);
-                Modal.close();
                 showManageHabitsModal(memberId, onManageClose);
             }
         });
 
         // Cancel
         document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
-            Modal.close();
             showManageHabitsModal(memberId, onManageClose);
         });
     }

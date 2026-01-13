@@ -1,6 +1,6 @@
 # Home Anchor - Widget Test Cases
 
-> **Last Updated:** 2026-01-08
+> **Last Updated:** 2026-01-10
 > **Testing Order:** Adults → Teens → Kids → Toddlers
 > **Status Legend:** ✅ Pass | ❌ Fail | ⏳ Untested | ⚠️ Partial
 
@@ -136,25 +136,25 @@
 
 | # | Test Case | Status | Notes |
 |---|-----------|--------|-------|
-| 4.1 | Widget renders correctly in dashboard | ⏳ | |
-| 4.2 | Displays gratitude journal | ⏳ | |
-| 4.3 | Can add gratitude entry (3 items) | ⏳ | |
-| 4.4 | Shows today's entries | ⏳ | |
-| 4.5 | Can edit today's entry | ⏳ | |
-| 4.6 | Can view past entries | ⏳ | |
-| 4.7 | Can delete entry | ⏳ | |
-| 4.8 | Can navigate between weeks | ⏳ | |
-| 4.9 | Weekly goal setting works | ⏳ | |
-| 4.10 | Weekly goal progress bar displays | ⏳ | |
-| 4.11 | Streak tracking displays correctly | ⏳ | |
-| 4.12 | Colored day cards show in weekly view | ⏳ | |
-| 4.13 | Full-page view opens correctly | ⏳ | |
-| 4.14 | Statistics display (streak, goal, total) | ⏳ | |
-| 4.15 | Random inspiration prompts show | ⏳ | |
-| 4.16 | Data syncs with Journal widget | ⏳ | |
-| 4.17 | Refresh button works | ⏳ | |
-| 4.18 | Data persists after page refresh | ⏳ | |
-| 4.19 | Hide widget works (PIN required) | ⏳ | |
+| 4.1 | Widget renders correctly in dashboard | ✅ | Desktop & Mobile - Shows streak, done indicator, entries |
+| 4.2 | Displays gratitude journal | ✅ | Desktop & Mobile - Today's gratitude section with entries |
+| 4.3 | Can add gratitude entry (3 items) | ✅ | Desktop & Mobile - 3 text fields in modal |
+| 4.4 | Shows today's entries | ✅ | Desktop & Mobile - Heart icons with entries listed |
+| 4.5 | Can edit today's entry | ✅ | Desktop & Mobile - Edit button opens modal with existing entries |
+| 4.6 | Can view past entries | ✅ | Desktop & Mobile - Weekly view shows all days with entries |
+| 4.7 | Can delete entry | ✅ | Desktop & Mobile - Clear entry text and save |
+| 4.8 | Can navigate between weeks | ✅ | Desktop & Mobile - Previous/Next week buttons work |
+| 4.9 | Weekly goal setting works | ✅ | Desktop & Mobile - Dropdown 3-7 days per week |
+| 4.10 | Weekly goal progress bar displays | ✅ | Desktop & Mobile - Shows X/Y format (e.g., 1/3) |
+| 4.11 | Streak tracking displays correctly | ✅ | Desktop & Mobile - Flame icon with day count |
+| 4.12 | Colored day cards show in weekly view | ✅ | Desktop & Mobile - Days with entries are highlighted |
+| 4.13 | Full-page view opens correctly | ✅ | Desktop & Mobile - Journal button opens Gratitude Journal page |
+| 4.14 | Statistics display (streak, goal, total) | ✅ | Desktop & Mobile - 3 stat cards at top of page |
+| 4.15 | Random inspiration prompts show | ✅ | Desktop & Mobile - Different prompt each time modal opens |
+| 4.16 | Data syncs with Journal widget | ⏳ | Requires both widgets enabled |
+| 4.17 | Refresh button works | ✅ | Desktop & Mobile - Updates widget display |
+| 4.18 | Data persists after page refresh | ✅ | Desktop & Mobile - All entries retained after refresh |
+| 4.19 | Hide widget works (PIN required) | ✅ | Desktop & Mobile - PIN modal, widget hidden, re-add works |
 
 ---
 
@@ -817,11 +817,11 @@
 
 | Member Type | Widgets | Test Cases | ✅ Pass | ❌ Fail | ⏳ Untested |
 |-------------|---------|------------|---------|---------|-------------|
-| Adult | 11 | 273 | 70 | 0 | 203 |
+| Adult | 11 | 273 | 88 | 0 | 185 |
 | Teen | 5 | 68 | 0 | 0 | 68 |
 | Kid | 10 | 136 | 0 | 0 | 136 |
 | Toddler | 5 | 67 | 0 | 0 | 67 |
-| **TOTAL** | **31** | **544** | **70** | **0** | **474** |
+| **TOTAL** | **31** | **544** | **88** | **0** | **456** |
 
 ---
 
@@ -845,6 +845,7 @@
 | 2026-01-07 | Playwright | 1. Meal Plan | 23 | 0 | Mobile testing: All sync and kids meal tests pass (1.17-1.23) |
 | 2026-01-07 | Playwright | 2. Task List | 19 | 0 | Desktop & Mobile: All tests pass (2.1-2.10, 2.12-2.20). Only 2.11 (overdue indicator) untested |
 | 2026-01-08 | Playwright | 3. Workout | 28 | 0 | Desktop & Mobile: Core features, measurements, calendar heatmap, steps, routines, suggest workout plan all pass. 10 tests N/A or not tested |
+| 2026-01-10 | Playwright | 4. Gratitude | 18 | 0 | Desktop & Mobile: All tests pass except 4.16 (Journal sync - requires both widgets). Widget CRUD, weekly view, stats, persistence all work |
 
 ---
 

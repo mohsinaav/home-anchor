@@ -420,21 +420,23 @@ const Gratitude = (function() {
     /**
      * Show the full page journal view
      */
-    function showJournalPage(memberId) {
+    function showJournalPage(memberId, activeTab = 'week') {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        renderJournalPage(main, memberId, member, new Date());
+        renderJournalPage(main, memberId, member, new Date(), activeTab);
     }
 
     /**
-     * Render the journal page with weekly view
+     * Render the journal page with tabbed interface
      */
-    function renderJournalPage(container, memberId, member, currentWeekDate) {
+    function renderJournalPage(container, memberId, member, currentWeekDate, activeTab = 'week') {
         const entries = getGratitudeEntries(memberId);
         const weeklyGoal = getWeeklyGoal(memberId);
         const streak = calculateStreak(memberId);
+        const todayItems = getTodayGratitude(memberId);
+        const writtenToday = todayItems.length > 0;
 
         const weekStart = getWeekStart(currentWeekDate);
         const weekEntries = getWeekEntries(entries, weekStart);
@@ -450,139 +452,64 @@ const Gratitude = (function() {
         const currentWeekStart = getWeekStart(new Date());
         const isCurrentWeek = weekStart.getTime() === currentWeekStart.getTime();
 
+        // Calculate monthly stats
+        const thisMonth = new Date();
+        const monthStart = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1);
+        const monthEntries = entries.filter(e => new Date(e.date) >= monthStart);
+        const monthDaysWithEntries = new Set(monthEntries.map(e => e.date)).size;
+
         container.innerHTML = `
-            <div class="gratitude-page">
-                <div class="gratitude-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+            <div class="gratitude-page gratitude-page--tabbed">
+                <!-- Hero Header -->
+                <div class="gratitude-page__hero">
+                    <button class="btn btn--ghost gratitude-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="gratitude-page__title">
-                        <i data-lucide="heart"></i>
-                        Gratitude Journal
-                    </h1>
-                    <div class="gratitude-page__nav">
-                        <button class="gratitude-page__nav-btn" id="prevWeekBtn" title="Previous week">
-                            <i data-lucide="chevron-left"></i>
-                        </button>
-                        <span class="gratitude-page__week">${weekRangeText}</span>
-                        <button class="gratitude-page__nav-btn" id="nextWeekBtn" title="Next week" ${isCurrentWeek ? 'disabled' : ''}>
-                            <i data-lucide="chevron-right"></i>
-                        </button>
+                    <div class="gratitude-page__hero-content">
+                        <h1 class="gratitude-page__hero-title">
+                            <i data-lucide="heart"></i>
+                            Gratitude Journal
+                        </h1>
+                        <p class="gratitude-page__hero-subtitle">Cultivate gratitude, one day at a time</p>
                     </div>
-                </div>
-
-                <div class="gratitude-page__stats">
-                    <div class="gratitude-stat">
-                        <div class="gratitude-stat__icon gratitude-stat__icon--flame">
-                            <i data-lucide="flame"></i>
+                    <div class="gratitude-page__hero-stats">
+                        <div class="gratitude-hero-stat">
+                            <span class="gratitude-hero-stat__value">${streak}</span>
+                            <span class="gratitude-hero-stat__label">Day Streak</span>
                         </div>
-                        <div class="gratitude-stat__info">
-                            <span class="gratitude-stat__value">${streak}</span>
-                            <span class="gratitude-stat__label">Day Streak</span>
+                        <div class="gratitude-hero-stat">
+                            <span class="gratitude-hero-stat__value">${entries.length}</span>
+                            <span class="gratitude-hero-stat__label">Total Entries</span>
                         </div>
-                    </div>
-                    <div class="gratitude-stat">
-                        <div class="gratitude-stat__icon gratitude-stat__icon--target">
-                            <i data-lucide="target"></i>
-                        </div>
-                        <div class="gratitude-stat__info">
-                            <span class="gratitude-stat__value">${daysWithEntries}/${weeklyGoal}</span>
-                            <span class="gratitude-stat__label">Weekly Goal</span>
-                        </div>
-                    </div>
-                    <div class="gratitude-stat">
-                        <div class="gratitude-stat__icon gratitude-stat__icon--book">
-                            <i data-lucide="book-heart"></i>
-                        </div>
-                        <div class="gratitude-stat__info">
-                            <span class="gratitude-stat__value">${entries.length}</span>
-                            <span class="gratitude-stat__label">Total Entries</span>
+                        <div class="gratitude-hero-stat">
+                            <span class="gratitude-hero-stat__value">${daysWithEntries}/${weeklyGoal}</span>
+                            <span class="gratitude-hero-stat__label">This Week</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Tab Navigation -->
+                <div class="gratitude-page__tabs">
+                    <button class="gratitude-tab ${activeTab === 'write' ? 'gratitude-tab--active' : ''}" data-tab="write">
+                        <i data-lucide="pen-line"></i>
+                        Write
+                    </button>
+                    <button class="gratitude-tab ${activeTab === 'week' ? 'gratitude-tab--active' : ''}" data-tab="week">
+                        <i data-lucide="calendar-days"></i>
+                        Week
+                    </button>
+                    <button class="gratitude-tab ${activeTab === 'stats' ? 'gratitude-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        Stats
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
                 <div class="gratitude-page__content">
-                    <div class="gratitude-week">
-                        ${[0, 1, 2, 3, 4, 5, 6].map(dayOffset => {
-                            const dayDate = new Date(weekStart);
-                            dayDate.setDate(dayDate.getDate() + dayOffset);
-                            const dateStr = DateUtils.formatISO(dayDate);
-                            const dayEntry = entries.find(e => e.date === dateStr);
-                            const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
-                            const dayNum = dayDate.getDate();
-                            const monthName = dayDate.toLocaleDateString('en-US', { month: 'short' });
-                            const isToday = dateStr === today;
-                            const isPast = dateStr < today;
-                            const colors = DAY_COLORS[dayOffset];
-
-                            // Get items or placeholder
-                            const items = dayEntry?.items || (dayEntry?.text ? [dayEntry.text] : null);
-
-                            return `
-                                <div class="gratitude-day ${isToday ? 'gratitude-day--today' : ''} ${dayEntry ? 'gratitude-day--filled' : ''}"
-                                     style="--day-bg: ${colors.bg}; --day-border: ${colors.border}; --day-text: ${colors.text};"
-                                     data-date="${dateStr}"
-                                     ${isToday ? 'data-editable="true"' : ''}>
-                                    <div class="gratitude-day__header">
-                                        <span class="gratitude-day__name">${dayName}</span>
-                                        <span class="gratitude-day__date">${monthName} ${dayNum}</span>
-                                    </div>
-                                    <div class="gratitude-day__content">
-                                        ${items ? items.map(item => `
-                                            <div class="gratitude-day__item">
-                                                <i data-lucide="heart"></i>
-                                                <span>${item}</span>
-                                            </div>
-                                        `).join('') : `
-                                            <div class="gratitude-day__empty">
-                                                ${isToday ? `
-                                                    <i data-lucide="plus-circle"></i>
-                                                    <span>Click to add gratitude</span>
-                                                ` : isPast ? `
-                                                    <i data-lucide="minus-circle"></i>
-                                                    <span>No entry</span>
-                                                ` : `
-                                                    <i data-lucide="clock"></i>
-                                                    <span>Upcoming</span>
-                                                `}
-                                            </div>
-                                        `}
-                                    </div>
-                                    ${isToday && dayEntry ? `
-                                        <button class="gratitude-day__edit" data-action="edit" data-date="${dateStr}">
-                                            <i data-lucide="edit-2"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-
-                    <div class="gratitude-goal-box">
-                        <div class="gratitude-goal-box__header">
-                            <i data-lucide="target"></i>
-                            <span>Weekly Goal</span>
-                        </div>
-                        <div class="gratitude-goal-box__content">
-                            <div class="gratitude-goal-box__progress">
-                                <div class="gratitude-goal-box__bar">
-                                    <div class="gratitude-goal-box__fill" style="width: ${Math.min(100, (daysWithEntries / weeklyGoal) * 100)}%"></div>
-                                </div>
-                                <span class="gratitude-goal-box__text">
-                                    ${daysWithEntries >= weeklyGoal ? '🎉 Goal reached!' : `${weeklyGoal - daysWithEntries} more days to go`}
-                                </span>
-                            </div>
-                            <div class="gratitude-goal-box__setting">
-                                <label>Days per week:</label>
-                                <select class="form-input form-input--sm" id="weeklyGoalSelect">
-                                    ${[3, 4, 5, 6, 7].map(n => `
-                                        <option value="${n}" ${weeklyGoal === n ? 'selected' : ''}>${n}</option>
-                                    `).join('')}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
+                    ${activeTab === 'write' ? renderWriteTab(memberId, todayItems, writtenToday) : ''}
+                    ${activeTab === 'week' ? renderWeekTab(entries, weekStart, weekRangeText, isCurrentWeek, today) : ''}
+                    ${activeTab === 'stats' ? renderStatsTab(entries, streak, weeklyGoal, daysWithEntries, monthDaysWithEntries) : ''}
                 </div>
             </div>
         `;
@@ -592,56 +519,348 @@ const Gratitude = (function() {
         }
 
         // Bind events
-        bindJournalPageEvents(container, memberId, member, weekStart);
+        bindJournalPageEvents(container, memberId, member, weekStart, activeTab);
+    }
+
+    /**
+     * Render the Write tab content
+     */
+    function renderWriteTab(memberId, todayItems, writtenToday) {
+        const prompt = getRandomPrompt();
+        const existingItems = writtenToday ? [...todayItems, '', '', ''].slice(0, 3) : ['', '', ''];
+
+        return `
+            <div class="gratitude-write-section">
+                <div class="gratitude-write-card">
+                    <div class="gratitude-write-card__date">
+                        ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                    </div>
+
+                    <div class="gratitude-write-card__prompt">
+                        <i data-lucide="sparkles"></i>
+                        <span>${prompt}</span>
+                    </div>
+
+                    ${writtenToday ? `
+                        <div class="gratitude-write-card__current">
+                            <div class="gratitude-write-card__current-label">
+                                <i data-lucide="check-circle"></i>
+                                Today's gratitude:
+                            </div>
+                            <div class="gratitude-write-card__current-items">
+                                ${todayItems.map(item => `
+                                    <div class="gratitude-write-card__item">
+                                        <i data-lucide="heart"></i>
+                                        <span>${item}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+
+                    <div class="gratitude-write-card__form">
+                        <p class="gratitude-write-card__instruction">
+                            ${writtenToday ? 'Edit your gratitude:' : 'What are you grateful for today?'}
+                        </p>
+                        <div class="gratitude-write-card__inputs">
+                            <div class="gratitude-write-card__input-row">
+                                <span class="gratitude-write-card__number">1.</span>
+                                <input type="text" class="form-input" id="pageGratitude1"
+                                       value="${existingItems[0] || ''}"
+                                       placeholder="I'm grateful for..." autocomplete="off">
+                            </div>
+                            <div class="gratitude-write-card__input-row">
+                                <span class="gratitude-write-card__number">2.</span>
+                                <input type="text" class="form-input" id="pageGratitude2"
+                                       value="${existingItems[1] || ''}"
+                                       placeholder="I'm also grateful for..." autocomplete="off">
+                            </div>
+                            <div class="gratitude-write-card__input-row">
+                                <span class="gratitude-write-card__number">3.</span>
+                                <input type="text" class="form-input" id="pageGratitude3"
+                                       value="${existingItems[2] || ''}"
+                                       placeholder="And grateful for..." autocomplete="off">
+                            </div>
+                        </div>
+                        <button class="btn btn--primary btn--lg gratitude-write-card__save" data-action="save-page-gratitude" data-member-id="${memberId}">
+                            <i data-lucide="save"></i>
+                            ${writtenToday ? 'Update Gratitude' : 'Save Gratitude'}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the Week tab content
+     */
+    function renderWeekTab(entries, weekStart, weekRangeText, isCurrentWeek, today) {
+        return `
+            <div class="gratitude-week-section">
+                <div class="gratitude-week-nav">
+                    <button class="gratitude-week-nav__btn" id="prevWeekBtn" title="Previous week">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="gratitude-week-nav__text">${weekRangeText}</span>
+                    <button class="gratitude-week-nav__btn" id="nextWeekBtn" title="Next week" ${isCurrentWeek ? 'disabled' : ''}>
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="gratitude-week">
+                    ${[0, 1, 2, 3, 4, 5, 6].map(dayOffset => {
+                        const dayDate = new Date(weekStart);
+                        dayDate.setDate(dayDate.getDate() + dayOffset);
+                        const dateStr = DateUtils.formatISO(dayDate);
+                        const dayEntry = entries.find(e => e.date === dateStr);
+                        const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'long' });
+                        const dayNum = dayDate.getDate();
+                        const monthName = dayDate.toLocaleDateString('en-US', { month: 'short' });
+                        const isToday = dateStr === today;
+                        const isPast = dateStr < today;
+                        const colors = DAY_COLORS[dayOffset];
+
+                        // Get items or placeholder
+                        const items = dayEntry?.items || (dayEntry?.text ? [dayEntry.text] : null);
+
+                        return `
+                            <div class="gratitude-day ${isToday ? 'gratitude-day--today' : ''} ${dayEntry ? 'gratitude-day--filled' : ''}"
+                                 style="--day-bg: ${colors.bg}; --day-border: ${colors.border}; --day-text: ${colors.text};"
+                                 data-date="${dateStr}"
+                                 ${isToday ? 'data-editable="true"' : ''}>
+                                <div class="gratitude-day__header">
+                                    <span class="gratitude-day__name">${dayName}</span>
+                                    <span class="gratitude-day__date">${monthName} ${dayNum}</span>
+                                </div>
+                                <div class="gratitude-day__content">
+                                    ${items ? items.map(item => `
+                                        <div class="gratitude-day__item">
+                                            <i data-lucide="heart"></i>
+                                            <span>${item}</span>
+                                        </div>
+                                    `).join('') : `
+                                        <div class="gratitude-day__empty">
+                                            ${isToday ? `
+                                                <i data-lucide="plus-circle"></i>
+                                                <span>Click to add gratitude</span>
+                                            ` : isPast ? `
+                                                <i data-lucide="minus-circle"></i>
+                                                <span>No entry</span>
+                                            ` : `
+                                                <i data-lucide="clock"></i>
+                                                <span>Upcoming</span>
+                                            `}
+                                        </div>
+                                    `}
+                                </div>
+                                ${isToday && dayEntry ? `
+                                    <button class="gratitude-day__edit" data-action="edit-day" data-date="${dateStr}">
+                                        <i data-lucide="edit-2"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the Stats tab content
+     */
+    function renderStatsTab(entries, streak, weeklyGoal, daysWithEntries, monthDaysWithEntries) {
+        // Calculate best streak
+        let bestStreak = 0;
+        let currentStreak = 0;
+        const sortedDates = [...new Set(entries.map(e => e.date))].sort();
+
+        for (let i = 0; i < sortedDates.length; i++) {
+            if (i === 0) {
+                currentStreak = 1;
+            } else {
+                const prevDate = new Date(sortedDates[i - 1]);
+                const currDate = new Date(sortedDates[i]);
+                const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    currentStreak++;
+                } else {
+                    currentStreak = 1;
+                }
+            }
+            bestStreak = Math.max(bestStreak, currentStreak);
+        }
+
+        // Calculate this month's progress
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const monthProgress = Math.round((monthDaysWithEntries / daysInMonth) * 100);
+
+        return `
+            <div class="gratitude-stats-section">
+                <div class="gratitude-stats-grid">
+                    <div class="gratitude-stat-card gratitude-stat-card--primary">
+                        <div class="gratitude-stat-card__icon">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="gratitude-stat-card__info">
+                            <span class="gratitude-stat-card__value">${streak}</span>
+                            <span class="gratitude-stat-card__label">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="gratitude-stat-card gratitude-stat-card--success">
+                        <div class="gratitude-stat-card__icon">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="gratitude-stat-card__info">
+                            <span class="gratitude-stat-card__value">${bestStreak}</span>
+                            <span class="gratitude-stat-card__label">Best Streak</span>
+                        </div>
+                    </div>
+                    <div class="gratitude-stat-card gratitude-stat-card--info">
+                        <div class="gratitude-stat-card__icon">
+                            <i data-lucide="book-heart"></i>
+                        </div>
+                        <div class="gratitude-stat-card__info">
+                            <span class="gratitude-stat-card__value">${entries.length}</span>
+                            <span class="gratitude-stat-card__label">Total Entries</span>
+                        </div>
+                    </div>
+                    <div class="gratitude-stat-card gratitude-stat-card--warning">
+                        <div class="gratitude-stat-card__icon">
+                            <i data-lucide="calendar-check"></i>
+                        </div>
+                        <div class="gratitude-stat-card__info">
+                            <span class="gratitude-stat-card__value">${monthDaysWithEntries}</span>
+                            <span class="gratitude-stat-card__label">This Month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gratitude-goal-card">
+                    <div class="gratitude-goal-card__header">
+                        <i data-lucide="target"></i>
+                        <span>Weekly Goal Progress</span>
+                    </div>
+                    <div class="gratitude-goal-card__content">
+                        <div class="gratitude-goal-card__progress">
+                            <div class="gratitude-goal-card__bar">
+                                <div class="gratitude-goal-card__fill" style="width: ${Math.min(100, (daysWithEntries / weeklyGoal) * 100)}%"></div>
+                            </div>
+                            <span class="gratitude-goal-card__text">
+                                ${daysWithEntries >= weeklyGoal ? '🎉 Goal reached!' : `${daysWithEntries}/${weeklyGoal} days completed`}
+                            </span>
+                        </div>
+                        <div class="gratitude-goal-card__setting">
+                            <label>Weekly goal:</label>
+                            <div class="gratitude-goal-buttons">
+                                ${[3, 4, 5, 6, 7].map(n => `
+                                    <button class="gratitude-goal-btn ${weeklyGoal === n ? 'gratitude-goal-btn--active' : ''}"
+                                            data-goal="${n}">${n}</button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="gratitude-month-card">
+                    <div class="gratitude-month-card__header">
+                        <i data-lucide="calendar"></i>
+                        <span>${new Date().toLocaleDateString('en-US', { month: 'long' })} Progress</span>
+                    </div>
+                    <div class="gratitude-month-card__content">
+                        <div class="gratitude-month-card__progress">
+                            <div class="gratitude-month-card__bar">
+                                <div class="gratitude-month-card__fill" style="width: ${monthProgress}%"></div>
+                            </div>
+                            <span class="gratitude-month-card__text">${monthDaysWithEntries} of ${daysInMonth} days (${monthProgress}%)</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     /**
      * Bind journal page events
      */
-    function bindJournalPageEvents(container, memberId, member, weekStart) {
+    function bindJournalPageEvents(container, memberId, member, weekStart, activeTab) {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
-        // Previous week
-        document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
-            const prevWeek = new Date(weekStart);
-            prevWeek.setDate(prevWeek.getDate() - 7);
-            renderJournalPage(container, memberId, member, prevWeek);
-        });
-
-        // Next week
-        document.getElementById('nextWeekBtn')?.addEventListener('click', () => {
-            const nextWeek = new Date(weekStart);
-            nextWeek.setDate(nextWeek.getDate() + 7);
-            renderJournalPage(container, memberId, member, nextWeek);
-        });
-
-        // Click on today's card to edit
-        container.querySelectorAll('.gratitude-day[data-editable="true"]').forEach(card => {
-            card.addEventListener('click', (e) => {
-                // Don't trigger if clicking the edit button
-                if (e.target.closest('[data-action="edit"]')) return;
-                showWriteModal(memberId);
+        // Tab switching
+        container.querySelectorAll('.gratitude-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                renderJournalPage(container, memberId, member, weekStart, newTab);
             });
         });
 
-        // Edit button on today's card
-        container.querySelectorAll('[data-action="edit"]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                showWriteModal(memberId, true);
-            });
-        });
+        // Tab-specific events
+        if (activeTab === 'write') {
+            // Save gratitude from page
+            container.querySelector('[data-action="save-page-gratitude"]')?.addEventListener('click', () => {
+                const items = [
+                    document.getElementById('pageGratitude1')?.value?.trim(),
+                    document.getElementById('pageGratitude2')?.value?.trim(),
+                    document.getElementById('pageGratitude3')?.value?.trim()
+                ].filter(Boolean);
 
-        // Weekly goal change
-        document.getElementById('weeklyGoalSelect')?.addEventListener('change', (e) => {
-            const newGoal = parseInt(e.target.value);
-            saveWeeklyGoal(memberId, newGoal);
-            Toast.success(`Weekly goal set to ${newGoal} days`);
-            renderJournalPage(container, memberId, member, weekStart);
-        });
+                if (items.length === 0) {
+                    Toast.error('Please write at least one thing you\'re grateful for');
+                    return;
+                }
+
+                saveGratitude(memberId, items);
+                renderJournalPage(container, memberId, member, weekStart, 'write');
+            });
+        }
+
+        if (activeTab === 'week') {
+            // Previous week
+            document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
+                const prevWeek = new Date(weekStart);
+                prevWeek.setDate(prevWeek.getDate() - 7);
+                renderJournalPage(container, memberId, member, prevWeek, 'week');
+            });
+
+            // Next week
+            document.getElementById('nextWeekBtn')?.addEventListener('click', () => {
+                const nextWeek = new Date(weekStart);
+                nextWeek.setDate(nextWeek.getDate() + 7);
+                renderJournalPage(container, memberId, member, nextWeek, 'week');
+            });
+
+            // Click on today's card to switch to write tab
+            container.querySelectorAll('.gratitude-day[data-editable="true"]').forEach(card => {
+                card.addEventListener('click', (e) => {
+                    if (e.target.closest('[data-action="edit-day"]')) return;
+                    renderJournalPage(container, memberId, member, weekStart, 'write');
+                });
+            });
+
+            // Edit button on today's card
+            container.querySelectorAll('[data-action="edit-day"]').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    renderJournalPage(container, memberId, member, weekStart, 'write');
+                });
+            });
+        }
+
+        if (activeTab === 'stats') {
+            // Weekly goal change via buttons
+            container.querySelectorAll('.gratitude-goal-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const newGoal = parseInt(btn.dataset.goal);
+                    saveWeeklyGoal(memberId, newGoal);
+                    Toast.success(`Weekly goal set to ${newGoal} days`);
+                    renderJournalPage(container, memberId, member, weekStart, 'stats');
+                });
+            });
+        }
     }
 
     /**

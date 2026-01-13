@@ -23,6 +23,11 @@
 .btn svg {
     width: 16px;
     height: 16px;
+    pointer-events: none;
+}
+
+.btn i {
+    pointer-events: none;
 }
 
 /* Button Sizes */
@@ -1040,6 +1045,35 @@ textarea.form-input {
     font-size: var(--text-sm);
     font-weight: var(--font-medium);
     color: var(--gray-700);
+}
+
+/* Widget Selection Header - for Select All button */
+.widget-selection-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
+}
+
+.widget-selection-header .form-label {
+    margin-bottom: 0;
+}
+
+/* Compact widget list for modals */
+.widget-list--compact {
+    max-height: 240px;
+    overflow-y: auto;
+    padding-right: var(--space-2);
+}
+
+.widget-list--compact .widget-checkbox {
+    padding: var(--space-2) var(--space-3);
+}
+
+.widget-list--compact .widget-checkbox__content svg {
+    width: 16px;
+    height: 16px;
 }
 
 /* ==========================================================================

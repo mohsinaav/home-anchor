@@ -263,8 +263,12 @@ const Tasks = (function() {
                 // Replace title with input
                 titleEl.innerHTML = `<input type="text" class="task-item__edit-input" value="${originalTitle}" />`;
                 const input = titleEl.querySelector('input');
+                // Place cursor at end after focus (use timeout to override browser's default select-all)
                 input.focus();
-                input.select();
+                setTimeout(() => {
+                    const len = input.value.length;
+                    input.setSelectionRange(len, len);
+                }, 10);
 
                 const saveEdit = () => {
                     const newTitle = input.value.trim();
@@ -429,47 +433,31 @@ const Tasks = (function() {
 
         container.innerHTML = `
             <div class="tasks-page">
-                <div class="tasks-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+                <!-- Hero Header -->
+                <div class="tasks-page__hero">
+                    <button class="btn btn--ghost tasks-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="tasks-page__title">
-                        <i data-lucide="check-square"></i>
-                        Task List
-                    </h1>
-                    <button class="btn btn--primary" data-action="add-task">
-                        <i data-lucide="plus"></i>
-                        Add Task
-                    </button>
-                </div>
-
-                <div class="tasks-page__stats">
-                    <div class="tasks-page-stat">
-                        <div class="tasks-page-stat__icon tasks-page-stat__icon--pending">
-                            <i data-lucide="circle"></i>
-                        </div>
-                        <div class="tasks-page-stat__info">
-                            <span class="tasks-page-stat__value">${pendingTasks.length}</span>
-                            <span class="tasks-page-stat__label">Pending</span>
-                        </div>
+                    <div class="tasks-page__hero-content">
+                        <h1 class="tasks-page__hero-title">
+                            <i data-lucide="check-square"></i>
+                            Task List
+                        </h1>
+                        <p class="tasks-page__hero-subtitle">Stay organized and get things done</p>
                     </div>
-                    <div class="tasks-page-stat">
-                        <div class="tasks-page-stat__icon tasks-page-stat__icon--completed">
-                            <i data-lucide="check-circle"></i>
+                    <div class="tasks-page__hero-stats">
+                        <div class="tasks-hero-stat">
+                            <span class="tasks-hero-stat__value">${pendingTasks.length}</span>
+                            <span class="tasks-hero-stat__label">Pending</span>
                         </div>
-                        <div class="tasks-page-stat__info">
-                            <span class="tasks-page-stat__value">${completedTasks.length}</span>
-                            <span class="tasks-page-stat__label">Completed</span>
+                        <div class="tasks-hero-stat">
+                            <span class="tasks-hero-stat__value">${completedTasks.length}</span>
+                            <span class="tasks-hero-stat__label">Completed</span>
                         </div>
-                    </div>
-                    <div class="tasks-page-stat">
-                        <div class="tasks-page-stat__icon tasks-page-stat__icon--total">
-                            <i data-lucide="list"></i>
-                        </div>
-                        <div class="tasks-page-stat__info">
-                            <span class="tasks-page-stat__value">${tasks.length}</span>
-                            <span class="tasks-page-stat__label">Total</span>
+                        <div class="tasks-hero-stat">
+                            <span class="tasks-hero-stat__value">${tasks.length}</span>
+                            <span class="tasks-hero-stat__label">Total</span>
                         </div>
                     </div>
                 </div>
@@ -568,10 +556,7 @@ const Tasks = (function() {
                         ` : ''}
                     </div>
                 </div>
-                <button class="btn btn--icon btn--ghost btn--sm task-page-item__delete" data-edit-btn="${task.id}" title="Edit task">
-                    <i data-lucide="pencil"></i>
-                </button>
-                <button class="btn btn--icon btn--ghost btn--sm task-page-item__delete" data-delete="${task.id}">
+                <button class="btn btn--icon btn--ghost btn--sm task-page-item__delete" data-delete="${task.id}" title="Delete task">
                     <i data-lucide="trash-2"></i>
                 </button>
             </div>
@@ -582,14 +567,20 @@ const Tasks = (function() {
      * Bind full page events
      */
     function bindFullPageEvents(container, memberId, member, widgetData) {
-        // Back button
-        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
-            State.emit('tabChanged', memberId);
-        });
+        // Back button - use onclick property for reliable replacement on re-render
+        const backBtn = container.querySelector('#backToMemberBtn');
+        if (backBtn) {
+            backBtn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                State.emit('tabChanged', memberId);
+            };
+            backBtn.style.cursor = 'pointer';
+        }
 
-        // Add task from full page
-        const addBtnPage = document.getElementById('addTaskBtnPage');
-        const inputPage = document.getElementById('newTaskInputPage');
+        // Add task from full page - use container-scoped selectors
+        const addBtnPage = container.querySelector('#addTaskBtnPage');
+        const inputPage = container.querySelector('#newTaskInputPage');
 
         const addTaskFromPage = () => {
             const title = inputPage?.value?.trim();
@@ -609,7 +600,7 @@ const Tasks = (function() {
 
             // Re-focus input after re-render
             setTimeout(() => {
-                document.getElementById('newTaskInputPage')?.focus();
+                container.querySelector('#newTaskInputPage')?.focus();
             }, 50);
         };
 
@@ -666,8 +657,13 @@ const Tasks = (function() {
             // Replace title with input
             titleEl.innerHTML = `<input type="text" class="task-page-item__edit-input" value="${originalTitle}" />`;
             const input = titleEl.querySelector('input');
+
+            // Place cursor at end after focus (use timeout to override browser's default select-all)
             input.focus();
-            input.select();
+            setTimeout(() => {
+                const len = input.value.length;
+                input.setSelectionRange(len, len);
+            }, 10);
 
             const saveEdit = () => {
                 const newTitle = input.value.trim();
@@ -698,19 +694,8 @@ const Tasks = (function() {
             });
         });
 
-        // Edit button click
-        container.querySelectorAll('[data-edit-btn]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const taskId = btn.dataset.editBtn;
-                const contentEl = container.querySelector(`[data-edit="${taskId}"]`);
-                if (contentEl) {
-                    startInlineEdit(contentEl, taskId);
-                }
-            });
-        });
-
-        // Clear completed
-        document.getElementById('clearCompletedBtn')?.addEventListener('click', () => {
+        // Clear completed - use container-scoped selector
+        container.querySelector('#clearCompletedBtn')?.addEventListener('click', () => {
             if (confirm('Delete all completed tasks?')) {
                 widgetData.tasks = widgetData.tasks.filter(t => !t.completed);
                 Storage.setWidgetData(memberId, 'task-list', widgetData);

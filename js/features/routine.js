@@ -113,13 +113,21 @@ const Routine = (function() {
 
     /**
      * Calculate days since last completion
+     * Uses DateUtils for proper timezone handling
      */
     function getDaysSinceLastDone(routine) {
         if (!routine.lastCompleted) return null;
-        const last = new Date(routine.lastCompleted);
-        const today = new Date();
-        const diffTime = today - last;
-        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        // Use DateUtils for proper local date handling
+        const lastDateStr = DateUtils.formatISO(new Date(routine.lastCompleted));
+        const todayStr = DateUtils.today();
+
+        // Parse both as local dates and calculate difference
+        const lastDate = DateUtils.parseLocalDate(lastDateStr);
+        const todayDate = DateUtils.parseLocalDate(todayStr);
+
+        const diffTime = todayDate - lastDate;
+        const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
         return diffDays;
     }
 
@@ -368,6 +376,33 @@ const Routine = (function() {
     }
 
     /**
+     * Get routines that are due today or overdue (not done today)
+     * A routine is "due today" when: daysSince >= freqDays (daysUntilDue <= 0)
+     */
+    function getRoutinesDueToday(memberId) {
+        const data = getWidgetData(memberId);
+        const dueRoutines = [];
+
+        data.routines.forEach(routine => {
+            const status = getRoutineStatus(routine);
+            // Only include routines that are overdue (which includes "due today" when overdueDays === 0)
+            // This means: routine was last done >= freqDays ago
+            if (status.status === 'overdue') {
+                dueRoutines.push({
+                    id: routine.id,
+                    title: routine.title,
+                    icon: routine.icon,
+                    color: routine.color,
+                    statusType: status.status,
+                    statusMessage: status.message
+                });
+            }
+        });
+
+        return dueRoutines;
+    }
+
+    /**
      * Sort routines by urgency
      */
     function sortRoutines(routines) {
@@ -375,9 +410,23 @@ const Routine = (function() {
             const statusA = getRoutineStatus(a);
             const statusB = getRoutineStatus(b);
 
-            // Priority: overdue > due-soon > new > upcoming > ok > snoozed > done
-            const priority = { 'overdue': 0, 'due-soon': 1, 'new': 2, 'upcoming': 3, 'ok': 4, 'snoozed': 5, 'done': 6 };
-            return (priority[statusA.status] || 6) - (priority[statusB.status] || 6);
+            // Priority: overdue > due-soon > upcoming > ok > new > snoozed > done
+            // "new" (never done) is lowest priority - existing routines take precedence
+            const priority = { 'overdue': 0, 'due-soon': 1, 'upcoming': 2, 'ok': 3, 'new': 4, 'snoozed': 5, 'done': 6 };
+            const priorityA = priority[statusA.status] !== undefined ? priority[statusA.status] : 6;
+            const priorityB = priority[statusB.status] !== undefined ? priority[statusB.status] : 6;
+
+            // Primary sort by priority (urgency)
+            if (priorityA !== priorityB) {
+                return priorityA - priorityB;
+            }
+
+            // Secondary sort: for overdue, sort by how overdue (most overdue first)
+            if (statusA.status === 'overdue' && statusB.status === 'overdue') {
+                return (statusB.overdueDays || 0) - (statusA.overdueDays || 0);
+            }
+
+            return 0;
         });
     }
 
@@ -479,91 +528,113 @@ const Routine = (function() {
             return;
         }
 
-        // Get routines for widget (prioritized by urgency, max 4 for compact view)
-        const displayRoutines = routines.filter(r => getRoutineStatus(r).status !== 'snoozed').slice(0, 4);
+        // Get pending routines (not done, not snoozed) and sort by urgency
+        const pendingRoutines = sortRoutines(routines.filter(r => {
+            const status = getRoutineStatus(r).status;
+            return status !== 'done' && status !== 'snoozed';
+        }));
+
+        // Get the most urgent routine for the focus card
+        const focusRoutine = pendingRoutines[0] || null;
+        const focusStatus = focusRoutine ? getRoutineStatus(focusRoutine) : null;
+
+        // Get "up next" routines (excluding the focus one, max 3)
+        const upNextRoutines = pendingRoutines.slice(1, 4);
+
+        // Count due today (overdue with 0 days + due-soon that's actually today)
+        const dueTodayCount = routines.filter(r => {
+            const status = getRoutineStatus(r);
+            return status.status === 'overdue' || status.status === 'due-soon' || status.status === 'new';
+        }).filter(r => getRoutineStatus(r).status !== 'done').length;
 
         container.innerHTML = `
-            <div class="routine-widget">
-                <!-- Stats header -->
-                <div class="routine-widget__stats-bar">
-                    <div class="routine-widget__stat ${overdueCount > 0 ? 'routine-widget__stat--alert' : ''}">
-                        <i data-lucide="alert-circle"></i>
-                        <span>${overdueCount}</span>
+            <div class="routine-widget routine-widget--dashboard">
+                <!-- Stats Row -->
+                <div class="routine-widget__stats">
+                    <div class="routine-widget__stat routine-widget__stat--danger">
+                        <span class="routine-widget__stat-value">${overdueCount}</span>
+                        <span class="routine-widget__stat-label">Overdue</span>
                     </div>
-                    <div class="routine-widget__stat ${dueSoonCount > 0 ? 'routine-widget__stat--warning' : ''}">
-                        <i data-lucide="clock"></i>
-                        <span>${dueSoonCount}</span>
+                    <div class="routine-widget__stat routine-widget__stat--warning">
+                        <span class="routine-widget__stat-value">${dueTodayCount}</span>
+                        <span class="routine-widget__stat-label">Due Today</span>
                     </div>
                     <div class="routine-widget__stat routine-widget__stat--success">
-                        <i data-lucide="check-circle-2"></i>
-                        <span>${doneToday}/${totalActive}</span>
+                        <span class="routine-widget__stat-value">${doneToday}</span>
+                        <span class="routine-widget__stat-label">Done</span>
                     </div>
                 </div>
 
-                ${overdueCount > 0 ? `
-                    <div class="routine-widget__alert routine-widget__alert--overdue">
-                        <div class="routine-widget__alert-content">
+                ${focusRoutine ? `
+                    <!-- Focus Card - Most Urgent -->
+                    <div class="routine-widget__focus" data-routine-id="${focusRoutine.id}">
+                        <div class="routine-widget__focus-label">
                             <i data-lucide="alert-circle"></i>
-                            <span>${overdueCount} overdue</span>
+                            Most Urgent
                         </div>
-                        <button class="routine-widget__alert-action" data-action="mark-all-overdue" title="Mark all overdue as done">
-                            <i data-lucide="check-check"></i>
-                        </button>
-                    </div>
-                ` : dueSoonCount > 0 ? `
-                    <div class="routine-widget__alert routine-widget__alert--upcoming">
-                        <i data-lucide="clock"></i>
-                        <span>${dueSoonCount} due soon</span>
-                    </div>
-                ` : ''}
-
-                <div class="routine-widget__list">
-                    ${displayRoutines.map(routine => {
-                        const status = getRoutineStatus(routine);
-                        const streak = routine.streak || 0;
-                        const timeIcon = TIME_OF_DAY[routine.timeOfDay || 'anytime']?.icon || 'clock';
-
-                        return `
-                            <div class="routine-item routine-item--${status.status}" data-routine-id="${routine.id}">
-                                <div class="routine-item__icon" style="--routine-color: ${routine.color || '#6366F1'}">
-                                    <i data-lucide="${routine.icon || 'check'}"></i>
-                                </div>
-                                <div class="routine-item__info">
-                                    <span class="routine-item__title">${routine.title}</span>
-                                    <span class="routine-item__meta">
-                                        <span class="routine-item__status">${status.message}</span>
-                                        ${streak > 1 ? `<span class="routine-item__streak" title="${streak} in a row"><i data-lucide="flame"></i>${streak}</span>` : ''}
-                                    </span>
-                                </div>
-                                <div class="routine-item__actions">
-                                    ${status.status !== 'done' ? `
-                                        <button class="routine-item__snooze btn btn--icon btn--xs btn--ghost"
-                                                data-snooze="${routine.id}" title="Snooze 1 day">
-                                            <i data-lucide="alarm-clock-off"></i>
-                                        </button>
-                                    ` : ''}
-                                    <button class="routine-item__check btn btn--icon btn--sm ${status.status === 'done' ? 'btn--success' : 'btn--ghost'}"
-                                            data-mark-done="${routine.id}" ${status.status === 'done' ? 'disabled' : ''}>
-                                        <i data-lucide="${status.status === 'done' ? 'check-circle-2' : 'circle'}"></i>
-                                    </button>
-                                </div>
+                        <div class="routine-widget__focus-content">
+                            <div class="routine-widget__focus-icon" style="background: ${focusRoutine.color || '#6366F1'}">
+                                <i data-lucide="${focusRoutine.icon || 'check'}"></i>
                             </div>
-                        `;
-                    }).join('')}
-                </div>
+                            <div class="routine-widget__focus-text">
+                                <div class="routine-widget__focus-title">${focusRoutine.title}</div>
+                                <div class="routine-widget__focus-meta">${focusStatus.message}</div>
+                            </div>
+                            <button class="routine-widget__focus-action" data-mark-done="${focusRoutine.id}">
+                                Done
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <!-- All Done State -->
+                    <div class="routine-widget__all-done">
+                        <i data-lucide="check-circle-2"></i>
+                        <span>All caught up!</span>
+                    </div>
+                `}
 
-                ${routines.length > 4 ? `
-                    <div class="routine-widget__more">
-                        +${routines.length - 4} more routines
+                ${upNextRoutines.length > 0 ? `
+                    <!-- Up Next List -->
+                    <div class="routine-widget__upnext">
+                        <div class="routine-widget__upnext-header">
+                            <h4>Up Next</h4>
+                            <button class="routine-widget__upnext-viewall" data-action="view-all">View all</button>
+                        </div>
+                        <div class="routine-widget__upnext-list">
+                            ${upNextRoutines.map(routine => {
+                                const status = getRoutineStatus(routine);
+                                return `
+                                    <div class="routine-widget__upnext-item" data-routine-id="${routine.id}">
+                                        <div class="routine-widget__upnext-icon" style="background: ${routine.color || '#6366F1'}">
+                                            <i data-lucide="${routine.icon || 'check'}"></i>
+                                        </div>
+                                        <div class="routine-widget__upnext-info">
+                                            <div class="routine-widget__upnext-title">${routine.title}</div>
+                                            <div class="routine-widget__upnext-meta">${status.message}</div>
+                                        </div>
+                                        <button class="routine-widget__upnext-check" data-mark-done="${routine.id}" title="Mark as done">
+                                            <i data-lucide="circle"></i>
+                                        </button>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
                     </div>
                 ` : ''}
 
+                ${pendingRoutines.length > 4 ? `
+                    <button class="routine-widget__more-btn" data-view-all-routines="${memberId}">
+                        +${pendingRoutines.length - 4} more routine${pendingRoutines.length - 4 !== 1 ? 's' : ''}
+                    </button>
+                ` : ''}
+
+                <!-- Footer -->
                 <div class="routine-widget__footer">
                     <button class="btn btn--sm btn--ghost" data-action="view-all">
                         <i data-lucide="list"></i>
-                        View All
+                        All Routines
                     </button>
-                    <button class="btn btn--sm btn--ghost" data-action="add">
+                    <button class="btn btn--sm btn--primary" data-action="add">
                         <i data-lucide="plus"></i>
                         Add
                     </button>
@@ -644,9 +715,37 @@ const Routine = (function() {
             });
         });
 
-        // View all
-        container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+        // View all (includes footer button and upnext header link)
+        container.querySelectorAll('[data-action="view-all"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showRoutinesPage(memberId);
+            });
+        });
+
+        // "+X more" button
+        container.querySelector('[data-view-all-routines]')?.addEventListener('click', () => {
             showRoutinesPage(memberId);
+        });
+
+        // Focus card click - show routine detail
+        container.querySelector('.routine-widget__focus')?.addEventListener('click', (e) => {
+            if (e.target.closest('[data-mark-done]')) return; // Don't trigger if clicking Done button
+            const routineId = container.querySelector('.routine-widget__focus')?.dataset.routineId;
+            if (routineId) {
+                showRoutineDetail(memberId, routineId, () => renderWidget(container, memberId));
+            }
+        });
+
+        // Upnext item click - show routine detail
+        container.querySelectorAll('.routine-widget__upnext-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('[data-mark-done]')) return; // Don't trigger if clicking check button
+                const routineId = item.dataset.routineId;
+                if (routineId) {
+                    showRoutineDetail(memberId, routineId, () => renderWidget(container, memberId));
+                }
+            });
         });
 
         // Add button
@@ -668,79 +767,109 @@ const Routine = (function() {
 
         // Group by status
         const overdue = routines.filter(r => getRoutineStatus(r).status === 'overdue');
-        const dueSoon = routines.filter(r => ['due-soon', 'new'].includes(getRoutineStatus(r).status));
+        const dueSoon = routines.filter(r => getRoutineStatus(r).status === 'due-soon');
+        const neverDone = routines.filter(r => getRoutineStatus(r).status === 'new');
         const upcoming = routines.filter(r => ['upcoming', 'ok'].includes(getRoutineStatus(r).status));
         const done = routines.filter(r => getRoutineStatus(r).status === 'done');
         const snoozed = routines.filter(r => getRoutineStatus(r).status === 'snoozed');
 
         // Calculate completion stats
         const last7Days = [];
+        const today = new Date();
         for (let i = 6; i >= 0; i--) {
             const d = DateUtils.addDays(new Date(), -i);
             const dateStr = DateUtils.formatISO(d);
             const dayCompletions = data.completionLog[dateStr] || [];
+            const isToday = i === 0;
             last7Days.push({
                 date: dateStr,
                 dayName: WEEKDAYS[d.getDay()],
-                count: dayCompletions.length
+                dayNum: d.getDate(),
+                count: dayCompletions.length,
+                isToday
             });
         }
         const maxCompletions = Math.max(...last7Days.map(d => d.count), 1);
+        const totalCompletionsThisWeek = last7Days.reduce((sum, d) => sum + d.count, 0);
+        const bestStreak = Math.max(...routines.map(r => r.bestStreak || 0), 0);
+        const categoryCounts = {};
+        routines.forEach(r => {
+            const cat = r.category || 'other';
+            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
+        });
+        const categoryCount = Object.keys(categoryCounts).length;
 
         main.innerHTML = `
             <div class="routines-page">
-                <div class="routines-page__header">
-                    <button class="btn btn--ghost" id="backBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
-                    </button>
-                    <h1 class="routines-page__title">
-                        <i data-lucide="list-checks"></i>
-                        Routines
-                    </h1>
-                    <button class="btn btn--primary" id="addRoutineBtn">
-                        <i data-lucide="plus"></i>
-                        Add
-                    </button>
-                </div>
-
-                <!-- Completion heatmap -->
-                <div class="routines-page__heatmap">
-                    <div class="routines-heatmap__title">
-                        <i data-lucide="activity"></i>
-                        Last 7 Days
+                <!-- Hero Header -->
+                <div class="routines-page__hero">
+                    <div class="routines-page__hero-bg">
+                        <div class="routines-hero-shape routines-hero-shape--1"></div>
+                        <div class="routines-hero-shape routines-hero-shape--2"></div>
+                        <div class="routines-hero-shape routines-hero-shape--3"></div>
+                        <div class="routines-hero-shape routines-hero-shape--4"></div>
                     </div>
-                    <div class="routines-heatmap__bars">
-                        ${last7Days.map(day => `
-                            <div class="routines-heatmap__day">
-                                <div class="routines-heatmap__bar-container">
-                                    <div class="routines-heatmap__bar"
-                                         style="height: ${(day.count / maxCompletions) * 100}%"
-                                         title="${day.count} completed"></div>
-                                </div>
-                                <span class="routines-heatmap__label">${day.dayName}</span>
-                                <span class="routines-heatmap__count">${day.count}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                ${overdue.length > 0 ? `
-                    <div class="routines-page__batch-action">
-                        <button class="btn btn--sm btn--secondary" id="markAllOverdueBtn">
-                            <i data-lucide="check-check"></i>
-                            Mark All ${overdue.length} Overdue as Done
+                    <div class="routines-page__hero-content">
+                        <button class="btn btn--ghost routines-page__back" id="backBtn" title="Go back to home">
+                            <i data-lucide="arrow-left"></i>
+                            Back
                         </button>
+                        <div class="routines-page__hero-text">
+                            <h1 class="routines-page__hero-title">Routines</h1>
+                            <p class="routines-page__hero-subtitle">Track recurring tasks and build lasting habits</p>
+                        </div>
+                        <div class="routines-page__hero-stats">
+                            <div class="routines-hero-stat" title="Total number of routines">
+                                <span class="routines-hero-stat__value">${routines.length}</span>
+                                <span class="routines-hero-stat__label">Routines</span>
+                            </div>
+                            <div class="routines-hero-stat" title="Routines completed in the last 7 days">
+                                <span class="routines-hero-stat__value">${totalCompletionsThisWeek}</span>
+                                <span class="routines-hero-stat__label">This Week</span>
+                            </div>
+                            <div class="routines-hero-stat" title="Longest consecutive completion streak">
+                                <span class="routines-hero-stat__value">${bestStreak}</span>
+                                <span class="routines-hero-stat__label">Best Streak</span>
+                            </div>
+                        </div>
+                        <div class="routines-page__hero-actions">
+                            <button class="btn btn--primary btn--lg" id="addRoutineBtn" title="Create a new routine">
+                                <i data-lucide="plus"></i>
+                                Add Routine
+                            </button>
+                        </div>
                     </div>
-                ` : ''}
+                </div>
 
                 <div class="routines-page__content">
+                    <!-- Weekly Activity -->
+                    <div class="routines-weekly">
+                        <div class="routines-weekly__header">
+                            <h3 class="routines-weekly__title">This Week</h3>
+                            <span class="routines-weekly__total">${totalCompletionsThisWeek} completed</span>
+                        </div>
+                        <div class="routines-weekly__days">
+                            ${last7Days.map(day => `
+                                <div class="routines-weekly__day ${day.isToday ? 'routines-weekly__day--today' : ''} ${day.count > 0 ? 'routines-weekly__day--active' : ''}">
+                                    <span class="routines-weekly__day-name">${day.dayName}</span>
+                                    <span class="routines-weekly__day-num">${day.dayNum}</span>
+                                    <span class="routines-weekly__day-count">${day.count}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    ${overdue.length > 0 ? `
+                        <div class="routines-page__batch-action">
+                            <button class="btn btn--sm btn--secondary" id="markAllOverdueBtn" title="Mark all overdue routines as completed">
+                                Mark All ${overdue.length} Overdue as Done
+                            </button>
+                        </div>
+                    ` : ''}
+
                     ${overdue.length > 0 ? `
                         <div class="routines-section routines-section--overdue">
-                            <h3 class="routines-section__title">
-                                <i data-lucide="alert-circle"></i>
-                                Overdue (${overdue.length})
-                            </h3>
+                            <h3 class="routines-section__title">Overdue (${overdue.length})</h3>
                             <div class="routines-section__list">
                                 ${renderRoutineCards(overdue, memberId, data.completionLog)}
                             </div>
@@ -749,22 +878,25 @@ const Routine = (function() {
 
                     ${dueSoon.length > 0 ? `
                         <div class="routines-section routines-section--due-soon">
-                            <h3 class="routines-section__title">
-                                <i data-lucide="clock"></i>
-                                Due Soon (${dueSoon.length})
-                            </h3>
+                            <h3 class="routines-section__title">Due Soon (${dueSoon.length})</h3>
                             <div class="routines-section__list">
                                 ${renderRoutineCards(dueSoon, memberId, data.completionLog)}
                             </div>
                         </div>
                     ` : ''}
 
+                    ${neverDone.length > 0 ? `
+                        <div class="routines-section routines-section--never-done">
+                            <h3 class="routines-section__title">Never Done (${neverDone.length})</h3>
+                            <div class="routines-section__list">
+                                ${renderRoutineCards(neverDone, memberId, data.completionLog)}
+                            </div>
+                        </div>
+                    ` : ''}
+
                     ${upcoming.length > 0 ? `
                         <div class="routines-section routines-section--upcoming">
-                            <h3 class="routines-section__title">
-                                <i data-lucide="calendar"></i>
-                                Upcoming (${upcoming.length})
-                            </h3>
+                            <h3 class="routines-section__title">Upcoming (${upcoming.length})</h3>
                             <div class="routines-section__list">
                                 ${renderRoutineCards(upcoming, memberId, data.completionLog)}
                             </div>
@@ -773,10 +905,7 @@ const Routine = (function() {
 
                     ${done.length > 0 ? `
                         <div class="routines-section routines-section--done">
-                            <h3 class="routines-section__title">
-                                <i data-lucide="check-circle-2"></i>
-                                Done Today (${done.length})
-                            </h3>
+                            <h3 class="routines-section__title">Done Today (${done.length})</h3>
                             <div class="routines-section__list">
                                 ${renderRoutineCards(done, memberId, data.completionLog)}
                             </div>
@@ -785,10 +914,7 @@ const Routine = (function() {
 
                     ${snoozed.length > 0 ? `
                         <div class="routines-section routines-section--snoozed">
-                            <h3 class="routines-section__title">
-                                <i data-lucide="alarm-clock-off"></i>
-                                Snoozed (${snoozed.length})
-                            </h3>
+                            <h3 class="routines-section__title">Snoozed (${snoozed.length})</h3>
                             <div class="routines-section__list">
                                 ${renderRoutineCards(snoozed, memberId, data.completionLog)}
                             </div>
@@ -797,10 +923,9 @@ const Routine = (function() {
 
                     ${routines.length === 0 ? `
                         <div class="routines-page__empty">
-                            <i data-lucide="list-plus"></i>
                             <h3>No routines yet</h3>
                             <p>Add your recurring tasks to keep track of them</p>
-                            <button class="btn btn--primary" id="addFirstBtn">
+                            <button class="btn btn--primary" id="addFirstBtn" title="Create your first routine">
                                 <i data-lucide="plus"></i>
                                 Add Your First Routine
                             </button>
@@ -845,59 +970,55 @@ const Routine = (function() {
             const freqLabel = routine.frequency === 'custom' ? `Every ${routine.customDays} days` : freqData.label;
             const streak = routine.streak || 0;
             const bestStreak = routine.bestStreak || 0;
-            const timeData = TIME_OF_DAY[routine.timeOfDay || 'anytime'];
-            const catData = CATEGORIES[routine.category || 'other'];
 
             return `
                 <div class="routine-card routine-card--${status.status}" data-routine-id="${routine.id}" style="--routine-color: ${routine.color || '#6366F1'}">
-                    <div class="routine-card__icon">
+                    <div class="routine-card__icon" title="${routine.title}">
                         <i data-lucide="${routine.icon || 'check'}"></i>
                     </div>
                     <div class="routine-card__content">
                         <h4 class="routine-card__title">${routine.title}</h4>
                         <div class="routine-card__meta">
-                            <span class="routine-card__frequency">
-                                <i data-lucide="${freqData.icon}"></i>
-                                ${freqLabel}
-                            </span>
-                            <span class="routine-card__time">
-                                <i data-lucide="${timeData.icon}"></i>
-                                ${timeData.label}
-                            </span>
+                            <span class="routine-card__frequency">${freqLabel}</span>
                             <span class="routine-card__status routine-card__status--${status.status}">${status.message}</span>
                         </div>
                         ${streak > 0 || bestStreak > 0 ? `
                             <div class="routine-card__streaks">
-                                ${streak > 0 ? `<span class="routine-card__streak"><i data-lucide="flame"></i> ${streak} current</span>` : ''}
-                                ${bestStreak > streak && bestStreak > 0 ? `<span class="routine-card__best-streak"><i data-lucide="trophy"></i> ${bestStreak} best</span>` : ''}
+                                ${streak > 0 ? `<span class="routine-card__streak" title="Current streak"><i data-lucide="flame"></i> ${streak}</span>` : ''}
+                                ${bestStreak > streak && bestStreak > 0 ? `<span class="routine-card__best-streak" title="Best streak"><i data-lucide="trophy"></i> ${bestStreak}</span>` : ''}
                             </div>
                         ` : ''}
                         ${routine.notes ? `<p class="routine-card__notes">${routine.notes}</p>` : ''}
                     </div>
                     <div class="routine-card__actions">
-                        ${status.status !== 'done' && status.status !== 'snoozed' ? `
-                            <button class="btn btn--icon btn--ghost" data-snooze-menu="${routine.id}" title="Snooze">
-                                <i data-lucide="alarm-clock-off"></i>
+                        <div class="routine-card__actions-primary">
+                            ${status.status !== 'done' && status.status !== 'snoozed' ? `
+                                <button class="btn btn--icon btn--ghost" data-snooze-menu="${routine.id}" title="Snooze - postpone this routine">
+                                    <i data-lucide="alarm-clock-off"></i>
+                                </button>
+                                <button class="btn btn--icon btn--ghost" data-skip="${routine.id}" title="Skip - mark as not needed this time">
+                                    <i data-lucide="skip-forward"></i>
+                                </button>
+                            ` : ''}
+                            ${status.status === 'snoozed' ? `
+                                <button class="btn btn--icon btn--ghost" data-unsnooze="${routine.id}" title="Remove snooze">
+                                    <i data-lucide="alarm-clock"></i>
+                                </button>
+                            ` : ''}
+                            <button class="btn btn--icon ${status.status === 'done' ? 'btn--success' : 'btn--primary'}"
+                                    data-mark-done="${routine.id}" ${status.status === 'done' ? 'disabled' : ''}
+                                    title="${status.status === 'done' ? 'Already completed today' : 'Mark as done'}">
+                                <i data-lucide="${status.status === 'done' ? 'check-circle-2' : 'check'}"></i>
                             </button>
-                            <button class="btn btn--icon btn--ghost" data-skip="${routine.id}" title="Skip this time">
-                                <i data-lucide="skip-forward"></i>
+                        </div>
+                        <div class="routine-card__actions-secondary">
+                            <button class="btn btn--icon btn--ghost" data-edit="${routine.id}" title="Edit routine">
+                                <i data-lucide="pencil"></i>
                             </button>
-                        ` : ''}
-                        ${status.status === 'snoozed' ? `
-                            <button class="btn btn--icon btn--ghost" data-unsnooze="${routine.id}" title="Unsnooze">
-                                <i data-lucide="alarm-clock"></i>
+                            <button class="btn btn--icon btn--ghost routine-card__delete" data-delete="${routine.id}" title="Delete routine">
+                                <i data-lucide="trash-2"></i>
                             </button>
-                        ` : ''}
-                        <button class="btn btn--icon ${status.status === 'done' ? 'btn--success' : 'btn--primary'}"
-                                data-mark-done="${routine.id}" ${status.status === 'done' ? 'disabled' : ''}>
-                            <i data-lucide="${status.status === 'done' ? 'check-circle-2' : 'check'}"></i>
-                        </button>
-                        <button class="btn btn--icon btn--ghost" data-edit="${routine.id}">
-                            <i data-lucide="pencil"></i>
-                        </button>
-                        <button class="btn btn--icon btn--ghost routine-card__delete" data-delete="${routine.id}">
-                            <i data-lucide="trash-2"></i>
-                        </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -948,7 +1069,7 @@ const Routine = (function() {
                 if (idx !== -1) {
                     data.routines[idx].snoozedUntil = null;
                     saveWidgetData(memberId, data);
-                    Toast.success('Unsnzoed');
+                    Toast.success('Unsnoozed');
                     if (refreshCallback) refreshCallback();
                 }
             });
@@ -1235,59 +1356,18 @@ const Routine = (function() {
         if (!routine) return;
 
         const content = `
-            <div class="routine-form">
+            <div class="edit-routine-form">
                 <div class="form-group">
-                    <label class="form-label">Routine Name *</label>
+                    <label class="form-label">Routine Name</label>
                     <input type="text" class="form-input" id="routineTitle" value="${routine.title}">
-                </div>
-
-                <div class="form-row">
-                    <div class="form-group form-group--half">
-                        <label class="form-label">Category</label>
-                        <select class="form-select" id="routineCategory">
-                            ${Object.entries(CATEGORIES).map(([key, val]) => `
-                                <option value="${key}" ${key === routine.category ? 'selected' : ''}>${val.label}</option>
-                            `).join('')}
-                        </select>
-                    </div>
-                    <div class="form-group form-group--half">
-                        <label class="form-label">Time of Day</label>
-                        <select class="form-select" id="routineTimeOfDay">
-                            ${Object.entries(TIME_OF_DAY).map(([key, val]) => `
-                                <option value="${key}" ${key === routine.timeOfDay ? 'selected' : ''}>${val.label}</option>
-                            `).join('')}
-                        </select>
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="form-label">How often?</label>
-                    <div class="routine-form__frequencies">
-                        ${Object.entries(FREQUENCIES).filter(([key]) => key !== 'custom').map(([key, val]) => `
-                            <label class="routine-freq-option ${key === routine.frequency ? 'routine-freq-option--selected' : ''}" data-freq="${key}">
-                                <input type="radio" name="frequency" value="${key}" ${key === routine.frequency ? 'checked' : ''}>
-                                <i data-lucide="${val.icon}"></i>
-                                <span>${val.label}</span>
-                            </label>
-                        `).join('')}
-                        <label class="routine-freq-option ${routine.frequency === 'custom' ? 'routine-freq-option--selected' : ''}" data-freq="custom">
-                            <input type="radio" name="frequency" value="custom" ${routine.frequency === 'custom' ? 'checked' : ''}>
-                            <i data-lucide="settings-2"></i>
-                            <span>Custom</span>
-                        </label>
-                    </div>
-                </div>
-
-                <div class="form-group routine-form__custom-freq" id="customFreqGroup" style="display: ${routine.frequency === 'custom' ? 'block' : 'none'};">
-                    <label class="form-label">Every X days</label>
-                    <input type="number" class="form-input" id="customDays" min="1" max="365" value="${routine.customDays || 5}" placeholder="e.g., 5">
                 </div>
 
                 <div class="form-group">
                     <label class="form-label">Icon</label>
-                    <div class="routine-form__icons" id="iconPicker">
+                    <div class="icon-picker">
+                        <input type="hidden" id="editRoutineIcon" value="${routine.icon || 'check'}">
                         ${['check', 'shirt', 'shopping-cart', 'bath', 'bed', 'car', 'home', 'trash-2', 'wind', 'credit-card', 'phone', 'mail', 'dumbbell', 'heart', 'book', 'flower-2'].map(icon => `
-                            <button type="button" class="icon-picker__btn ${icon === routine.icon ? 'icon-picker__btn--selected' : ''}" data-icon="${icon}">
+                            <button type="button" class="icon-picker__icon ${icon === routine.icon ? 'icon-picker__icon--selected' : ''}" data-icon="${icon}" title="${icon}">
                                 <i data-lucide="${icon}"></i>
                             </button>
                         `).join('')}
@@ -1296,7 +1376,7 @@ const Routine = (function() {
 
                 <div class="form-group">
                     <label class="form-label">Color</label>
-                    <div class="routine-form__colors" id="colorPicker">
+                    <div class="color-picker">
                         ${ROUTINE_COLORS.map(color => `
                             <button type="button" class="color-picker__btn ${color === routine.color ? 'color-picker__btn--selected' : ''}"
                                     data-color="${color}" style="background-color: ${color}"></button>
@@ -1305,34 +1385,45 @@ const Routine = (function() {
                 </div>
 
                 <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="routineCategory">
+                        ${Object.entries(CATEGORIES).map(([key, val]) => `
+                            <option value="${key}" ${key === routine.category ? 'selected' : ''}>${val.label}</option>
+                        `).join('')}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Frequency</label>
+                    <select class="form-select" id="routineFrequency">
+                        ${Object.entries(FREQUENCIES).map(([key, val]) => `
+                            <option value="${key}" ${key === routine.frequency ? 'selected' : ''}>${val.label}</option>
+                        `).join('')}
+                    </select>
+                </div>
+
+                <div class="form-group" id="customFreqGroup" style="display: ${routine.frequency === 'custom' ? 'block' : 'none'};">
+                    <label class="form-label">Every X days</label>
+                    <input type="number" class="form-input" id="customDays" min="1" max="365" value="${routine.customDays || 5}" placeholder="e.g., 5">
+                </div>
+
+                <div class="form-group">
                     <label class="form-label">Notes (optional)</label>
                     <textarea class="form-input form-textarea" id="routineNotes" rows="2" placeholder="Add any helpful notes...">${routine.notes || ''}</textarea>
                 </div>
 
-                <div class="form-group">
-                    <label class="form-label">
-                        <input type="checkbox" id="notificationEnabled" class="form-checkbox" style="margin-right: 8px;" ${routine.notificationEnabled ? 'checked' : ''}>
-                        <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
-                        Remind me
-                    </label>
-                    <div id="notificationTimeGroup" style="display: ${routine.notificationEnabled ? 'block' : 'none'}; margin-top: 8px;">
-                        <input type="time" class="form-input" id="notificationTime" value="${routine.notificationTime || '09:00'}">
-                        <span class="form-hint">You'll get a notification at this time when the routine is due</span>
+                <div class="edit-routine-form__stats">
+                    <div class="edit-routine-form__stat">
+                        <span class="edit-routine-form__stat-value">${routine.lastCompleted ? new Date(routine.lastCompleted).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Never'}</span>
+                        <span class="edit-routine-form__stat-label">Last Done</span>
                     </div>
-                </div>
-
-                <div class="routine-form__stats">
-                    <div class="routine-form__stat">
-                        <span class="routine-form__stat-label">Last Completed</span>
-                        <span class="routine-form__stat-value">${routine.lastCompleted ? new Date(routine.lastCompleted).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : 'Never'}</span>
+                    <div class="edit-routine-form__stat">
+                        <span class="edit-routine-form__stat-value">${routine.streak || 0}</span>
+                        <span class="edit-routine-form__stat-label">Current Streak</span>
                     </div>
-                    <div class="routine-form__stat">
-                        <span class="routine-form__stat-label">Current Streak</span>
-                        <span class="routine-form__stat-value"><i data-lucide="flame" style="width:14px;height:14px;"></i> ${routine.streak || 0}</span>
-                    </div>
-                    <div class="routine-form__stat">
-                        <span class="routine-form__stat-label">Best Streak</span>
-                        <span class="routine-form__stat-value"><i data-lucide="trophy" style="width:14px;height:14px;"></i> ${routine.bestStreak || 0}</span>
+                    <div class="edit-routine-form__stat">
+                        <span class="edit-routine-form__stat-value">${routine.bestStreak || 0}</span>
+                        <span class="edit-routine-form__stat-label">Best Streak</span>
                     </div>
                 </div>
             </div>
@@ -1342,60 +1433,65 @@ const Routine = (function() {
             title: 'Edit Routine',
             content,
             footer: `
-                <button class="btn btn--secondary" data-modal-cancel>Cancel</button>
+                <button class="btn btn--ghost" data-modal-cancel>Cancel</button>
+                <button class="btn btn--danger" id="deleteRoutineBtn">Delete</button>
                 <button class="btn btn--primary" id="saveRoutineBtn">Save</button>
             `
         });
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
-        let selectedIcon = routine.icon;
-        let selectedColor = routine.color;
-        let selectedFreq = routine.frequency;
-
-        // Notification toggle
-        document.getElementById('notificationEnabled')?.addEventListener('change', (e) => {
-            const timeGroup = document.getElementById('notificationTimeGroup');
-            if (timeGroup) {
-                timeGroup.style.display = e.target.checked ? 'block' : 'none';
-            }
-        });
-
-        // Frequency selection
-        document.querySelectorAll('.routine-freq-option').forEach(opt => {
-            opt.addEventListener('click', () => {
-                document.querySelectorAll('.routine-freq-option').forEach(o => o.classList.remove('routine-freq-option--selected'));
-                opt.classList.add('routine-freq-option--selected');
-                opt.querySelector('input').checked = true;
-                selectedFreq = opt.dataset.freq;
-
-                const customGroup = document.getElementById('customFreqGroup');
-                if (customGroup) {
-                    customGroup.style.display = selectedFreq === 'custom' ? 'block' : 'none';
+        // Icon picker
+        document.querySelectorAll('.edit-routine-form .icon-picker__icon').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.edit-routine-form .icon-picker__icon').forEach(b => {
+                    b.classList.remove('icon-picker__icon--selected');
+                });
+                btn.classList.add('icon-picker__icon--selected');
+                const iconInput = document.getElementById('editRoutineIcon');
+                if (iconInput) {
+                    iconInput.value = btn.dataset.icon;
                 }
             });
         });
 
-        // Icon selection
-        document.querySelectorAll('#iconPicker .icon-picker__btn').forEach(btn => {
+        // Color picker
+        document.querySelectorAll('.edit-routine-form .color-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#iconPicker .icon-picker__btn').forEach(b => b.classList.remove('icon-picker__btn--selected'));
-                btn.classList.add('icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('.edit-routine-form .color-picker__btn').forEach(b => {
+                    b.classList.remove('color-picker__btn--selected');
+                });
+                btn.classList.add('color-picker__btn--selected');
             });
         });
 
-        // Color selection
-        document.querySelectorAll('#colorPicker .color-picker__btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('#colorPicker .color-picker__btn').forEach(b => b.classList.remove('color-picker__btn--selected'));
-                btn.classList.add('color-picker__btn--selected');
-                selectedColor = btn.dataset.color;
-            });
+        // Frequency change - show/hide custom days input
+        document.getElementById('routineFrequency')?.addEventListener('change', (e) => {
+            const customGroup = document.getElementById('customFreqGroup');
+            if (customGroup) {
+                customGroup.style.display = e.target.value === 'custom' ? 'block' : 'none';
+            }
         });
 
         // Cancel
         document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => Modal.close());
+
+        // Delete
+        document.getElementById('deleteRoutineBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.dangerConfirm(
+                `Permanently delete "${routine.title}"? This cannot be undone.`,
+                'Delete Routine'
+            );
+            if (confirmed) {
+                deleteRoutine(memberId, routineId);
+                Modal.close();
+
+                const widgetBody = document.getElementById('widget-routine');
+                if (widgetBody) renderWidget(widgetBody, memberId);
+
+                if (onSuccess) onSuccess();
+            }
+        });
 
         // Save
         document.getElementById('saveRoutineBtn')?.addEventListener('click', () => {
@@ -1405,28 +1501,24 @@ const Routine = (function() {
                 return;
             }
 
+            const icon = document.getElementById('editRoutineIcon')?.value || 'check';
+            const color = document.querySelector('.edit-routine-form .color-picker__btn--selected')?.dataset.color || routine.color;
             const category = document.getElementById('routineCategory')?.value || 'other';
-            const timeOfDay = document.getElementById('routineTimeOfDay')?.value || 'anytime';
+            const frequency = document.getElementById('routineFrequency')?.value || 'weekly';
             const notes = document.getElementById('routineNotes')?.value?.trim() || '';
-            const customDays = selectedFreq === 'custom' ? parseInt(document.getElementById('customDays')?.value) || 5 : null;
-
-            const notificationEnabled = document.getElementById('notificationEnabled')?.checked || false;
-            const notificationTime = notificationEnabled ? document.getElementById('notificationTime')?.value || null : null;
+            const customDays = frequency === 'custom' ? parseInt(document.getElementById('customDays')?.value) || 5 : null;
 
             const idx = data.routines.findIndex(r => r.id === routineId);
             if (idx !== -1) {
                 data.routines[idx] = {
                     ...data.routines[idx],
                     title,
-                    frequency: selectedFreq,
+                    frequency,
                     customDays,
-                    icon: selectedIcon,
-                    color: selectedColor,
+                    icon,
+                    color,
                     category,
-                    timeOfDay,
-                    notes,
-                    notificationEnabled,
-                    notificationTime
+                    notes
                 };
                 saveWidgetData(memberId, data);
             }
@@ -1512,6 +1604,8 @@ const Routine = (function() {
         renderWidget,
         showRoutinesPage,
         getRoutineStatus,
+        getRoutinesDueToday,
+        markDone,
         FREQUENCIES,
         CATEGORIES,
         TIME_OF_DAY

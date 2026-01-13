@@ -23,5 +23,8 @@
     "rewards"
   ],
   "author": "",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.57.0"
+  }
 }

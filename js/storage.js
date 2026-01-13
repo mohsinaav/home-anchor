@@ -24,7 +24,7 @@ const Storage = (function() {
             { id: 'habits', name: 'Habits', description: 'Habit tracker', icon: 'repeat', default: false },
             { id: 'recipes', name: 'Recipes', description: 'Recipe collection', icon: 'book-open', default: false },
             { id: 'grocery', name: 'Grocery', description: 'Shopping list', icon: 'shopping-cart', default: false },
-            { id: 'routine', name: 'Reminders', description: 'Recurring reminders and tasks', icon: 'bell', default: false },
+            { id: 'routine', name: 'Routines', description: 'Track recurring tasks and build habits', icon: 'repeat', default: false },
             { id: 'vision-board', name: 'Vision Board', description: 'Track your goals and dreams', icon: 'target', default: false },
             { id: 'journal', name: 'Journal', description: 'Private daily journal with mood tracking', icon: 'notebook-pen', default: false },
             { id: 'circuit-timer', name: 'Circuit Timer', description: 'Interval workout timer', icon: 'timer', default: false }
@@ -39,7 +39,7 @@ const Storage = (function() {
             { id: 'screen-time', name: 'Screen Time', description: 'Manage device usage', icon: 'smartphone', default: false },
             { id: 'achievements', name: 'Achievements', description: 'Track accomplishments', icon: 'award', default: false },
             { id: 'chores', name: 'Chores', description: 'Household responsibilities', icon: 'list-checks', default: false },
-            { id: 'routine', name: 'Reminders', description: 'Daily reminders', icon: 'bell', default: false },
+            { id: 'routine', name: 'Routines', description: 'Track recurring tasks', icon: 'repeat', default: false },
             { id: 'points', name: 'Points', description: 'Earn points for goals', icon: 'star', default: false },
             { id: 'rewards', name: 'Rewards', description: 'Redeem earned points', icon: 'gift', default: false }
         ],

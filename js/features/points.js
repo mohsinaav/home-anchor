@@ -604,6 +604,7 @@ const Points = (function() {
         if (!main) return;
 
         const member = Storage.getMember(memberId);
+        const isTeen = member && member.type === 'teen';
         const widgetData = getWidgetData(memberId);
         const history = widgetData.history || [];
 
@@ -624,7 +625,7 @@ const Points = (function() {
 
         // Calculate level info
         const totalXP = getTotalXP(history);
-        const levelInfo = calculateLevel(totalXP);
+        const levelInfo = calculateLevel(totalXP, isTeen);
 
         // Calculate weekly stats
         const today = new Date();
@@ -737,10 +738,16 @@ const Points = (function() {
                         <i data-lucide="arrow-left"></i>
                         Back
                     </button>
-                    <h2 class="page-title">⭐ Points</h2>
-                    <div class="page-header__balance">
-                        <span class="page-header__balance-value">${widgetData.balance || 0}</span>
-                        <span class="page-header__balance-label">pts</span>
+                    <h2 class="page-title">${isTeen ? '🪙 Coins' : '⭐ Points'}</h2>
+                    <div class="page-header__actions">
+                        <button class="btn btn--sm btn--secondary" id="addBonusBtn" title="Add Bonus ${isTeen ? 'Coins' : 'Points'} (Admin)">
+                            <i data-lucide="plus-circle"></i>
+                            Add ${isTeen ? 'Coins' : 'Points'}
+                        </button>
+                        <div class="page-header__balance">
+                            <span class="page-header__balance-value">${widgetData.balance || 0}</span>
+                            <span class="page-header__balance-label">${isTeen ? 'coins' : 'pts'}</span>
+                        </div>
                     </div>
                 </div>
 
@@ -751,7 +758,7 @@ const Points = (function() {
                             <i data-lucide="${levelInfo.rankIcon}"></i>
                         </div>
                         <div class="level-section__info">
-                            <span class="level-section__level">Level ${levelInfo.level}</span>
+                            <span class="level-section__level">${isTeen ? 'Rank' : 'Level'} ${levelInfo.level}</span>
                             <span class="level-section__rank">${levelInfo.rankName}</span>
                         </div>
                     </div>
@@ -760,7 +767,7 @@ const Points = (function() {
                             <div class="level-section__xp-fill" style="width: ${levelInfo.progress}%; background-color: ${levelInfo.rankColor}"></div>
                         </div>
                         <div class="level-section__xp-text">
-                            <span>${levelInfo.currentXP} / ${levelInfo.xpToNextLevel} XP to Level ${levelInfo.level + 1}</span>
+                            <span>${levelInfo.currentXP} / ${levelInfo.xpToNextLevel} XP to ${isTeen ? 'Rank' : 'Level'} ${levelInfo.level + 1}</span>
                             <span class="level-section__total-xp">${totalXP} Total XP</span>
                         </div>
                     </div>
@@ -808,16 +815,18 @@ const Points = (function() {
                 <div class="history-panel history-panel--history" id="panelHistory">
                     ${sortedDates.length === 0 ? `
                         <div class="points-empty-history">
-                            <span class="points-empty-history__emoji">🌟</span>
-                            <p>No points history yet!</p>
-                            <p class="points-empty-history__hint">Complete activities to start earning points.</p>
+                            <span class="points-empty-history__emoji">${isTeen ? '🪙' : '🌟'}</span>
+                            <p>No ${isTeen ? 'coins' : 'points'} history yet!</p>
+                            <p class="points-empty-history__hint">Complete activities to start earning ${isTeen ? 'coins' : 'points'}.</p>
                         </div>
                     ` : sortedDates.slice(0, 14).map(date => `
                         <div class="points-day">
                             <div class="points-day__header">
                                 <span class="points-day__date">${getDateLabel(date)}</span>
                                 <span class="points-day__stats">
-                                    ${groupedHistory[date].filter(e => e.type === 'earned').reduce((sum, e) => sum + e.points, 0)} earned
+                                    ${groupedHistory[date].filter(e => e.type === 'earned' || e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} earned
+                                    ${groupedHistory[date].filter(e => e.type === 'bonus').length > 0 ?
+                                        ` (${groupedHistory[date].filter(e => e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} bonus)` : ''}
                                     ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
                                         ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
                                 </span>
@@ -826,9 +835,9 @@ const Points = (function() {
                                 ${groupedHistory[date].map(entry => `
                                     <div class="points-day__activity points-day__activity--${entry.type}">
                                         <span class="points-day__icon">
-                                            ${entry.type === 'spent' ? '🎁' : '⭐'}
+                                            ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : '⭐'}
                                         </span>
-                                        <span class="points-day__name">${entry.activityName}</span>
+                                        <span class="points-day__name">${entry.activityName}${entry.type === 'bonus' && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
                                         <span class="points-day__points points-day__points--${entry.type}">
                                             ${entry.type === 'spent' ? '-' : '+'}${entry.points}
                                         </span>
@@ -960,6 +969,14 @@ const Points = (function() {
             }
         });
 
+        // Bind add bonus button (admin only)
+        document.getElementById('addBonusBtn')?.addEventListener('click', async () => {
+            const verified = await PIN.verify();
+            if (verified) {
+                showAddBonusModal(memberId);
+            }
+        });
+
         // Bind tab switching
         document.querySelectorAll('.history-tab').forEach(tab => {
             tab.addEventListener('click', () => {
@@ -1037,6 +1054,109 @@ const Points = (function() {
         // Close calendar details
         document.getElementById('closeCalendarDetails')?.addEventListener('click', () => {
             document.getElementById('calendarDetails').style.display = 'none';
+        });
+    }
+
+    /**
+     * Show add bonus points modal (admin only)
+     */
+    function showAddBonusModal(memberId) {
+        const today = DateUtils.today();
+        const members = Storage.getMembers();
+        const member = members.find(m => m.id === memberId);
+        const isTeen = member && member.type === 'teen';
+        const parentMembers = members.filter(m => m.type === 'adult');
+        const pointsLabel = isTeen ? 'Coins' : 'Points';
+        const pointsLabelLower = isTeen ? 'coins' : 'points';
+
+        const content = `
+            <div class="add-bonus-modal">
+                <div class="form-group">
+                    <label class="form-label">${pointsLabel} to Add</label>
+                    <input type="number" class="form-input" id="bonusPoints" value="10" min="1" max="100" required>
+                    <p class="form-hint">Enter the number of bonus ${pointsLabelLower} to award</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Reason</label>
+                    <input type="text" class="form-input" id="bonusReason" placeholder="e.g., Helped grandma, Forgot to log Tuesday" required>
+                    <p class="form-hint">Brief explanation for the bonus ${pointsLabelLower}</p>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Date</label>
+                    <input type="date" class="form-input" id="bonusDate" value="${today}" max="${today}">
+                    <p class="form-hint">Select the date for these ${pointsLabelLower} (can backdate)</p>
+                </div>
+                ${parentMembers.length > 0 ? `
+                    <div class="form-group">
+                        <label class="form-label">Added By</label>
+                        <select class="form-input" id="bonusAddedBy">
+                            ${parentMembers.map(p => `<option value="${p.name}">${p.name}</option>`).join('')}
+                        </select>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        Modal.open({
+            title: `Add Bonus ${pointsLabel} for ${member?.name || 'Child'}`,
+            content,
+            footer: Modal.createFooter('Cancel', `Add ${pointsLabel}`)
+        });
+
+        // Focus on points input
+        setTimeout(() => {
+            document.getElementById('bonusPoints')?.focus();
+        }, 100);
+
+        Modal.bindFooterEvents(() => {
+            const points = parseInt(document.getElementById('bonusPoints')?.value) || 0;
+            const reason = document.getElementById('bonusReason')?.value?.trim();
+            const date = document.getElementById('bonusDate')?.value || today;
+            const addedBy = document.getElementById('bonusAddedBy')?.value || 'Parent';
+
+            if (points < 1) {
+                Toast.error(`Please enter at least 1 ${pointsLabelLower.slice(0, -1)}`);
+                return false;
+            }
+
+            if (!reason) {
+                Toast.error(`Please enter a reason for the bonus ${pointsLabelLower}`);
+                return false;
+            }
+
+            // Get current widget data
+            const widgetData = getWidgetData(memberId);
+            const now = new Date().toISOString();
+
+            // Create bonus history entry
+            const bonusEntry = {
+                activityId: `bonus-${Date.now()}`,
+                activityName: `Bonus ${pointsLabel}`,
+                activityIcon: 'gift',
+                date: date,
+                completedAt: now,
+                points: points,
+                basePoints: points,
+                bonus: 0,
+                type: 'bonus',
+                reason: reason,
+                addedBy: addedBy
+            };
+
+            // Update widget data
+            const updatedData = {
+                ...widgetData,
+                balance: (widgetData.balance || 0) + points,
+                history: [bonusEntry, ...(widgetData.history || []).slice(0, 99)]
+            };
+
+            Storage.setWidgetData(memberId, 'points', updatedData);
+            Toast.success(`Added ${points} bonus ${pointsLabelLower}!`);
+
+            // Refresh the history page
+            showHistoryPage(memberId);
+
+            return true;
         });
     }
 

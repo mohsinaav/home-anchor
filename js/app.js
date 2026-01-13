@@ -362,6 +362,14 @@ const Content = (function() {
                             <div id="highlightsContainer"></div>
                         </section>
 
+                        <!-- Routines Due Today -->
+                        <section class="section" id="routinesDueTodaySection" style="display: none;">
+                            <div class="section__header">
+                                <h2 class="section__title">Routines Due Today</h2>
+                            </div>
+                            <div id="routinesDueTodayContainer"></div>
+                        </section>
+
                         <!-- Calendar Section -->
                         <section class="section">
                             <div class="section__header">
@@ -378,6 +386,9 @@ const Content = (function() {
         if (typeof Calendar !== 'undefined') {
             Calendar.renderHighlights(document.getElementById('highlightsContainer'));
         }
+
+        // Render routines due today
+        renderRoutinesDueToday();
 
         // Render calendar
         if (typeof Calendar !== 'undefined') {
@@ -397,6 +408,89 @@ const Content = (function() {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+    }
+
+    /**
+     * Render routines due today section on home page
+     */
+    function renderRoutinesDueToday() {
+        const section = document.getElementById('routinesDueTodaySection');
+        const container = document.getElementById('routinesDueTodayContainer');
+        if (!section || !container) return;
+
+        // Check if Routine module is available
+        if (typeof Routine === 'undefined') {
+            section.style.display = 'none';
+            return;
+        }
+
+        const members = Storage.getMembers();
+        const dueRoutines = [];
+
+        // Collect all due routines from all members
+        members.forEach(member => {
+            const routines = Routine.getRoutinesDueToday(member.id);
+            routines.forEach(routine => {
+                dueRoutines.push({
+                    ...routine,
+                    memberId: member.id,
+                    memberName: member.name,
+                    memberAvatar: member.avatar
+                });
+            });
+        });
+
+        // Hide section if no routines due
+        if (dueRoutines.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+
+        container.innerHTML = `
+            <div class="routines-due-today">
+                ${dueRoutines.map(routine => `
+                    <div class="routine-due-card" data-routine-id="${routine.id}" data-member-id="${routine.memberId}">
+                        <div class="routine-due-card__icon" style="background: ${routine.color || '#6366F1'}">
+                            <i data-lucide="${routine.icon || 'check'}"></i>
+                        </div>
+                        <div class="routine-due-card__content">
+                            <div class="routine-due-card__title">${routine.title}</div>
+                            <div class="routine-due-card__meta">
+                                <span class="routine-due-card__member">${routine.memberName}</span>
+                                <span class="routine-due-card__status routine-due-card__status--${routine.statusType}">${routine.statusMessage}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn--sm btn--primary routine-due-card__done"
+                                data-mark-done="${routine.id}"
+                                data-member-id="${routine.memberId}"
+                                title="Mark as done">
+                            Done
+                        </button>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind mark done buttons
+        container.querySelectorAll('[data-mark-done]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const routineId = btn.dataset.markDone;
+                const memberId = btn.dataset.memberId;
+
+                if (typeof Routine !== 'undefined') {
+                    Routine.markDone(memberId, routineId);
+                    // Re-render the section
+                    renderRoutinesDueToday();
+                }
+            });
+        });
     }
 
     function renderEmptyHome() {

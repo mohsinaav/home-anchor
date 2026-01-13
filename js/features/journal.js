@@ -194,49 +194,124 @@ const Journal = (function() {
     /**
      * Show the full journal page
      */
-    function showJournalPage(memberId) {
+    function showJournalPage(memberId, activeTab = 'write') {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        renderJournalPage(main, memberId, member);
+        renderJournalPage(main, memberId, member, activeTab);
     }
 
     /**
-     * Render the journal page
+     * Render the journal page with tabbed interface
      */
-    function renderJournalPage(container, memberId, member) {
+    function renderJournalPage(container, memberId, member, activeTab = 'write') {
         const widgetData = getWidgetData(memberId);
         const entries = widgetData.entries || [];
         const streak = calculateStreak(entries);
         const todayEntry = getTodayEntry(entries);
-        const prompt = getDailyPrompt();
+        const writtenToday = hasWrittenToday(entries);
+
+        // Calculate best streak
+        let bestStreak = 0;
+        let currentStreakCalc = 0;
+        const uniqueDates = [...new Set(entries.map(e => e.date))].sort();
+        for (let i = 0; i < uniqueDates.length; i++) {
+            if (i === 0) {
+                currentStreakCalc = 1;
+            } else {
+                const prevDate = new Date(uniqueDates[i - 1]);
+                const currDate = new Date(uniqueDates[i]);
+                const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    currentStreakCalc++;
+                } else {
+                    currentStreakCalc = 1;
+                }
+            }
+            bestStreak = Math.max(bestStreak, currentStreakCalc);
+        }
+
+        // Calculate monthly stats
+        const thisMonth = new Date();
+        const monthStart = new Date(thisMonth.getFullYear(), thisMonth.getMonth(), 1);
+        const monthEntries = entries.filter(e => new Date(e.date) >= monthStart);
+        const monthDaysWithEntries = new Set(monthEntries.map(e => e.date)).size;
 
         container.innerHTML = `
-            <div class="journal-page">
-                <div class="journal-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+            <div class="journal-page journal-page--tabbed">
+                <!-- Hero Header -->
+                <div class="journal-page__hero">
+                    <button class="btn btn--ghost journal-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="journal-page__title">
-                        <i data-lucide="notebook-pen"></i>
-                        My Journal
-                    </h1>
-                    <div class="journal-page__stats">
-                        <div class="journal-stat">
-                            <i data-lucide="flame"></i>
-                            <span>${streak} day streak</span>
+                    <div class="journal-page__hero-content">
+                        <h1 class="journal-page__hero-title">
+                            <i data-lucide="notebook-pen"></i>
+                            My Journal
+                        </h1>
+                        <p class="journal-page__hero-subtitle">Your private space for reflection</p>
+                    </div>
+                    <div class="journal-page__hero-stats">
+                        <div class="journal-hero-stat">
+                            <span class="journal-hero-stat__value">${streak}</span>
+                            <span class="journal-hero-stat__label">Day Streak</span>
                         </div>
-                        <div class="journal-stat">
-                            <i data-lucide="book-heart"></i>
-                            <span>${entries.length} entries</span>
+                        <div class="journal-hero-stat">
+                            <span class="journal-hero-stat__value">${entries.length}</span>
+                            <span class="journal-hero-stat__label">Total Entries</span>
+                        </div>
+                        <div class="journal-hero-stat">
+                            <span class="journal-hero-stat__value">${monthDaysWithEntries}</span>
+                            <span class="journal-hero-stat__label">This Month</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Tab Navigation -->
+                <div class="journal-page__tabs">
+                    <button class="journal-tab ${activeTab === 'write' ? 'journal-tab--active' : ''}" data-tab="write">
+                        <i data-lucide="pen-line"></i>
+                        Write
+                    </button>
+                    <button class="journal-tab ${activeTab === 'history' ? 'journal-tab--active' : ''}" data-tab="history">
+                        <i data-lucide="history"></i>
+                        History
+                    </button>
+                    <button class="journal-tab ${activeTab === 'stats' ? 'journal-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        Stats
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
                 <div class="journal-page__content">
-                    <!-- Today's Entry / Write Section -->
+                    ${activeTab === 'write' ? renderWriteTab(memberId, todayEntry) : ''}
+                    ${activeTab === 'history' ? renderHistoryTab(entries) : ''}
+                    ${activeTab === 'stats' ? renderStatsTab(entries, streak, bestStreak, monthDaysWithEntries) : ''}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind events
+        bindJournalPageEvents(container, memberId, member, activeTab, todayEntry);
+    }
+
+    /**
+     * Render the Write tab content
+     */
+    function renderWriteTab(memberId, todayEntry) {
+        const prompt = getDailyPrompt();
+
+        if (todayEntry) {
+            // Show today's entry with edit option
+            return `
+                <div class="journal-write-section">
                     <div class="journal-notebook">
                         <div class="journal-notebook__paper">
                             <div class="journal-notebook__date">
@@ -247,118 +322,170 @@ const Journal = (function() {
                                     day: 'numeric'
                                 })}
                             </div>
-
-                            ${!todayEntry ? `
-                                <div class="journal-notebook__prompt">
-                                    <i data-lucide="sparkles"></i>
-                                    <span>${prompt}</span>
-                                </div>
-
-                                <div class="journal-notebook__mood-section">
-                                    <label class="journal-notebook__mood-label">How are you feeling?</label>
-                                    <div class="journal-notebook__moods" id="moodSelector">
-                                        ${MOODS.map(mood => `
-                                            <button class="journal-mood" data-mood="${mood.id}"
-                                                    style="--mood-color: ${mood.color}"
-                                                    title="${mood.label}">
-                                                <span class="journal-mood__emoji">${mood.emoji}</span>
-                                                <span class="journal-mood__label">${mood.label}</span>
-                                            </button>
-                                        `).join('')}
+                            <div class="journal-notebook__entry">
+                                ${todayEntry.mood ? `
+                                    <div class="journal-notebook__entry-mood"
+                                         style="--mood-color: ${getMoodById(todayEntry.mood)?.color || '#D1D5DB'}">
+                                        <span class="journal-mood__emoji">${getMoodById(todayEntry.mood)?.emoji || '😊'}</span>
+                                        <span>${getMoodById(todayEntry.mood)?.label || 'Feeling'}</span>
                                     </div>
-                                </div>
-
-                                <div class="journal-notebook__write">
-                                    <textarea
-                                        class="journal-notebook__textarea"
-                                        id="journalEntry"
-                                        placeholder="Start writing..."
-                                        rows="8"
-                                    ></textarea>
-                                </div>
-
-                                <!-- Gratitude Section (collapsible) -->
-                                <div class="journal-gratitude">
-                                    <button class="journal-gratitude__toggle" id="gratitudeToggle">
-                                        <i data-lucide="heart"></i>
-                                        <span>Add Gratitude</span>
-                                        <i data-lucide="chevron-down" class="journal-gratitude__chevron"></i>
-                                    </button>
-                                    <div class="journal-gratitude__content" id="gratitudeContent" style="display: none;">
-                                        <p class="journal-gratitude__hint">What are you grateful for today?</p>
-                                        <div class="journal-gratitude__inputs">
-                                            <input type="text" class="form-input" id="gratitude1" placeholder="I'm grateful for..." autocomplete="off">
-                                            <input type="text" class="form-input" id="gratitude2" placeholder="I'm also grateful for..." autocomplete="off">
-                                            <input type="text" class="form-input" id="gratitude3" placeholder="And grateful for..." autocomplete="off">
+                                ` : ''}
+                                ${todayEntry.content ? `
+                                    <div class="journal-notebook__entry-content">
+                                        ${todayEntry.content.replace(/\n/g, '<br>')}
+                                    </div>
+                                ` : ''}
+                                ${todayEntry.gratitude && todayEntry.gratitude.length > 0 ? `
+                                    <div class="journal-notebook__gratitude-display">
+                                        <div class="journal-notebook__gratitude-header">
+                                            <i data-lucide="heart"></i>
+                                            <span>Today's Gratitude</span>
+                                        </div>
+                                        <div class="journal-notebook__gratitude-items">
+                                            ${todayEntry.gratitude.map(item => `
+                                                <div class="journal-notebook__gratitude-item">
+                                                    <i data-lucide="sparkle"></i>
+                                                    <span>${item}</span>
+                                                </div>
+                                            `).join('')}
                                         </div>
                                     </div>
+                                ` : ''}
+                                <div class="journal-notebook__entry-time">
+                                    Written at ${new Date(todayEntry.createdAt).toLocaleTimeString('en-US', {
+                                        hour: 'numeric',
+                                        minute: '2-digit'
+                                    })}
+                                    ${todayEntry.updatedAt && todayEntry.updatedAt !== todayEntry.createdAt ?
+                                        ` (edited)` : ''}
                                 </div>
-
-                                <div class="journal-notebook__save">
-                                    <button class="btn btn--primary" id="saveEntryBtn">
-                                        <i data-lucide="save"></i>
-                                        Save Entry
-                                    </button>
-                                </div>
-                            ` : `
-                                <div class="journal-notebook__entry">
-                                    ${todayEntry.mood ? `
-                                        <div class="journal-notebook__entry-mood"
-                                             style="--mood-color: ${getMoodById(todayEntry.mood)?.color || '#D1D5DB'}">
-                                            <span class="journal-mood__emoji">${getMoodById(todayEntry.mood)?.emoji || '😊'}</span>
-                                            <span>${getMoodById(todayEntry.mood)?.label || 'Feeling'}</span>
-                                        </div>
-                                    ` : ''}
-                                    ${todayEntry.content ? `
-                                        <div class="journal-notebook__entry-content">
-                                            ${todayEntry.content.replace(/\n/g, '<br>')}
-                                        </div>
-                                    ` : ''}
-                                    ${todayEntry.gratitude && todayEntry.gratitude.length > 0 ? `
-                                        <div class="journal-notebook__gratitude-display">
-                                            <div class="journal-notebook__gratitude-header">
-                                                <i data-lucide="heart"></i>
-                                                <span>Today's Gratitude</span>
-                                            </div>
-                                            <div class="journal-notebook__gratitude-items">
-                                                ${todayEntry.gratitude.map(item => `
-                                                    <div class="journal-notebook__gratitude-item">
-                                                        <i data-lucide="sparkle"></i>
-                                                        <span>${item}</span>
-                                                    </div>
-                                                `).join('')}
-                                            </div>
-                                        </div>
-                                    ` : ''}
-                                    <div class="journal-notebook__entry-time">
-                                        Written at ${new Date(todayEntry.createdAt).toLocaleTimeString('en-US', {
-                                            hour: 'numeric',
-                                            minute: '2-digit'
-                                        })}
-                                        ${todayEntry.updatedAt && todayEntry.updatedAt !== todayEntry.createdAt ?
-                                            ` (edited)` : ''}
-                                    </div>
-                                    <button class="btn btn--ghost btn--sm" id="editTodayBtn">
-                                        <i data-lucide="edit-2"></i>
-                                        Edit Entry
-                                    </button>
-                                </div>
-                            `}
+                                <button class="btn btn--ghost btn--sm" id="editTodayBtn">
+                                    <i data-lucide="edit-2"></i>
+                                    Edit Entry
+                                </button>
+                            </div>
                         </div>
                     </div>
+                </div>
+            `;
+        }
 
-                    <!-- Past Entries -->
-                    ${entries.filter(e => e.date !== DateUtils.today()).length > 0 ? `
-                        <div class="journal-history">
-                            <h2 class="journal-history__title">
-                                <i data-lucide="history"></i>
-                                Past Entries
-                            </h2>
-                            <div class="journal-history__list">
-                                ${entries
-                                    .filter(e => e.date !== DateUtils.today())
-                                    .slice(0, 10)
-                                    .map(entry => {
+        // Show write form
+        return `
+            <div class="journal-write-section">
+                <div class="journal-notebook">
+                    <div class="journal-notebook__paper">
+                        <div class="journal-notebook__date">
+                            ${new Date().toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric'
+                            })}
+                        </div>
+
+                        <div class="journal-notebook__prompt">
+                            <i data-lucide="sparkles"></i>
+                            <span>${prompt}</span>
+                        </div>
+
+                        <div class="journal-notebook__mood-section">
+                            <label class="journal-notebook__mood-label">How are you feeling?</label>
+                            <div class="journal-notebook__moods" id="moodSelector">
+                                ${MOODS.map(mood => `
+                                    <button class="journal-mood" data-mood="${mood.id}"
+                                            style="--mood-color: ${mood.color}"
+                                            title="${mood.label}">
+                                        <span class="journal-mood__emoji">${mood.emoji}</span>
+                                        <span class="journal-mood__label">${mood.label}</span>
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <div class="journal-notebook__write">
+                            <textarea
+                                class="journal-notebook__textarea"
+                                id="journalEntry"
+                                placeholder="Start writing..."
+                                rows="8"
+                            ></textarea>
+                        </div>
+
+                        <!-- Gratitude Section (collapsible) -->
+                        <div class="journal-gratitude">
+                            <button class="journal-gratitude__toggle" id="gratitudeToggle">
+                                <i data-lucide="heart"></i>
+                                <span>Add Gratitude</span>
+                                <i data-lucide="chevron-down" class="journal-gratitude__chevron"></i>
+                            </button>
+                            <div class="journal-gratitude__content" id="gratitudeContent" style="display: none;">
+                                <p class="journal-gratitude__hint">What are you grateful for today?</p>
+                                <div class="journal-gratitude__inputs">
+                                    <input type="text" class="form-input" id="gratitude1" placeholder="I'm grateful for..." autocomplete="off">
+                                    <input type="text" class="form-input" id="gratitude2" placeholder="I'm also grateful for..." autocomplete="off">
+                                    <input type="text" class="form-input" id="gratitude3" placeholder="And grateful for..." autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="journal-notebook__save">
+                            <button class="btn btn--primary" id="saveEntryBtn">
+                                <i data-lucide="save"></i>
+                                Save Entry
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render the History tab content
+     */
+    function renderHistoryTab(entries) {
+        const pastEntries = entries.filter(e => e.date !== DateUtils.today());
+
+        if (pastEntries.length === 0) {
+            return `
+                <div class="journal-history-section">
+                    <div class="journal-history-empty">
+                        <i data-lucide="notebook-pen"></i>
+                        <p>No past entries yet</p>
+                        <span>Start writing today to build your journal history</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Group entries by month
+        const groupedEntries = {};
+        pastEntries.forEach(entry => {
+            const date = new Date(entry.date);
+            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+            const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+
+            if (!groupedEntries[monthKey]) {
+                groupedEntries[monthKey] = {
+                    label: monthLabel,
+                    entries: []
+                };
+            }
+            groupedEntries[monthKey].entries.push(entry);
+        });
+
+        return `
+            <div class="journal-history-section">
+                ${Object.keys(groupedEntries)
+                    .sort((a, b) => b.localeCompare(a))
+                    .map(monthKey => {
+                        const group = groupedEntries[monthKey];
+                        return `
+                            <div class="journal-month-group">
+                                <h3 class="journal-month-group__title">${group.label}</h3>
+                                <div class="journal-history__list">
+                                    ${group.entries.map(entry => {
                                         const mood = getMoodById(entry.mood);
                                         const entryDate = new Date(entry.date);
                                         return `
@@ -379,38 +506,138 @@ const Journal = (function() {
                                                     ` : ''}
                                                 </div>
                                                 <div class="journal-history__entry-preview">
-                                                    ${entry.content.length > 150
+                                                    ${entry.content && entry.content.length > 150
                                                         ? entry.content.substring(0, 150) + '...'
-                                                        : entry.content}
+                                                        : entry.content || '(No content)'}
                                                 </div>
                                             </div>
                                         `;
                                     }).join('')}
+                                </div>
                             </div>
-                            ${entries.filter(e => e.date !== DateUtils.today()).length > 10 ? `
-                                <button class="btn btn--ghost btn--block" id="viewAllBtn">
-                                    <i data-lucide="notebook-pen"></i>
-                                    View All Entries (${entries.length - 1})
-                                </button>
-                            ` : ''}
-                        </div>
-                    ` : ''}
-                </div>
+                        `;
+                    }).join('')}
             </div>
         `;
+    }
 
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
+    /**
+     * Render the Stats tab content
+     */
+    function renderStatsTab(entries, streak, bestStreak, monthDaysWithEntries) {
+        // Count mood distribution
+        const moodCounts = {};
+        entries.forEach(entry => {
+            if (entry.mood) {
+                moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+            }
+        });
 
-        // Bind events
-        bindJournalPageEvents(container, memberId, member, todayEntry);
+        // Find most common mood
+        let mostCommonMood = null;
+        let maxCount = 0;
+        Object.keys(moodCounts).forEach(moodId => {
+            if (moodCounts[moodId] > maxCount) {
+                maxCount = moodCounts[moodId];
+                mostCommonMood = moodId;
+            }
+        });
+
+        // Calculate this month's progress
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const monthProgress = Math.round((monthDaysWithEntries / daysInMonth) * 100);
+
+        return `
+            <div class="journal-stats-section">
+                <div class="journal-stats-grid">
+                    <div class="journal-stat-card journal-stat-card--primary">
+                        <div class="journal-stat-card__icon">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="journal-stat-card__info">
+                            <span class="journal-stat-card__value">${streak}</span>
+                            <span class="journal-stat-card__label">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="journal-stat-card journal-stat-card--success">
+                        <div class="journal-stat-card__icon">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="journal-stat-card__info">
+                            <span class="journal-stat-card__value">${bestStreak}</span>
+                            <span class="journal-stat-card__label">Best Streak</span>
+                        </div>
+                    </div>
+                    <div class="journal-stat-card journal-stat-card--info">
+                        <div class="journal-stat-card__icon">
+                            <i data-lucide="book-heart"></i>
+                        </div>
+                        <div class="journal-stat-card__info">
+                            <span class="journal-stat-card__value">${entries.length}</span>
+                            <span class="journal-stat-card__label">Total Entries</span>
+                        </div>
+                    </div>
+                    <div class="journal-stat-card journal-stat-card--warning">
+                        <div class="journal-stat-card__icon">
+                            <i data-lucide="calendar-check"></i>
+                        </div>
+                        <div class="journal-stat-card__info">
+                            <span class="journal-stat-card__value">${monthDaysWithEntries}</span>
+                            <span class="journal-stat-card__label">This Month</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="journal-month-card">
+                    <div class="journal-month-card__header">
+                        <i data-lucide="calendar"></i>
+                        <span>${new Date().toLocaleDateString('en-US', { month: 'long' })} Progress</span>
+                    </div>
+                    <div class="journal-month-card__content">
+                        <div class="journal-month-card__progress">
+                            <div class="journal-month-card__bar">
+                                <div class="journal-month-card__fill" style="width: ${monthProgress}%"></div>
+                            </div>
+                            <span class="journal-month-card__text">${monthDaysWithEntries} of ${daysInMonth} days (${monthProgress}%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${Object.keys(moodCounts).length > 0 ? `
+                    <div class="journal-mood-card">
+                        <div class="journal-mood-card__header">
+                            <i data-lucide="heart"></i>
+                            <span>Mood Distribution</span>
+                        </div>
+                        <div class="journal-mood-card__content">
+                            <div class="journal-mood-card__grid">
+                                ${MOODS.filter(m => moodCounts[m.id]).map(mood => `
+                                    <div class="journal-mood-card__item" style="--mood-color: ${mood.color}">
+                                        <span class="journal-mood-card__emoji">${mood.emoji}</span>
+                                        <span class="journal-mood-card__count">${moodCounts[mood.id]}</span>
+                                        <span class="journal-mood-card__label">${mood.label}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${mostCommonMood ? `
+                                <div class="journal-mood-card__most-common">
+                                    <span>Most common mood:</span>
+                                    <span class="journal-mood-card__most-common-mood" style="--mood-color: ${getMoodById(mostCommonMood)?.color}">
+                                        ${getMoodById(mostCommonMood)?.emoji} ${getMoodById(mostCommonMood)?.label}
+                                    </span>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     /**
      * Bind journal page events
      */
-    function bindJournalPageEvents(container, memberId, member, todayEntry) {
+    function bindJournalPageEvents(container, memberId, member, activeTab, todayEntry) {
         let selectedMood = null;
 
         // Back button
@@ -418,73 +645,81 @@ const Journal = (function() {
             State.emit('tabChanged', memberId);
         });
 
-        // Gratitude toggle
-        const gratitudeToggle = document.getElementById('gratitudeToggle');
-        const gratitudeContent = document.getElementById('gratitudeContent');
-        if (gratitudeToggle && gratitudeContent) {
-            gratitudeToggle.addEventListener('click', () => {
-                const isOpen = gratitudeContent.style.display !== 'none';
-                gratitudeContent.style.display = isOpen ? 'none' : 'block';
-                gratitudeToggle.classList.toggle('journal-gratitude__toggle--open', !isOpen);
+        // Tab switching
+        container.querySelectorAll('.journal-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                renderJournalPage(container, memberId, member, newTab);
+            });
+        });
+
+        // Tab-specific events
+        if (activeTab === 'write') {
+            // Gratitude toggle
+            const gratitudeToggle = document.getElementById('gratitudeToggle');
+            const gratitudeContent = document.getElementById('gratitudeContent');
+            if (gratitudeToggle && gratitudeContent) {
+                gratitudeToggle.addEventListener('click', () => {
+                    const isOpen = gratitudeContent.style.display !== 'none';
+                    gratitudeContent.style.display = isOpen ? 'none' : 'block';
+                    gratitudeToggle.classList.toggle('journal-gratitude__toggle--open', !isOpen);
+                });
+            }
+
+            // Mood selection
+            container.querySelectorAll('.journal-mood').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    container.querySelectorAll('.journal-mood').forEach(b =>
+                        b.classList.remove('journal-mood--selected'));
+                    btn.classList.add('journal-mood--selected');
+                    selectedMood = btn.dataset.mood;
+                });
+            });
+
+            // Save entry
+            document.getElementById('saveEntryBtn')?.addEventListener('click', () => {
+                const content = document.getElementById('journalEntry')?.value?.trim();
+
+                // Collect gratitude items
+                const gratitudeItems = [
+                    document.getElementById('gratitude1')?.value?.trim(),
+                    document.getElementById('gratitude2')?.value?.trim(),
+                    document.getElementById('gratitude3')?.value?.trim()
+                ].filter(Boolean);
+
+                // Need at least journal content OR gratitude
+                if (!content && gratitudeItems.length === 0) {
+                    Toast.error('Please write something in your journal or add gratitude');
+                    return;
+                }
+
+                saveEntry(memberId, content || '', selectedMood, gratitudeItems);
+                renderJournalPage(container, memberId, member, 'write');
+            });
+
+            // Edit today's entry
+            document.getElementById('editTodayBtn')?.addEventListener('click', () => {
+                showEditModal(memberId, todayEntry, () => {
+                    renderJournalPage(container, memberId, member, 'write');
+                });
             });
         }
 
-        // Mood selection
-        container.querySelectorAll('.journal-mood').forEach(btn => {
-            btn.addEventListener('click', () => {
-                container.querySelectorAll('.journal-mood').forEach(b =>
-                    b.classList.remove('journal-mood--selected'));
-                btn.classList.add('journal-mood--selected');
-                selectedMood = btn.dataset.mood;
+        if (activeTab === 'history') {
+            // View past entry
+            container.querySelectorAll('.journal-history__entry').forEach(card => {
+                card.addEventListener('click', () => {
+                    const entryId = card.dataset.entryId;
+                    const widgetData = getWidgetData(memberId);
+                    const entry = widgetData.entries.find(e => e.id === entryId);
+                    if (entry) {
+                        showEntryModal(memberId, entry, () => {
+                            renderJournalPage(container, memberId, member, 'history');
+                        });
+                    }
+                });
             });
-        });
-
-        // Save entry
-        document.getElementById('saveEntryBtn')?.addEventListener('click', () => {
-            const content = document.getElementById('journalEntry')?.value?.trim();
-
-            // Collect gratitude items
-            const gratitudeItems = [
-                document.getElementById('gratitude1')?.value?.trim(),
-                document.getElementById('gratitude2')?.value?.trim(),
-                document.getElementById('gratitude3')?.value?.trim()
-            ].filter(Boolean);
-
-            // Need at least journal content OR gratitude
-            if (!content && gratitudeItems.length === 0) {
-                Toast.error('Please write something in your journal or add gratitude');
-                return;
-            }
-
-            saveEntry(memberId, content || '', selectedMood, gratitudeItems);
-            renderJournalPage(container, memberId, member);
-        });
-
-        // Edit today's entry
-        document.getElementById('editTodayBtn')?.addEventListener('click', () => {
-            showEditModal(memberId, todayEntry, () => {
-                renderJournalPage(container, memberId, member);
-            });
-        });
-
-        // View past entry
-        container.querySelectorAll('.journal-history__entry').forEach(card => {
-            card.addEventListener('click', () => {
-                const entryId = card.dataset.entryId;
-                const widgetData = getWidgetData(memberId);
-                const entry = widgetData.entries.find(e => e.id === entryId);
-                if (entry) {
-                    showEntryModal(memberId, entry, () => {
-                        renderJournalPage(container, memberId, member);
-                    });
-                }
-            });
-        });
-
-        // View all entries
-        document.getElementById('viewAllBtn')?.addEventListener('click', () => {
-            showAllEntriesPage(memberId, member);
-        });
+        }
     }
 
     /**
@@ -794,114 +1029,6 @@ const Journal = (function() {
         // Close button
         document.getElementById('closeEntryBtn')?.addEventListener('click', () => {
             Modal.close();
-        });
-    }
-
-    /**
-     * Show all entries page
-     */
-    function showAllEntriesPage(memberId, member) {
-        const main = document.getElementById('mainContent');
-        if (!main) return;
-
-        const widgetData = getWidgetData(memberId);
-        const entries = widgetData.entries || [];
-
-        // Group entries by month
-        const groupedEntries = {};
-        entries.forEach(entry => {
-            const date = new Date(entry.date);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
-
-            if (!groupedEntries[monthKey]) {
-                groupedEntries[monthKey] = {
-                    label: monthLabel,
-                    entries: []
-                };
-            }
-            groupedEntries[monthKey].entries.push(entry);
-        });
-
-        main.innerHTML = `
-            <div class="journal-all-entries">
-                <div class="journal-page__header">
-                    <button class="btn btn--ghost" id="backToJournalBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back to Journal
-                    </button>
-                    <h1 class="journal-page__title">
-                        <i data-lucide="notebook-pen"></i>
-                        All Entries
-                    </h1>
-                    <span class="journal-all-entries__count">${entries.length} entries</span>
-                </div>
-
-                <div class="journal-all-entries__content">
-                    ${Object.keys(groupedEntries)
-                        .sort((a, b) => b.localeCompare(a))
-                        .map(monthKey => {
-                            const group = groupedEntries[monthKey];
-                            return `
-                                <div class="journal-month-group">
-                                    <h3 class="journal-month-group__title">${group.label}</h3>
-                                    <div class="journal-history__list">
-                                        ${group.entries.map(entry => {
-                                            const mood = getMoodById(entry.mood);
-                                            const entryDate = new Date(entry.date);
-                                            return `
-                                                <div class="journal-history__entry" data-entry-id="${entry.id}">
-                                                    <div class="journal-history__entry-header">
-                                                        <span class="journal-history__entry-date">
-                                                            ${entryDate.toLocaleDateString('en-US', {
-                                                                weekday: 'short',
-                                                                month: 'short',
-                                                                day: 'numeric'
-                                                            })}
-                                                        </span>
-                                                        ${mood ? `
-                                                            <span class="journal-history__entry-mood"
-                                                                  style="--mood-color: ${mood.color}">
-                                                                ${mood.emoji}
-                                                            </span>
-                                                        ` : ''}
-                                                    </div>
-                                                    <div class="journal-history__entry-preview">
-                                                        ${entry.content.length > 150
-                                                            ? entry.content.substring(0, 150) + '...'
-                                                            : entry.content}
-                                                    </div>
-                                                </div>
-                                            `;
-                                        }).join('')}
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                </div>
-            </div>
-        `;
-
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // Back button
-        document.getElementById('backToJournalBtn')?.addEventListener('click', () => {
-            renderJournalPage(main, memberId, member);
-        });
-
-        // Entry click
-        main.querySelectorAll('.journal-history__entry').forEach(card => {
-            card.addEventListener('click', () => {
-                const entryId = card.dataset.entryId;
-                const entry = entries.find(e => e.id === entryId);
-                if (entry) {
-                    showEntryModal(memberId, entry, () => {
-                        showAllEntriesPage(memberId, member);
-                    });
-                }
-            });
         });
     }
 

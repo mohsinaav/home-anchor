@@ -246,10 +246,16 @@ const Tabs = (function() {
                 </div>
 
                 <div class="form-group">
-                    <label class="form-label">Widgets</label>
-                    <p class="form-hint">Default widgets for this member type will be enabled. You can customize later.</p>
-                    <div class="widget-preview" id="widgetPreview">
-                        ${renderWidgetPreview('adult', registry)}
+                    <div class="widget-selection-header">
+                        <label class="form-label">Widgets</label>
+                        <button type="button" class="btn btn--sm btn--ghost" id="selectAllWidgetsBtn">
+                            <i data-lucide="check-square"></i>
+                            Select All
+                        </button>
+                    </div>
+                    <p class="form-hint">Choose which widgets to enable for this member:</p>
+                    <div class="widget-selection" id="widgetSelection">
+                        ${renderWidgetSelection('adult', registry)}
                     </div>
                 </div>
             </form>
@@ -274,7 +280,27 @@ const Tabs = (function() {
         let selectedType = 'adult';
         const typeBtns = document.querySelectorAll('.member-type-btn');
         const ageGroup = document.getElementById('ageGroup');
-        const widgetPreview = document.getElementById('widgetPreview');
+        const widgetSelection = document.getElementById('widgetSelection');
+
+        // Setup Select All button
+        const selectAllBtn = document.getElementById('selectAllWidgetsBtn');
+        selectAllBtn?.addEventListener('click', () => {
+            const checkboxes = widgetSelection.querySelectorAll('input[type="checkbox"]');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+
+            // Update button text
+            selectAllBtn.innerHTML = allChecked
+                ? '<i data-lucide="check-square"></i> Select All'
+                : '<i data-lucide="square"></i> Deselect All';
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
 
         typeBtns.forEach(btn => {
             btn.addEventListener('click', () => {
@@ -298,8 +324,15 @@ const Tabs = (function() {
                     ageGroup.style.display = 'none';
                 }
 
-                // Update widget preview
-                widgetPreview.innerHTML = renderWidgetPreview(selectedType, registry);
+                // Update widget selection
+                widgetSelection.innerHTML = renderWidgetSelection(selectedType, registry);
+
+                // Reset Select All button text
+                selectAllBtn.innerHTML = '<i data-lucide="check-square"></i> Select All';
+
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             });
         });
 
@@ -342,10 +375,15 @@ const Tabs = (function() {
                 return false;
             }
 
-            // Create member with avatar
+            // Get selected widgets
+            const checkboxes = document.querySelectorAll('#widgetSelection input[type="checkbox"]:checked');
+            const selectedWidgets = Array.from(checkboxes).map(cb => cb.value);
+
+            // Create member with avatar and selected widgets
             const newMember = Storage.addMember({
                 name,
                 type: selectedType,
+                widgets: selectedWidgets,
                 ...((selectedType === 'kid' || selectedType === 'teen') && { age })
             }, photoData);
 
@@ -432,6 +470,32 @@ const Tabs = (function() {
                         <i data-lucide="${w.icon}"></i>
                         ${w.name}
                     </span>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render widget selection checkboxes for member type
+     */
+    function renderWidgetSelection(type, registry) {
+        const widgets = registry[type] || [];
+
+        if (widgets.length === 0) {
+            return '<p class="text-muted">No widgets available for this member type</p>';
+        }
+
+        return `
+            <div class="widget-list widget-list--compact">
+                ${widgets.map(widget => `
+                    <label class="widget-checkbox">
+                        <input type="checkbox" name="widget" value="${widget.id}"
+                            ${widget.default ? 'checked' : ''}>
+                        <span class="widget-checkbox__content">
+                            <i data-lucide="${widget.icon}"></i>
+                            <span class="widget-checkbox__name">${widget.name}</span>
+                        </span>
+                    </label>
                 `).join('')}
             </div>
         `;

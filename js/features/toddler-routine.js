@@ -467,6 +467,10 @@ const ToddlerRoutine = (function() {
                 </div>
 
                 <div class="toddler-routine-widget__footer">
+                    <button class="btn btn--sm btn--ghost" data-action="history" title="View history">
+                        <i data-lucide="history"></i>
+                        History
+                    </button>
                     <button class="btn btn--sm btn--ghost" data-action="manage" title="Manage routines">
                         <i data-lucide="settings"></i>
                         Manage
@@ -617,6 +621,12 @@ const ToddlerRoutine = (function() {
         container.querySelector('[data-action="stats"]')?.addEventListener('click', (e) => {
             e.stopPropagation();
             showStatsModal(memberId);
+        });
+
+        // History button
+        container.querySelector('[data-action="history"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showHistoryPage(memberId);
         });
 
         // Reset button
@@ -1281,6 +1291,127 @@ const ToddlerRoutine = (function() {
     }
 
     /**
+     * Show routine history page
+     */
+    function showHistoryPage(memberId) {
+        const main = document.getElementById('mainContent');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        const data = getWidgetData(memberId);
+        const history = data.history || [];
+        const routines = data.routines || [];
+
+        // Create routine lookup map
+        const routineMap = {};
+        routines.forEach(r => {
+            routineMap[r.id] = r.title;
+        });
+
+        // Sort history by date descending
+        const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));
+
+        // Calculate stats
+        const todayStr = DateUtils.today();
+        const completedToday = data.completedToday || [];
+        const todayCount = completedToday.length;
+        const totalRoutines = routines.length;
+
+        // Calculate streak (consecutive days with all routines completed)
+        let streak = 0;
+        for (let i = 0; i < sortedHistory.length; i++) {
+            if (sortedHistory[i].completed === sortedHistory[i].total && sortedHistory[i].total > 0) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        // Get date label
+        const getDateLabel = (date) => {
+            if (date === todayStr) return 'Today';
+            const yesterday = DateUtils.formatISO(DateUtils.addDays(new Date(), -1));
+            if (date === yesterday) return 'Yesterday';
+            return DateUtils.formatShort(date);
+        };
+
+        main.innerHTML = `
+            <div class="toddler-tasks-history-page">
+                <div class="toddler-tasks-page__header">
+                    <button class="btn btn--ghost" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <h1 class="toddler-tasks-page__title">
+                        📅 Routine History
+                    </h1>
+                    <div></div>
+                </div>
+
+                <div class="toddler-tasks-page__stats">
+                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--done">
+                        <div class="toddler-tasks-page-stat__icon">✅</div>
+                        <div class="toddler-tasks-page-stat__info">
+                            <span class="toddler-tasks-page-stat__value">${todayCount}/${totalRoutines}</span>
+                            <span class="toddler-tasks-page-stat__label">Today</span>
+                        </div>
+                    </div>
+                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--total">
+                        <div class="toddler-tasks-page-stat__icon">🔥</div>
+                        <div class="toddler-tasks-page-stat__info">
+                            <span class="toddler-tasks-page-stat__value">${streak}</span>
+                            <span class="toddler-tasks-page-stat__label">Day Streak</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toddler-tasks-history">
+                    ${sortedHistory.length === 0 ? `
+                        <div class="toddler-tasks-page__empty">
+                            <div class="toddler-tasks-page__empty-icon">📅</div>
+                            <h2>No History Yet</h2>
+                            <p>Complete some routines to see your history!</p>
+                        </div>
+                    ` : sortedHistory.map(entry => `
+                        <div class="toddler-tasks-history__day">
+                            <div class="toddler-tasks-history__day-header">
+                                <span class="toddler-tasks-history__day-label">${getDateLabel(entry.date)}</span>
+                                <span class="toddler-tasks-history__day-count ${entry.completed === entry.total ? 'toddler-tasks-history__day-count--complete' : ''}">
+                                    ${entry.completed}/${entry.total} completed
+                                    ${entry.completed === entry.total && entry.total > 0 ? ' ⭐' : ''}
+                                </span>
+                            </div>
+                            <div class="toddler-tasks-history__day-list">
+                                ${(entry.routineIds || []).map(routineId => `
+                                    <div class="toddler-tasks-history__item">
+                                        <span class="toddler-tasks-history__item-icon">✅</span>
+                                        <span class="toddler-tasks-history__item-title">${routineMap[routineId] || 'Routine'}</span>
+                                    </div>
+                                `).join('')}
+                                ${entry.routineIds && entry.routineIds.length === 0 ? `
+                                    <div class="toddler-tasks-history__item toddler-tasks-history__item--empty">
+                                        <span class="toddler-tasks-history__item-icon">📋</span>
+                                        <span class="toddler-tasks-history__item-title">No routines completed</span>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+    }
+
+    /**
      * Initialize
      */
     function init() {
@@ -1291,6 +1422,7 @@ const ToddlerRoutine = (function() {
         init,
         renderWidget,
         showFullPage,
+        showHistoryPage,
         ROUTINE_IMAGES
     };
 })();

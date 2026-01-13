@@ -28,9 +28,26 @@ const ToddlerTasks = (function() {
     function getWidgetData(memberId) {
         const stored = Storage.getWidgetData(memberId, 'toddler-tasks');
         if (!stored || !stored.tasks) {
-            return { tasks: [] };
+            return { tasks: [], history: [] };
+        }
+        // Ensure history array exists for older data
+        if (!stored.history) {
+            stored.history = [];
         }
         return stored;
+    }
+
+    /**
+     * Add entry to history
+     */
+    function addToHistory(widgetData, task) {
+        const historyEntry = {
+            id: `hist-${Date.now()}`,
+            taskTitle: task.title,
+            completedAt: new Date().toISOString(),
+            date: DateUtils.today()
+        };
+        widgetData.history = [historyEntry, ...(widgetData.history || [])].slice(0, 100); // Keep last 100 entries
     }
 
     /**
@@ -77,6 +94,10 @@ const ToddlerTasks = (function() {
                     <button class="btn btn--sm btn--ghost" data-action="view-all">
                         <i data-lucide="list"></i>
                         View All (${tasks.length})
+                    </button>
+                    <button class="btn btn--sm btn--ghost" data-action="view-history">
+                        <i data-lucide="history"></i>
+                        History
                     </button>
                     ${completedTasks.length > 0 ? `
                         <span class="toddler-tasks-widget__completed-count">
@@ -165,8 +186,13 @@ const ToddlerTasks = (function() {
                 const taskId = checkbox.dataset.taskToggle;
                 const task = widgetData.tasks.find(t => t.id === taskId);
                 if (task) {
+                    const wasCompleted = task.completed;
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
+                    // Add to history when task is completed
+                    if (checkbox.checked && !wasCompleted) {
+                        addToHistory(widgetData, task);
+                    }
                     saveWidgetData(memberId, widgetData);
                     renderWidget(container, memberId);
                 }
@@ -187,6 +213,11 @@ const ToddlerTasks = (function() {
         // View All button
         container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
             showFullPage(memberId);
+        });
+
+        // History button
+        container.querySelector('[data-action="view-history"]')?.addEventListener('click', () => {
+            showHistoryPage(memberId);
         });
     }
 
@@ -364,8 +395,13 @@ const ToddlerTasks = (function() {
                 const taskId = checkbox.dataset.taskToggle;
                 const task = widgetData.tasks.find(t => t.id === taskId);
                 if (task) {
+                    const wasCompleted = task.completed;
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
+                    // Add to history when task is completed
+                    if (checkbox.checked && !wasCompleted) {
+                        addToHistory(widgetData, task);
+                    }
                     saveWidgetData(memberId, widgetData);
                     renderFullPage(container, memberId, member);
                 }
@@ -394,6 +430,112 @@ const ToddlerTasks = (function() {
         });
     }
 
+    /**
+     * Show history page
+     */
+    function showHistoryPage(memberId) {
+        const main = document.getElementById('mainContent');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        const widgetData = getWidgetData(memberId);
+        const history = widgetData.history || [];
+
+        // Group history by date
+        const groupedHistory = {};
+        history.forEach(entry => {
+            if (!groupedHistory[entry.date]) {
+                groupedHistory[entry.date] = [];
+            }
+            groupedHistory[entry.date].push(entry);
+        });
+
+        // Sort dates descending
+        const sortedDates = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a));
+
+        // Calculate stats
+        const todayStr = DateUtils.today();
+        const todayCount = (groupedHistory[todayStr] || []).length;
+        const totalCount = history.length;
+
+        // Get date label
+        const getDateLabel = (date) => {
+            if (date === todayStr) return 'Today';
+            const yesterday = DateUtils.formatISO(DateUtils.addDays(new Date(), -1));
+            if (date === yesterday) return 'Yesterday';
+            return DateUtils.formatShort(date);
+        };
+
+        main.innerHTML = `
+            <div class="toddler-tasks-history-page">
+                <div class="toddler-tasks-page__header">
+                    <button class="btn btn--ghost" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <h1 class="toddler-tasks-page__title">
+                        📜 Task History
+                    </h1>
+                    <div></div>
+                </div>
+
+                <div class="toddler-tasks-page__stats">
+                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--done">
+                        <div class="toddler-tasks-page-stat__icon">✅</div>
+                        <div class="toddler-tasks-page-stat__info">
+                            <span class="toddler-tasks-page-stat__value">${todayCount}</span>
+                            <span class="toddler-tasks-page-stat__label">Today</span>
+                        </div>
+                    </div>
+                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--total">
+                        <div class="toddler-tasks-page-stat__icon">📊</div>
+                        <div class="toddler-tasks-page-stat__info">
+                            <span class="toddler-tasks-page-stat__value">${totalCount}</span>
+                            <span class="toddler-tasks-page-stat__label">All Time</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="toddler-tasks-history">
+                    ${sortedDates.length === 0 ? `
+                        <div class="toddler-tasks-page__empty">
+                            <div class="toddler-tasks-page__empty-icon">📜</div>
+                            <h2>No History Yet</h2>
+                            <p>Complete some tasks to see your history!</p>
+                        </div>
+                    ` : sortedDates.map(date => `
+                        <div class="toddler-tasks-history__day">
+                            <div class="toddler-tasks-history__day-header">
+                                <span class="toddler-tasks-history__day-label">${getDateLabel(date)}</span>
+                                <span class="toddler-tasks-history__day-count">${groupedHistory[date].length} completed</span>
+                            </div>
+                            <div class="toddler-tasks-history__day-list">
+                                ${groupedHistory[date].map(entry => `
+                                    <div class="toddler-tasks-history__item">
+                                        <span class="toddler-tasks-history__item-icon">✅</span>
+                                        <span class="toddler-tasks-history__item-title">${entry.taskTitle}</span>
+                                        <span class="toddler-tasks-history__item-time">
+                                            ${new Date(entry.completedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
+                                        </span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+    }
+
     function init() {
         // Initialize toddler tasks feature
     }
@@ -401,6 +543,7 @@ const ToddlerTasks = (function() {
     return {
         init,
         renderWidget,
-        showFullPage
+        showFullPage,
+        showHistoryPage
     };
 })();

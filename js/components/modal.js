@@ -7,6 +7,7 @@ const Modal = (function() {
     let currentModal = null;
     let onConfirmCallback = null;
     let onCancelCallback = null;
+    let cleanupTimeoutId = null;
 
     // DOM elements
     const overlay = document.getElementById('modalOverlay');
@@ -51,6 +52,12 @@ const Modal = (function() {
      * Open modal with options
      */
     function open(options = {}) {
+        // Cancel any pending cleanup from a previous close
+        if (cleanupTimeoutId) {
+            clearTimeout(cleanupTimeoutId);
+            cleanupTimeoutId = null;
+        }
+
         const {
             title = 'Modal',
             content = '',
@@ -129,13 +136,14 @@ const Modal = (function() {
             onCancelCallback();
         }
 
-        // Clear after animation
-        setTimeout(() => {
+        // Clear after animation (save timeout ID so it can be cancelled)
+        cleanupTimeoutId = setTimeout(() => {
             if (contentEl) contentEl.innerHTML = '';
             if (footerEl) footerEl.innerHTML = '';
             currentModal = null;
             onConfirmCallback = null;
             onCancelCallback = null;
+            cleanupTimeoutId = null;
         }, 200);
     }
 
@@ -149,12 +157,14 @@ const Modal = (function() {
         overlay?.classList.remove('modal-overlay--active');
         document.body.style.overflow = '';
 
-        setTimeout(() => {
+        // Clear after animation (save timeout ID so it can be cancelled)
+        cleanupTimeoutId = setTimeout(() => {
             if (contentEl) contentEl.innerHTML = '';
             if (footerEl) footerEl.innerHTML = '';
             currentModal = null;
             onConfirmCallback = null;
             onCancelCallback = null;
+            cleanupTimeoutId = null;
         }, 200);
     }
 

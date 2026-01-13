@@ -1297,6 +1297,9 @@ const SettingsPage = (function() {
             const container = document.querySelector('.settings-page').parentElement;
             render(container);
 
+            // Re-render tabs to reflect name change immediately
+            Tabs.render();
+
             return true;
         });
     }
