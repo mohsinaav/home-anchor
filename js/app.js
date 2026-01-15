@@ -491,6 +491,37 @@ const Content = (function() {
                 }
             });
         });
+
+        // Bind card click to navigate to routine page with snooze/postpone options
+        container.querySelectorAll('.routine-due-card').forEach(card => {
+            card.addEventListener('click', (e) => {
+                // Don't navigate if clicking the Done button
+                if (e.target.closest('[data-mark-done]')) return;
+
+                const routineId = card.dataset.routineId;
+                const memberId = card.dataset.memberId;
+
+                if (typeof Routine !== 'undefined' && typeof Tabs !== 'undefined') {
+                    // Switch to the member's tab first
+                    Tabs.switchTo(memberId);
+                    // Then show routine detail (navigates to routines page)
+                    setTimeout(() => {
+                        Routine.showRoutinesPage(memberId, 'due');
+                        // Scroll to and highlight the specific routine
+                        setTimeout(() => {
+                            const routineCard = document.querySelector(`[data-routine-id="${routineId}"]`);
+                            if (routineCard) {
+                                routineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                routineCard.classList.add('routine-card--highlighted');
+                                setTimeout(() => {
+                                    routineCard.classList.remove('routine-card--highlighted');
+                                }, 2000);
+                            }
+                        }, 100);
+                    }, 50);
+                }
+            });
+        });
     }
 
     function renderEmptyHome() {
@@ -888,6 +919,13 @@ const App = (function() {
                         Tour.showMemberTour(member.type);
                     }, 600);
                 }
+            }
+        });
+
+        // Home button - logo/brand click goes to home dashboard
+        document.getElementById('homeBtn')?.addEventListener('click', () => {
+            if (typeof Tabs !== 'undefined') {
+                Tabs.switchTo('home');
             }
         });
 

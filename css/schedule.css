@@ -785,6 +785,27 @@
     .member-sidebar:not(.member-sidebar--expanded) .schedule-current__badge {
         display: none;
     }
+
+    /* Expanded state on mobile */
+    .member-sidebar--expanded .schedule-sidebar {
+        padding: var(--space-3);
+    }
+
+    .member-sidebar--expanded .schedule-sidebar__header {
+        padding: var(--space-3) 0;
+        margin-bottom: var(--space-3);
+    }
+
+    .member-sidebar--expanded .schedule-current {
+        margin-bottom: var(--space-3);
+        border-radius: var(--radius-lg);
+        padding: var(--space-3);
+    }
+
+    .member-sidebar--expanded .schedule-sidebar__upcoming {
+        max-height: 200px;
+        overflow-y: auto;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1273,5 +1294,82 @@
     .preset-btn {
         flex: 1;
         justify-content: center;
+    }
+
+    /* Mobile schedule manager improvements */
+    .schedule-manager__tabs {
+        gap: var(--space-1);
+        padding: 0 var(--space-3) var(--space-2);
+        margin: 0 calc(var(--space-3) * -1);
+    }
+
+    .schedule-manager__tab {
+        padding: var(--space-2);
+        font-size: 11px;
+        min-width: fit-content;
+    }
+
+    /* Ensure timeline is scrollable and doesn't overflow */
+    .schedule-timeline-wrapper {
+        max-height: 350px;
+        margin: 0 calc(var(--space-3) * -1);
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    /* Smaller hour labels on mobile */
+    .schedule-timeline {
+        grid-template-columns: 45px 1fr;
+    }
+
+    .schedule-timeline__hour-label {
+        font-size: 9px;
+        padding-right: 4px;
+    }
+
+    /* Improve block readability on small screens */
+    .schedule-timeline__block {
+        left: 2px;
+        right: 2px;
+        padding: var(--space-1);
+    }
+
+    .schedule-timeline__block-icon {
+        width: 18px;
+        height: 18px;
+    }
+
+    .schedule-timeline__block-icon svg {
+        width: 10px;
+        height: 10px;
+    }
+
+    .schedule-timeline__block-title {
+        font-size: 10px;
+    }
+
+    .schedule-timeline__block-time {
+        font-size: 9px;
+    }
+
+    /* Form panel full width on mobile */
+    .schedule-form-panel {
+        margin-left: calc(var(--space-3) * -1);
+        margin-right: calc(var(--space-3) * -1);
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+    }
+
+    /* Better touch targets for icon/color pickers */
+    .icon-picker__btn--sm {
+        width: 36px;
+        height: 36px;
+    }
+
+    .color-picker__btn--sm {
+        width: 28px;
+        height: 28px;
     }
 }

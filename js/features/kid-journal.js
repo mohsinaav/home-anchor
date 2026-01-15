@@ -69,6 +69,265 @@ const KidJournal = (function() {
     }
 
     /**
+     * Check if member can set journal password
+     * Teens always can, kids only if setting is enabled
+     */
+    function canSetPassword(memberId) {
+        const member = Storage.getMember(memberId);
+        if (!member) return false;
+
+        if (member.type === 'teen') {
+            return true; // Teens always can
+        }
+
+        if (member.type === 'kid') {
+            const settings = Storage.getSettings();
+            return settings.allowKidsJournalPassword === true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Get journal password for a member
+     */
+    function getJournalPassword(memberId) {
+        const widgetData = getWidgetData(memberId);
+        return widgetData.settings?.journalPassword || null;
+    }
+
+    /**
+     * Set journal password for a member
+     */
+    function setJournalPassword(memberId, password) {
+        const widgetData = getWidgetData(memberId);
+        if (!widgetData.settings) widgetData.settings = {};
+        widgetData.settings.journalPassword = password;
+        saveWidgetData(memberId, widgetData);
+    }
+
+    /**
+     * Remove journal password for a member
+     */
+    function removeJournalPassword(memberId) {
+        const widgetData = getWidgetData(memberId);
+        if (widgetData.settings) {
+            delete widgetData.settings.journalPassword;
+            saveWidgetData(memberId, widgetData);
+        }
+    }
+
+    /**
+     * Show password verification modal
+     * Returns a promise that resolves to true if verified, false otherwise
+     * Note: If password setting is disabled for kids, bypass verification
+     */
+    function verifyPassword(memberId) {
+        return new Promise((resolve) => {
+            const password = getJournalPassword(memberId);
+            // If no password set, allow access
+            if (!password) {
+                resolve(true);
+                return;
+            }
+
+            // If password setting is disabled (admin turned it off), bypass verification
+            // This gives parents/admin control over kid journal access
+            if (!canSetPassword(memberId)) {
+                resolve(true);
+                return;
+            }
+
+            let resolved = false;
+            const safeResolve = (value) => {
+                if (!resolved) {
+                    resolved = true;
+                    resolve(value);
+                }
+            };
+
+            Modal.open({
+                title: 'Enter Password',
+                content: `
+                    <div class="journal-password-verify">
+                        <p style="margin-bottom: var(--space-4); color: var(--gray-600);">
+                            Enter your secret password to open your diary.
+                        </p>
+                        <input type="password" id="journalPasswordInput" class="form-input"
+                               placeholder="Your password" maxlength="20" autocomplete="off">
+                        <p id="passwordError" style="color: var(--danger); font-size: var(--text-sm); margin-top: var(--space-2); display: none;">
+                            Wrong password! Try again.
+                        </p>
+                    </div>
+                `,
+                footer: `
+                    <button class="btn btn--secondary" data-modal-cancel>Cancel</button>
+                    <button class="btn btn--primary" id="verifyPasswordBtn">
+                        <i data-lucide="unlock"></i>
+                        Open
+                    </button>
+                `
+            });
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+
+            const input = document.getElementById('journalPasswordInput');
+            const verifyBtn = document.getElementById('verifyPasswordBtn');
+            const errorEl = document.getElementById('passwordError');
+
+            // Focus input
+            setTimeout(() => input?.focus(), 100);
+
+            const checkPassword = () => {
+                const entered = input?.value || '';
+                if (entered === password) {
+                    Modal.close();
+                    safeResolve(true);
+                } else {
+                    errorEl.style.display = 'block';
+                    input.value = '';
+                    input?.focus();
+                }
+            };
+
+            verifyBtn?.addEventListener('click', checkPassword);
+            input?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') checkPassword();
+            });
+
+            // Handle cancel
+            document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
+                safeResolve(false);
+            });
+
+            // Handle modal close (backdrop click, etc)
+            const modalOverlay = document.querySelector('.modal__overlay');
+            modalOverlay?.addEventListener('click', (e) => {
+                if (e.target === modalOverlay) {
+                    safeResolve(false);
+                }
+            });
+        });
+    }
+
+    /**
+     * Show password setup/change modal
+     */
+    function showPasswordSetupModal(memberId, onComplete) {
+        const currentPassword = getJournalPassword(memberId);
+        const hasPassword = !!currentPassword;
+
+        Modal.open({
+            title: hasPassword ? 'Change Password' : 'Set Password',
+            content: `
+                <div class="journal-password-setup">
+                    <p style="margin-bottom: var(--space-4); color: var(--gray-600);">
+                        ${hasPassword
+                            ? 'Enter your current password and a new password.'
+                            : 'Create a secret password to keep your diary private.'}
+                    </p>
+
+                    ${hasPassword ? `
+                        <div class="form-group">
+                            <label class="form-label">Current Password</label>
+                            <input type="password" id="currentJournalPassword" class="form-input"
+                                   placeholder="Your current password" maxlength="20" autocomplete="off">
+                        </div>
+                    ` : ''}
+
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="newJournalPassword" class="form-input"
+                               placeholder="Create a password" maxlength="20" autocomplete="off">
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label">Confirm Password</label>
+                        <input type="password" id="confirmJournalPassword" class="form-input"
+                               placeholder="Type it again" maxlength="20" autocomplete="off">
+                    </div>
+
+                    <p id="setupPasswordError" style="color: var(--danger); font-size: var(--text-sm); margin-top: var(--space-2); display: none;"></p>
+
+                    ${hasPassword ? `
+                        <div style="margin-top: var(--space-4); padding-top: var(--space-4); border-top: 1px solid var(--gray-200);">
+                            <button class="btn btn--danger btn--ghost btn--sm" id="removePasswordBtn">
+                                <i data-lucide="trash-2"></i>
+                                Remove Password
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            footer: `
+                <button class="btn btn--secondary" data-modal-cancel>Cancel</button>
+                <button class="btn btn--primary" id="savePasswordBtn">
+                    <i data-lucide="lock"></i>
+                    ${hasPassword ? 'Update Password' : 'Set Password'}
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        const currentInput = document.getElementById('currentJournalPassword');
+        const newInput = document.getElementById('newJournalPassword');
+        const confirmInput = document.getElementById('confirmJournalPassword');
+        const saveBtn = document.getElementById('savePasswordBtn');
+        const removeBtn = document.getElementById('removePasswordBtn');
+        const errorEl = document.getElementById('setupPasswordError');
+
+        const showError = (msg) => {
+            errorEl.textContent = msg;
+            errorEl.style.display = 'block';
+        };
+
+        saveBtn?.addEventListener('click', () => {
+            errorEl.style.display = 'none';
+
+            // Validate current password if changing
+            if (hasPassword && currentInput?.value !== currentPassword) {
+                showError('Current password is incorrect.');
+                return;
+            }
+
+            const newPassword = newInput?.value || '';
+            const confirmPassword = confirmInput?.value || '';
+
+            if (newPassword.length < 4) {
+                showError('Password must be at least 4 characters.');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showError('Passwords do not match.');
+                return;
+            }
+
+            setJournalPassword(memberId, newPassword);
+            Modal.close();
+            Toast.success(hasPassword ? 'Password updated!' : 'Password set!');
+            if (onComplete) onComplete();
+        });
+
+        removeBtn?.addEventListener('click', () => {
+            if (currentInput?.value !== currentPassword) {
+                showError('Enter your current password to remove it.');
+                return;
+            }
+
+            removeJournalPassword(memberId);
+            Modal.close();
+            Toast.success('Password removed.');
+            if (onComplete) onComplete();
+        });
+    }
+
+    /**
      * Get today's prompt (rotates daily based on day of year)
      */
     function getTodayPrompt() {
@@ -153,6 +412,10 @@ const KidJournal = (function() {
         // Calculate streak for display
         const streak = calculateStreak(entries);
 
+        // Check if personal password is set AND feature is enabled
+        // If setting is disabled, don't show lock even if password exists
+        const hasActivePassword = !!getJournalPassword(memberId) && canSetPassword(memberId);
+
         container.innerHTML = `
             <div class="kid-journal-widget">
                 <div class="kid-journal-widget__header">
@@ -180,7 +443,7 @@ const KidJournal = (function() {
 
                 <div class="kid-journal-widget__actions">
                     <button class="btn btn--primary btn--block kid-journal-widget__open-btn" data-action="open-journal">
-                        <span class="kid-journal-widget__open-icon">✏️</span>
+                        <span class="kid-journal-widget__open-icon">${hasActivePassword ? '🔒' : '✏️'}</span>
                         ${alreadyWroteToday ? 'View My Diary' : 'Write in My Diary'}
                     </button>
                     ${!alreadyWroteToday ? `
@@ -197,7 +460,10 @@ const KidJournal = (function() {
         }
 
         // Bind open journal button
-        container.querySelector('[data-action="open-journal"]')?.addEventListener('click', () => {
+        container.querySelector('[data-action="open-journal"]')?.addEventListener('click', async () => {
+            // Verify personal password if set
+            const verified = await verifyPassword(memberId);
+            if (!verified) return;
             showFullPage(memberId, 'list');
         });
     }
@@ -448,6 +714,10 @@ const KidJournal = (function() {
             : null;
         const mostCommonMoodObj = mostCommonMood ? getMoodById(mostCommonMood) : null;
 
+        // Check if user can set password
+        const showPasswordOption = canSetPassword(memberId);
+        const hasPassword = !!getJournalPassword(memberId);
+
         container.innerHTML = `
             <div class="kid-journal-page">
                 <div class="kid-journal-page__header">
@@ -458,13 +728,20 @@ const KidJournal = (function() {
                     <h1 class="kid-journal-page__title">
                         📔 My Journal
                     </h1>
-                    <div class="kid-journal-page__view-toggle">
-                        <button class="btn btn--sm ${currentView === 'calendar' ? 'btn--primary' : 'btn--ghost'}" data-view="calendar">
-                            <i data-lucide="calendar"></i>
-                        </button>
-                        <button class="btn btn--sm ${currentView === 'list' ? 'btn--primary' : 'btn--ghost'}" data-view="list">
-                            <i data-lucide="list"></i>
-                        </button>
+                    <div class="kid-journal-page__actions">
+                        ${showPasswordOption ? `
+                            <button class="btn btn--sm btn--ghost" id="journalSettingsBtn" title="${hasPassword ? 'Change password' : 'Set password'}">
+                                <i data-lucide="${hasPassword ? 'lock' : 'lock-open'}"></i>
+                            </button>
+                        ` : ''}
+                        <div class="kid-journal-page__view-toggle">
+                            <button class="btn btn--sm ${currentView === 'calendar' ? 'btn--primary' : 'btn--ghost'}" data-view="calendar">
+                                <i data-lucide="calendar"></i>
+                            </button>
+                            <button class="btn btn--sm ${currentView === 'list' ? 'btn--primary' : 'btn--ghost'}" data-view="list">
+                                <i data-lucide="list"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -723,6 +1000,14 @@ const KidJournal = (function() {
             btn.addEventListener('click', () => {
                 const view = btn.dataset.view;
                 renderFullPage(container, memberId, member, view);
+            });
+        });
+
+        // Journal settings (password)
+        document.getElementById('journalSettingsBtn')?.addEventListener('click', () => {
+            showPasswordSetupModal(memberId, () => {
+                // Re-render to update lock icon
+                renderFullPage(container, memberId, member, currentView);
             });
         });
 

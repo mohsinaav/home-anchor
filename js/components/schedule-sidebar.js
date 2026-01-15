@@ -21,6 +21,15 @@ const ScheduleSidebar = (function() {
             startLiveUpdates();
             bindMobileToggle();
         });
+
+        // Listen for schedule updates to refresh immediately
+        if (typeof State !== 'undefined') {
+            State.on('scheduleUpdated', (updatedMemberId) => {
+                if (currentMemberId && (updatedMemberId === currentMemberId || !updatedMemberId)) {
+                    render(currentMemberId);
+                }
+            });
+        }
     }
 
     /**

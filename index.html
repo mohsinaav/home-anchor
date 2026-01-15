@@ -16,6 +16,9 @@
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
 
+    <!-- SortableJS for drag-and-drop -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+
     <!-- Stylesheets -->
     <link rel="stylesheet" href="css/base.css">
     <link rel="stylesheet" href="css/layout.css">
@@ -28,16 +31,17 @@
     <link rel="stylesheet" href="css/schedule.css">
     <link rel="stylesheet" href="css/kids-widgets.css">
     <link rel="stylesheet" href="css/pages.css">
+    <link rel="stylesheet" href="css/page-layout.css">
     <link rel="stylesheet" href="css/tour.css">
 </head>
 <body>
     <div id="app" class="app">
         <!-- Header -->
         <header class="header">
-            <div class="header__brand">
+            <button class="header__brand" id="homeBtn" aria-label="Go to Home">
                 <img src="logo.svg" alt="Home Anchor" class="header__logo">
                 <h1 class="header__title">Home Anchor</h1>
-            </div>
+            </button>
             <div class="header__actions">
                 <button class="header__btn" id="dashboardBtn" aria-label="Family Dashboard" title="Family Dashboard">
                     <i data-lucide="layout-dashboard"></i>

@@ -491,42 +491,364 @@ const Habits = (function() {
     }
 
     /**
-     * Show full page stats view with monthly grid
+     * Show full page view with tabs
      */
     function showStatsPage(memberId) {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        renderStatsPage(main, memberId, member, new Date());
+        // Default to 'today' tab, current month
+        renderFullPage(main, memberId, member, 'today', new Date());
     }
 
     /**
-     * Render the stats page
+     * Render the full page with tabbed interface
      */
-    function renderStatsPage(container, memberId, member, currentDate) {
+    function renderFullPage(container, memberId, member, activeTab = 'today', currentDate = new Date()) {
         const widgetData = getWidgetData(memberId);
         const habits = (widgetData.habits || []).filter(h => !h.archived);
         const archivedHabits = widgetData.archivedHabits || [];
         const log = widgetData.log || {};
         const restDays = widgetData.restDays || {};
+        const today = DateUtils.today();
+        const todayHabits = getTodayHabits(habits);
+        const todayLog = log[today] || [];
+        const isRest = restDays[today] || false;
 
+        // Calculate stats
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const totalCompletions = habits.reduce((sum, habit) => {
+            const { completions } = countMonthlyCompletions(log, restDays, habit, year, month);
+            return sum + completions;
+        }, 0);
+        const totalScheduled = habits.reduce((sum, habit) => {
+            const { scheduledDays } = countMonthlyCompletions(log, restDays, habit, year, month);
+            return sum + scheduledDays;
+        }, 0);
+        const overallPercentage = totalScheduled > 0 ? Math.round((totalCompletions / totalScheduled) * 100) : 0;
+        const bestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
+        const completedToday = todayHabits.filter(h => todayLog.includes(h.id)).length;
+
+        // Tab counts
+        const tabCounts = {
+            today: `${completedToday}/${todayHabits.length}`,
+            archived: archivedHabits.length
+        };
+
+        container.innerHTML = `
+            <div class="habits-page">
+                <!-- Hero Header -->
+                <div class="habits-page__hero">
+                    <button class="btn btn--ghost habits-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <div class="habits-page__hero-content">
+                        <h1 class="habits-page__hero-title">
+                            <i data-lucide="repeat"></i>
+                            Habit Tracker
+                        </h1>
+                        <p class="habits-page__hero-subtitle">Build consistency, track your progress</p>
+                    </div>
+                    <div class="habits-page__hero-stats">
+                        <div class="habits-hero-stat">
+                            <span class="habits-hero-stat__value">${overallPercentage}%</span>
+                            <span class="habits-hero-stat__label">This Month</span>
+                        </div>
+                        <div class="habits-hero-stat">
+                            <span class="habits-hero-stat__value">${bestStreak}</span>
+                            <span class="habits-hero-stat__label">Best Streak</span>
+                        </div>
+                        <div class="habits-hero-stat">
+                            <span class="habits-hero-stat__value">${habits.length}</span>
+                            <span class="habits-hero-stat__label">Habits</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="habits-page__tabs">
+                    <button class="habits-tab ${activeTab === 'today' ? 'habits-tab--active' : ''}" data-tab="today">
+                        <i data-lucide="calendar-check"></i>
+                        <span>Today</span>
+                        <span class="habits-tab__count">${tabCounts.today}</span>
+                    </button>
+                    <button class="habits-tab ${activeTab === 'calendar' ? 'habits-tab--active' : ''}" data-tab="calendar">
+                        <i data-lucide="calendar"></i>
+                        <span>Calendar</span>
+                    </button>
+                    <button class="habits-tab ${activeTab === 'stats' ? 'habits-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Stats</span>
+                    </button>
+                    ${archivedHabits.length > 0 ? `
+                        <button class="habits-tab ${activeTab === 'archived' ? 'habits-tab--active' : ''}" data-tab="archived">
+                            <i data-lucide="archive"></i>
+                            <span>Archived</span>
+                            <span class="habits-tab__count">${tabCounts.archived}</span>
+                        </button>
+                    ` : ''}
+                </div>
+
+                <!-- Action Bar -->
+                <div class="habits-page__actions">
+                    <button class="btn btn--secondary" id="manageHabitsBtn">
+                        <i data-lucide="settings"></i>
+                        Manage Habits
+                    </button>
+                    <button class="btn ${isRest ? 'btn--warning' : 'btn--secondary'}" id="restDayBtn">
+                        <i data-lucide="coffee"></i>
+                        ${isRest ? 'Cancel Rest' : 'Rest Day'}
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="habits-page__content">
+                    ${renderTabContent(activeTab, memberId, widgetData, habits, archivedHabits, log, restDays, currentDate, todayHabits, todayLog, isRest)}
+                </div>
+            </div>
+        `;
+
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind events
+        bindFullPageEvents(container, memberId, member, activeTab, currentDate);
+    }
+
+    /**
+     * Render content for each tab
+     */
+    function renderTabContent(activeTab, memberId, widgetData, habits, archivedHabits, log, restDays, currentDate, todayHabits, todayLog, isRest) {
+        switch (activeTab) {
+            case 'today':
+                return renderTodayTab(memberId, todayHabits, todayLog, isRest, habits);
+            case 'calendar':
+                return renderCalendarTab(memberId, habits, log, restDays, currentDate);
+            case 'stats':
+                return renderStatsTab(memberId, habits, log, restDays, currentDate);
+            case 'archived':
+                return renderArchivedTab(memberId, archivedHabits);
+            default:
+                return renderTodayTab(memberId, todayHabits, todayLog, isRest, habits);
+        }
+    }
+
+    /**
+     * Render Today tab - Today's habits with checkboxes
+     */
+    function renderTodayTab(memberId, todayHabits, todayLog, isRest, allHabits) {
+        const completedCount = todayHabits.filter(h => todayLog.includes(h.id)).length;
+        const totalHabits = todayHabits.length;
+        const allDone = totalHabits > 0 && completedCount === totalHabits;
+        const progress = totalHabits > 0 ? Math.round((completedCount / totalHabits) * 100) : 0;
+
+        // Get weekly data for the week strip
+        const today = new Date();
+        const weekData = getWeekData(today, memberId, allHabits);
+
+        if (isRest) {
+            return `
+                <div class="habits-today habits-today--rest">
+                    <div class="habits-today__rest-banner">
+                        <i data-lucide="coffee"></i>
+                        <div>
+                            <h3>Rest Day</h3>
+                            <p>Take it easy today! Your streaks won't be affected.</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        if (todayHabits.length === 0) {
+            return `
+                <div class="page-content__empty">
+                    <div class="page-content__empty-icon">
+                        <i data-lucide="calendar-off"></i>
+                    </div>
+                    <h3>No habits scheduled for today</h3>
+                    <p>Add habits or adjust your schedule to see them here.</p>
+                    <button class="btn btn--primary" id="addHabitEmptyBtn">
+                        <i data-lucide="plus"></i>
+                        Add Habit
+                    </button>
+                </div>
+            `;
+        }
+
+        // Calculate best streak from all habits
+        const bestStreak = Math.max(...allHabits.map(h => h.bestStreak || 0), 0);
+        const currentStreak = Math.max(...allHabits.map(h => h.streak || 0), 0);
+
+        return `
+            <div class="habits-today ${allDone ? 'habits-today--complete' : ''}">
+                <!-- Stats Row -->
+                <div class="habits-today__stats">
+                    <div class="habits-today__stat">
+                        <div class="habits-today__stat-icon habits-today__stat-icon--progress">
+                            <i data-lucide="target"></i>
+                        </div>
+                        <div class="habits-today__stat-content">
+                            <span class="habits-today__stat-value">${progress}%</span>
+                            <span class="habits-today__stat-label">Today</span>
+                        </div>
+                    </div>
+                    <div class="habits-today__stat">
+                        <div class="habits-today__stat-icon habits-today__stat-icon--streak">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="habits-today__stat-content">
+                            <span class="habits-today__stat-value">${currentStreak}</span>
+                            <span class="habits-today__stat-label">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="habits-today__stat">
+                        <div class="habits-today__stat-icon habits-today__stat-icon--best">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="habits-today__stat-content">
+                            <span class="habits-today__stat-value">${bestStreak}</span>
+                            <span class="habits-today__stat-label">Best Streak</span>
+                        </div>
+                    </div>
+                    <div class="habits-today__stat">
+                        <div class="habits-today__stat-icon habits-today__stat-icon--total">
+                            <i data-lucide="list-checks"></i>
+                        </div>
+                        <div class="habits-today__stat-content">
+                            <span class="habits-today__stat-value">${allHabits.length}</span>
+                            <span class="habits-today__stat-label">Total Habits</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Calendar Strip -->
+                <div class="habits-today__week">
+                    <div class="habits-today__week-header">
+                        <i data-lucide="calendar-days"></i>
+                        <span>This Week</span>
+                    </div>
+                    <div class="habits-today__week-days">
+                        ${weekData.map(day => `
+                            <div class="habits-today__week-day ${day.isToday ? 'habits-today__week-day--today' : ''} ${day.isComplete ? 'habits-today__week-day--complete' : ''} ${day.isPast && !day.isComplete && day.hasHabits ? 'habits-today__week-day--missed' : ''}">
+                                <span class="habits-today__week-day-name">${day.dayName}</span>
+                                <span class="habits-today__week-day-num">${day.dayNum}</span>
+                                ${day.isComplete ? '<i data-lucide="check" class="habits-today__week-day-check"></i>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Progress Section -->
+                <div class="habits-today__progress-section">
+                    <div class="habits-today__progress-header">
+                        <span class="habits-today__progress-label">Today's Progress</span>
+                        <span class="habits-today__progress-count">${completedCount}/${totalHabits}</span>
+                    </div>
+                    <div class="habits-today__progress-bar">
+                        <div class="habits-today__progress-fill ${allDone ? 'habits-today__progress-fill--complete' : ''}" style="width: ${progress}%"></div>
+                    </div>
+                </div>
+
+                <!-- Habit List -->
+                <div class="habits-today__list">
+                    ${todayHabits.map(habit => {
+                        const isCompleted = todayLog.includes(habit.id);
+                        const cat = CATEGORIES[habit.category] || CATEGORIES.other;
+                        return `
+                            <button class="habits-today__item ${isCompleted ? 'habits-today__item--done' : ''}"
+                                    data-habit-id="${habit.id}"
+                                    style="--habit-color: ${cat.color}">
+                                <span class="habits-today__item-checkbox">
+                                    <i data-lucide="${isCompleted ? 'check-circle-2' : 'circle'}"></i>
+                                </span>
+                                <span class="habits-today__item-icon" style="background: ${cat.color}15">
+                                    <i data-lucide="${habit.icon || 'circle'}" style="color: ${cat.color}"></i>
+                                </span>
+                                <div class="habits-today__item-info">
+                                    <span class="habits-today__item-name">${habit.name}</span>
+                                    <span class="habits-today__item-category" style="color: ${cat.color}">${cat.name}</span>
+                                </div>
+                                ${habit.streak > 0 ? `
+                                    <span class="habits-today__item-streak">
+                                        <i data-lucide="flame"></i>
+                                        <span>${habit.streak} day${habit.streak !== 1 ? 's' : ''}</span>
+                                    </span>
+                                ` : ''}
+                            </button>
+                        `;
+                    }).join('')}
+                </div>
+
+                ${allDone ? `
+                    <div class="habits-today__celebration">
+                        <i data-lucide="party-popper"></i>
+                        <h3>All habits completed!</h3>
+                        <p>Great job staying consistent today!</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Get weekly data for the week strip in Today tab
+     */
+    function getWeekData(today, memberId, habits) {
+        const widgetData = Storage.getWidgetData(memberId, 'habits') || {};
+        const log = widgetData.log || {};
+        const dayOfWeek = today.getDay();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - dayOfWeek);
+
+        const weekDays = [];
+        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + i);
+            const dateStr = formatDateStr(date.getFullYear(), date.getMonth(), date.getDate());
+            const dayLog = log[dateStr] || [];
+
+            // Get habits scheduled for this day
+            const scheduledHabits = habits.filter(h => isHabitScheduledForDate(h, dateStr));
+            const completedCount = scheduledHabits.filter(h => dayLog.includes(h.id)).length;
+            const isComplete = scheduledHabits.length > 0 && completedCount === scheduledHabits.length;
+
+            weekDays.push({
+                dayName: dayNames[i],
+                dayNum: date.getDate(),
+                isToday: i === dayOfWeek,
+                isPast: date < new Date(today.getFullYear(), today.getMonth(), today.getDate()),
+                isComplete: isComplete,
+                hasHabits: scheduledHabits.length > 0
+            });
+        }
+
+        return weekDays;
+    }
+
+    /**
+     * Render Calendar tab - Monthly calendar grid
+     */
+    function renderCalendarTab(memberId, habits, log, restDays, currentDate) {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
         const daysInMonth = new Date(year, month + 1, 0).getDate();
         const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
-        // Split days into two rows for desktop: 1-16 and 17-31 (like the paper tracker)
+        // Split days into two rows for desktop
         const daysRow1 = [];
         const daysRow2 = [];
-        for (let d = 1; d <= 16; d++) {
-            daysRow1.push(d);
-        }
-        for (let d = 17; d <= 31; d++) {
-            daysRow2.push(d);
-        }
+        for (let d = 1; d <= 16; d++) daysRow1.push(d);
+        for (let d = 17; d <= 31; d++) daysRow2.push(d);
 
-        // For mobile: split into 4 rows of 8 days each
+        // Mobile rows
         const mobileRows = [
             [1, 2, 3, 4, 5, 6, 7, 8],
             [9, 10, 11, 12, 13, 14, 15, 16],
@@ -534,14 +856,180 @@ const Habits = (function() {
             [25, 26, 27, 28, 29, 30, 31]
         ];
 
-        // Get weekday for each day (S, M, T, W, T, F, S)
         const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
         const getWeekday = (day) => {
             const date = new Date(year, month, day);
             return weekdays[date.getDay()];
         };
 
-        // Calculate overall stats for the month
+        if (habits.length === 0) {
+            return `
+                <div class="page-content__empty">
+                    <div class="page-content__empty-icon">
+                        <i data-lucide="repeat"></i>
+                    </div>
+                    <h3>No habits to track</h3>
+                    <p>Add your first habit to start tracking.</p>
+                    <button class="btn btn--primary" id="addHabitEmptyBtn">
+                        <i data-lucide="plus"></i>
+                        Add Habit
+                    </button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="habits-calendar">
+                <!-- Month Navigation -->
+                <div class="page-date-nav">
+                    <button class="page-date-nav__btn" id="prevMonthBtn">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="page-date-nav__label">${monthName}</span>
+                    <button class="page-date-nav__btn" id="nextMonthBtn">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- Desktop Table View -->
+                <div class="habits-tracker habits-tracker--desktop">
+                    <table class="habits-tracker__table">
+                        <tbody>
+                            ${habits.map((habit, index) => {
+                                const cat = CATEGORIES[habit.category] || CATEGORIES.other;
+                                return `
+                                    <tr class="habits-tracker__row1">
+                                        <td class="habits-tracker__habit-name" rowspan="2">
+                                            <div class="habits-tracker__habit-info">
+                                                <span class="habits-tracker__habit-icon" style="color: ${cat.color}">
+                                                    <i data-lucide="${habit.icon || 'circle'}"></i>
+                                                </span>
+                                                <span>${habit.name}</span>
+                                                ${habit.streak > 0 ? `<span class="habits-tracker__habit-streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
+                                            </div>
+                                        </td>
+                                        ${daysRow1.map(d => renderCalendarCell(d, habit, year, month, log, restDays, getWeekday)).join('')}
+                                    </tr>
+                                    <tr class="habits-tracker__row2 ${index === habits.length - 1 ? 'habits-tracker__row2--last' : ''}">
+                                        ${daysRow2.map(d => renderCalendarCell(d, habit, year, month, log, restDays, getWeekday, daysInMonth)).join('')}
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Mobile Grid View -->
+                <div class="habits-tracker habits-tracker--mobile">
+                    ${habits.map(habit => {
+                        const cat = CATEGORIES[habit.category] || CATEGORIES.other;
+                        return `
+                            <div class="habits-mobile-habit">
+                                <div class="habits-mobile-habit__header">
+                                    <span class="habits-mobile-habit__icon" style="color: ${cat.color}">
+                                        <i data-lucide="${habit.icon || 'circle'}"></i>
+                                    </span>
+                                    <span class="habits-mobile-habit__name">${habit.name}</span>
+                                    ${habit.streak > 0 ? `<span class="habits-mobile-habit__streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
+                                </div>
+                                <div class="habits-mobile-habit__grid">
+                                    ${mobileRows.map(row => `
+                                        <div class="habits-mobile-habit__row">
+                                            ${row.map(d => renderMobileCalendarCell(d, habit, year, month, log, restDays, getWeekday, daysInMonth)).join('')}
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Helper: Render a single calendar cell for desktop
+     */
+    function renderCalendarCell(d, habit, year, month, log, restDays, getWeekday, daysInMonth = 31) {
+        if (d > daysInMonth) {
+            return `<td class="habits-tracker__cell habits-tracker__cell--disabled" title="${getWeekday(d)} ${d}">
+                <span class="habits-tracker__day-label">
+                    <span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span>
+                    <span class="habits-tracker__day-num">${d}</span>
+                </span>
+            </td>`;
+        }
+
+        const dateStr = formatDateStr(year, month, d);
+        const dayLog = log[dateStr] || [];
+        const isCompleted = dayLog.includes(habit.id);
+        const isPastOrToday = new Date(year, month, d) <= new Date();
+        const isTodayCell = isToday(year, month, d);
+        const isRestDayCell = restDays[dateStr];
+        const isScheduled = isHabitScheduledForDate(habit, dateStr);
+
+        return `
+            <td class="habits-tracker__cell
+                ${isCompleted ? 'habits-tracker__cell--done' : ''}
+                ${isTodayCell ? 'habits-tracker__cell--today' : ''}
+                ${!isPastOrToday ? 'habits-tracker__cell--future' : ''}
+                ${isRestDayCell ? 'habits-tracker__cell--rest' : ''}
+                ${!isScheduled ? 'habits-tracker__cell--not-scheduled' : ''}"
+                data-date="${dateStr}"
+                data-habit-id="${habit.id}"
+                title="${getWeekday(d)} ${d}${isRestDayCell ? ' (Rest day)' : ''}${!isScheduled ? ' (Not scheduled)' : ''}"
+                ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
+                <span class="habits-tracker__day-label">
+                    <span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span>
+                    <span class="habits-tracker__day-num">${d}</span>
+                </span>
+            </td>
+        `;
+    }
+
+    /**
+     * Helper: Render a single calendar cell for mobile
+     */
+    function renderMobileCalendarCell(d, habit, year, month, log, restDays, getWeekday, daysInMonth) {
+        if (d > daysInMonth) {
+            return `<div class="habits-mobile-cell habits-mobile-cell--disabled">
+                <span class="habits-mobile-cell__weekday">${getWeekday(d)}</span>
+                <span class="habits-mobile-cell__day">${d}</span>
+            </div>`;
+        }
+
+        const dateStr = formatDateStr(year, month, d);
+        const dayLog = log[dateStr] || [];
+        const isCompleted = dayLog.includes(habit.id);
+        const isPastOrToday = new Date(year, month, d) <= new Date();
+        const isTodayCell = isToday(year, month, d);
+        const isRestDayCell = restDays[dateStr];
+        const isScheduled = isHabitScheduledForDate(habit, dateStr);
+
+        return `
+            <div class="habits-mobile-cell
+                ${isCompleted ? 'habits-mobile-cell--done' : ''}
+                ${isTodayCell ? 'habits-mobile-cell--today' : ''}
+                ${!isPastOrToday ? 'habits-mobile-cell--future' : ''}
+                ${isRestDayCell ? 'habits-mobile-cell--rest' : ''}
+                ${!isScheduled ? 'habits-mobile-cell--not-scheduled' : ''}"
+                data-date="${dateStr}"
+                data-habit-id="${habit.id}"
+                ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
+                <span class="habits-mobile-cell__weekday">${getWeekday(d)}</span>
+                <span class="habits-mobile-cell__day">${d}</span>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab - Monthly progress and statistics
+     */
+    function renderStatsTab(memberId, habits, log, restDays, currentDate) {
+        const year = currentDate.getFullYear();
+        const month = currentDate.getMonth();
+        const monthName = currentDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
         const totalCompletions = habits.reduce((sum, habit) => {
             const { completions } = countMonthlyCompletions(log, restDays, habit, year, month);
             return sum + completions;
@@ -554,293 +1042,162 @@ const Habits = (function() {
         const bestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
         const bestOverallStreak = Math.max(...habits.map(h => h.bestStreak || 0), 0);
 
-        container.innerHTML = `
-            <div class="habits-page habits-page--colorful">
-                <div class="habits-page__hero">
-                    <button class="btn btn--ghost habits-page__back" id="backToMemberBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
-                    </button>
-                    <div class="habits-page__hero-content">
-                        <h1 class="habits-page__title">
-                            <i data-lucide="repeat"></i>
-                            Habit Tracker
-                        </h1>
-                        <p class="habits-page__subtitle">Track your daily habits and build consistency</p>
+        if (habits.length === 0) {
+            return `
+                <div class="page-content__empty">
+                    <div class="page-content__empty-icon">
+                        <i data-lucide="bar-chart-2"></i>
                     </div>
+                    <h3>No stats yet</h3>
+                    <p>Add habits to start tracking your progress.</p>
                 </div>
+            `;
+        }
 
-                <div class="habits-page__stats-row">
-                    <div class="habits-stat-card habits-stat-card--primary">
-                        <div class="habits-stat-card__icon">
-                            <i data-lucide="percent"></i>
-                        </div>
-                        <div class="habits-stat-card__info">
-                            <span class="habits-stat-card__value">${overallPercentage}%</span>
-                            <span class="habits-stat-card__label">This Month</span>
-                        </div>
-                    </div>
-                    <div class="habits-stat-card habits-stat-card--warning">
-                        <div class="habits-stat-card__icon">
-                            <i data-lucide="flame"></i>
-                        </div>
-                        <div class="habits-stat-card__info">
-                            <span class="habits-stat-card__value">${bestStreak}</span>
-                            <span class="habits-stat-card__label">Current Streak</span>
-                        </div>
-                    </div>
-                    <div class="habits-stat-card habits-stat-card--success">
-                        <div class="habits-stat-card__icon">
-                            <i data-lucide="check-circle-2"></i>
-                        </div>
-                        <div class="habits-stat-card__info">
-                            <span class="habits-stat-card__value">${totalCompletions}</span>
-                            <span class="habits-stat-card__label">Completions</span>
-                        </div>
-                    </div>
-                    <div class="habits-stat-card habits-stat-card--info">
-                        <div class="habits-stat-card__icon">
-                            <i data-lucide="trophy"></i>
-                        </div>
-                        <div class="habits-stat-card__info">
-                            <span class="habits-stat-card__value">${bestOverallStreak}</span>
-                            <span class="habits-stat-card__label">Best Streak</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="habits-page__nav">
-                    <button class="habits-page__nav-btn" id="prevMonthBtn">
+        return `
+            <div class="habits-stats">
+                <!-- Month Navigation -->
+                <div class="page-date-nav">
+                    <button class="page-date-nav__btn" id="prevMonthBtn">
                         <i data-lucide="chevron-left"></i>
                     </button>
-                    <span class="habits-page__month">${monthName}</span>
-                    <button class="habits-page__nav-btn" id="nextMonthBtn">
+                    <span class="page-date-nav__label">${monthName}</span>
+                    <button class="page-date-nav__btn" id="nextMonthBtn">
                         <i data-lucide="chevron-right"></i>
                     </button>
                 </div>
 
-                <div class="habits-page__content">
-                    ${habits.length === 0 ? `
-                        <div class="habits-empty">
-                            <i data-lucide="repeat"></i>
-                            <p>No habits to track yet</p>
-                            <button class="btn btn--primary" id="addFirstHabitBtn">
-                                <i data-lucide="plus"></i>
-                                Add Habit
-                            </button>
+                <!-- Stat Cards -->
+                <div class="page-stats-row">
+                    <div class="page-stat-card page-stat-card--primary">
+                        <div class="page-stat-card__icon">
+                            <i data-lucide="percent"></i>
                         </div>
-                    ` : `
-                        <!-- Desktop Table View (hidden on mobile) -->
-                        <div class="habits-tracker habits-tracker--desktop">
-                            <table class="habits-tracker__table">
-                                <tbody>
-                                    ${habits.map((habit, index) => {
-                                        const cat = CATEGORIES[habit.category] || CATEGORIES.other;
-                                        return `
-                                            <tr class="habits-tracker__row1">
-                                                <td class="habits-tracker__habit-name" rowspan="2">
-                                                    <div class="habits-tracker__habit-info">
-                                                        <span class="habits-tracker__habit-icon" style="color: ${cat.color}">
-                                                            <i data-lucide="${habit.icon || 'circle'}"></i>
-                                                        </span>
-                                                        <span>${habit.name}</span>
-                                                        ${habit.streak > 0 ? `<span class="habits-tracker__habit-streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
-                                                    </div>
-                                                </td>
-                                                ${daysRow1.map(d => {
-                                                    const dateStr = formatDateStr(year, month, d);
-                                                    const dayLog = log[dateStr] || [];
-                                                    const isCompleted = dayLog.includes(habit.id);
-                                                    const isPastOrToday = new Date(year, month, d) <= new Date();
-                                                    const isTodayCell = isToday(year, month, d);
-                                                    const isRestDayCell = restDays[dateStr];
-                                                    const isScheduled = isHabitScheduledForDate(habit, dateStr);
-
-                                                    return `
-                                                        <td class="habits-tracker__cell
-                                                            ${isCompleted ? 'habits-tracker__cell--done' : ''}
-                                                            ${isTodayCell ? 'habits-tracker__cell--today' : ''}
-                                                            ${!isPastOrToday ? 'habits-tracker__cell--future' : ''}
-                                                            ${isRestDayCell ? 'habits-tracker__cell--rest' : ''}
-                                                            ${!isScheduled ? 'habits-tracker__cell--not-scheduled' : ''}"
-                                                            data-date="${dateStr}"
-                                                            data-habit-id="${habit.id}"
-                                                            title="${getWeekday(d)} ${d}${isRestDayCell ? ' (Rest day)' : ''}${!isScheduled ? ' (Not scheduled)' : ''}"
-                                                            ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
-                                                            <span class="habits-tracker__day-label">
-                                                                <span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span>
-                                                                <span class="habits-tracker__day-num">${d}</span>
-                                                            </span>
-                                                        </td>
-                                                    `;
-                                                }).join('')}
-                                            </tr>
-                                            <tr class="habits-tracker__row2 ${index === habits.length - 1 ? 'habits-tracker__row2--last' : ''}">
-                                                ${daysRow2.map(d => {
-                                                    if (d > daysInMonth) {
-                                                        return `<td class="habits-tracker__cell habits-tracker__cell--disabled" title="${getWeekday(d)} ${d}"><span class="habits-tracker__day-label"><span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span><span class="habits-tracker__day-num">${d}</span></span></td>`;
-                                                    }
-                                                    const dateStr = formatDateStr(year, month, d);
-                                                    const dayLog = log[dateStr] || [];
-                                                    const isCompleted = dayLog.includes(habit.id);
-                                                    const isPastOrToday = new Date(year, month, d) <= new Date();
-                                                    const isTodayCell = isToday(year, month, d);
-                                                    const isRestDayCell = restDays[dateStr];
-                                                    const isScheduled = isHabitScheduledForDate(habit, dateStr);
-
-                                                    return `
-                                                        <td class="habits-tracker__cell
-                                                            ${isCompleted ? 'habits-tracker__cell--done' : ''}
-                                                            ${isTodayCell ? 'habits-tracker__cell--today' : ''}
-                                                            ${!isPastOrToday ? 'habits-tracker__cell--future' : ''}
-                                                            ${isRestDayCell ? 'habits-tracker__cell--rest' : ''}
-                                                            ${!isScheduled ? 'habits-tracker__cell--not-scheduled' : ''}"
-                                                            data-date="${dateStr}"
-                                                            data-habit-id="${habit.id}"
-                                                            title="${getWeekday(d)} ${d}${isRestDayCell ? ' (Rest day)' : ''}${!isScheduled ? ' (Not scheduled)' : ''}"
-                                                            ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
-                                                            <span class="habits-tracker__day-label">
-                                                                <span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span>
-                                                                <span class="habits-tracker__day-num">${d}</span>
-                                                            </span>
-                                                        </td>
-                                                    `;
-                                                }).join('')}
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
+                        <div class="page-stat-card__info">
+                            <span class="page-stat-card__value">${overallPercentage}%</span>
+                            <span class="page-stat-card__label">Completion Rate</span>
                         </div>
+                    </div>
+                    <div class="page-stat-card page-stat-card--warning">
+                        <div class="page-stat-card__icon">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="page-stat-card__info">
+                            <span class="page-stat-card__value">${bestStreak}</span>
+                            <span class="page-stat-card__label">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="page-stat-card page-stat-card--success">
+                        <div class="page-stat-card__icon">
+                            <i data-lucide="check-circle-2"></i>
+                        </div>
+                        <div class="page-stat-card__info">
+                            <span class="page-stat-card__value">${totalCompletions}</span>
+                            <span class="page-stat-card__label">Completions</span>
+                        </div>
+                    </div>
+                    <div class="page-stat-card page-stat-card--info">
+                        <div class="page-stat-card__icon">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="page-stat-card__info">
+                            <span class="page-stat-card__value">${bestOverallStreak}</span>
+                            <span class="page-stat-card__label">Best Streak</span>
+                        </div>
+                    </div>
+                </div>
 
-                        <!-- Mobile Grid View (hidden on desktop) -->
-                        <div class="habits-tracker habits-tracker--mobile">
-                            ${habits.map(habit => {
-                                const cat = CATEGORIES[habit.category] || CATEGORIES.other;
-                                return `
-                                    <div class="habits-mobile-habit">
-                                        <div class="habits-mobile-habit__header">
-                                            <span class="habits-mobile-habit__icon" style="color: ${cat.color}">
-                                                <i data-lucide="${habit.icon || 'circle'}"></i>
-                                            </span>
-                                            <span class="habits-mobile-habit__name">${habit.name}</span>
-                                            ${habit.streak > 0 ? `<span class="habits-mobile-habit__streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
-                                        </div>
-                                        <div class="habits-mobile-habit__grid">
-                                            ${mobileRows.map(row => `
-                                                <div class="habits-mobile-habit__row">
-                                                    ${row.map(d => {
-                                                        if (d > daysInMonth) {
-                                                            return `<div class="habits-mobile-cell habits-mobile-cell--disabled">
-                                                                <span class="habits-mobile-cell__weekday">${getWeekday(d)}</span>
-                                                                <span class="habits-mobile-cell__day">${d}</span>
-                                                            </div>`;
-                                                        }
-                                                        const dateStr = formatDateStr(year, month, d);
-                                                        const dayLog = log[dateStr] || [];
-                                                        const isCompleted = dayLog.includes(habit.id);
-                                                        const isPastOrToday = new Date(year, month, d) <= new Date();
-                                                        const isTodayCell = isToday(year, month, d);
-                                                        const isRestDayCell = restDays[dateStr];
-                                                        const isScheduled = isHabitScheduledForDate(habit, dateStr);
-
-                                                        return `
-                                                            <div class="habits-mobile-cell
-                                                                ${isCompleted ? 'habits-mobile-cell--done' : ''}
-                                                                ${isTodayCell ? 'habits-mobile-cell--today' : ''}
-                                                                ${!isPastOrToday ? 'habits-mobile-cell--future' : ''}
-                                                                ${isRestDayCell ? 'habits-mobile-cell--rest' : ''}
-                                                                ${!isScheduled ? 'habits-mobile-cell--not-scheduled' : ''}"
-                                                                data-date="${dateStr}"
-                                                                data-habit-id="${habit.id}"
-                                                                ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
-                                                                <span class="habits-mobile-cell__weekday">${getWeekday(d)}</span>
-                                                                <span class="habits-mobile-cell__day">${d}</span>
-                                                            </div>
-                                                        `;
-                                                    }).join('')}
-                                                </div>
-                                            `).join('')}
-                                        </div>
+                <!-- Per-Habit Progress -->
+                <div class="page-section">
+                    <h3 class="page-section__title">
+                        <i data-lucide="list"></i>
+                        Habit Progress
+                    </h3>
+                    <div class="habits-summary-cards">
+                        ${habits.map(habit => {
+                            const cat = CATEGORIES[habit.category] || CATEGORIES.other;
+                            const { completions, scheduledDays } = countMonthlyCompletions(log, restDays, habit, year, month);
+                            const percentage = scheduledDays > 0 ? Math.round((completions / scheduledDays) * 100) : 0;
+                            return `
+                                <div class="habits-summary-card">
+                                    <div class="habits-summary-card__icon" style="background: ${cat.color}20; color: ${cat.color}">
+                                        <i data-lucide="${habit.icon || 'circle'}"></i>
                                     </div>
-                                `;
-                            }).join('')}
-                        </div>
-
-                        <div class="habits-page__summary">
-                            <h3>This Month's Progress</h3>
-                            <div class="habits-summary-cards">
-                                ${habits.map(habit => {
-                                    const cat = CATEGORIES[habit.category] || CATEGORIES.other;
-                                    const { completions, scheduledDays } = countMonthlyCompletions(log, restDays, habit, year, month);
-                                    const percentage = scheduledDays > 0 ? Math.round((completions / scheduledDays) * 100) : 0;
-                                    return `
-                                        <div class="habits-summary-card">
-                                            <div class="habits-summary-card__icon" style="background: ${cat.color}20; color: ${cat.color}">
-                                                <i data-lucide="${habit.icon || 'circle'}"></i>
-                                            </div>
-                                            <div class="habits-summary-card__info">
-                                                <span class="habits-summary-card__name">${habit.name}</span>
-                                                <span class="habits-summary-card__stats">
-                                                    ${completions}/${scheduledDays} days (${percentage}%)
-                                                    ${habit.streak > 0 ? `<span class="habits-summary-card__streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
-                                                </span>
-                                            </div>
-                                            <div class="habits-summary-card__bar">
-                                                <div class="habits-summary-card__progress" style="width: ${percentage}%; background: ${cat.color}"></div>
-                                            </div>
-                                        </div>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-
-                        ${archivedHabits.length > 0 ? `
-                            <div class="habits-page__archived">
-                                <button class="btn btn--ghost btn--sm" id="toggleArchivedBtn">
-                                    <i data-lucide="archive"></i>
-                                    Archived Habits (${archivedHabits.length})
-                                    <i data-lucide="chevron-down"></i>
-                                </button>
-                                <div class="habits-archived-list" style="display: none;">
-                                    ${archivedHabits.map(habit => `
-                                        <div class="habits-archived-item">
-                                            <div class="habits-archived-item__info">
-                                                <i data-lucide="${habit.icon || 'circle'}"></i>
-                                                <span>${habit.name}</span>
-                                            </div>
-                                            <div class="habits-archived-item__actions">
-                                                <button class="btn btn--xs btn--ghost" data-restore="${habit.id}" title="Restore habit">
-                                                    <i data-lucide="rotate-ccw"></i>
-                                                    Restore
-                                                </button>
-                                                <button class="btn btn--xs btn--ghost btn--danger" data-delete-archived="${habit.id}" title="Delete permanently">
-                                                    <i data-lucide="trash-2"></i>
-                                                </button>
-                                            </div>
-                                        </div>
-                                    `).join('')}
+                                    <div class="habits-summary-card__info">
+                                        <span class="habits-summary-card__name">${habit.name}</span>
+                                        <span class="habits-summary-card__stats">
+                                            ${completions}/${scheduledDays} days (${percentage}%)
+                                            ${habit.streak > 0 ? `<span class="habits-summary-card__streak"><i data-lucide="flame"></i>${habit.streak}</span>` : ''}
+                                        </span>
+                                    </div>
+                                    <div class="habits-summary-card__bar">
+                                        <div class="habits-summary-card__progress" style="width: ${percentage}%; background: ${cat.color}"></div>
+                                    </div>
                                 </div>
-                            </div>
-                        ` : ''}
-                    `}
+                            `;
+                        }).join('')}
+                    </div>
                 </div>
             </div>
         `;
-
-        // Initialize icons
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // Bind events
-        bindStatsPageEvents(container, memberId, member, currentDate);
     }
 
     /**
-     * Bind stats page events
+     * Render Archived tab - Archived habits with restore/delete options
      */
-    function bindStatsPageEvents(container, memberId, member, currentDate) {
+    function renderArchivedTab(memberId, archivedHabits) {
+        if (archivedHabits.length === 0) {
+            return `
+                <div class="page-content__empty">
+                    <div class="page-content__empty-icon">
+                        <i data-lucide="archive"></i>
+                    </div>
+                    <h3>No archived habits</h3>
+                    <p>Archived habits will appear here.</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="habits-archived">
+                <p class="habits-archived__info">
+                    Archived habits are hidden from your daily tracker. You can restore them at any time.
+                </p>
+                <div class="habits-archived__list">
+                    ${archivedHabits.map(habit => {
+                        const cat = CATEGORIES[habit.category] || CATEGORIES.other;
+                        return `
+                            <div class="habits-archived-item">
+                                <div class="habits-archived-item__info">
+                                    <span class="habits-archived-item__icon" style="color: ${cat.color}">
+                                        <i data-lucide="${habit.icon || 'circle'}"></i>
+                                    </span>
+                                    <div class="habits-archived-item__details">
+                                        <span class="habits-archived-item__name">${habit.name}</span>
+                                        ${habit.archivedAt ? `<span class="habits-archived-item__date">Archived ${DateUtils.formatShort(habit.archivedAt)}</span>` : ''}
+                                    </div>
+                                </div>
+                                <div class="habits-archived-item__actions">
+                                    <button class="btn btn--sm btn--ghost" data-restore="${habit.id}">
+                                        <i data-lucide="rotate-ccw"></i>
+                                        Restore
+                                    </button>
+                                    <button class="btn btn--sm btn--ghost btn--danger" data-delete-archived="${habit.id}">
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, activeTab, currentDate) {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             if (typeof Tabs !== 'undefined') {
@@ -848,52 +1205,83 @@ const Habits = (function() {
             }
         });
 
+        // Tab switching
+        container.querySelectorAll('.habits-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                renderFullPage(container, memberId, member, newTab, currentDate);
+            });
+        });
+
+        // Manage habits button
+        document.getElementById('manageHabitsBtn')?.addEventListener('click', () => {
+            showManageHabitsModal(memberId, () => {
+                renderFullPage(container, memberId, member, activeTab, currentDate);
+            });
+        });
+
+        // Rest day toggle
+        document.getElementById('restDayBtn')?.addEventListener('click', () => {
+            const today = DateUtils.today();
+            const isNowRest = toggleRestDay(memberId, today);
+            Toast.success(isNowRest ? 'Rest day activated!' : 'Rest day cancelled');
+            renderFullPage(container, memberId, member, activeTab, currentDate);
+        });
+
+        // Add habit button (from empty states)
+        document.getElementById('addHabitEmptyBtn')?.addEventListener('click', () => {
+            showManageHabitsModal(memberId, () => {
+                renderFullPage(container, memberId, member, activeTab, currentDate);
+            });
+        });
+
+        // Today tab - toggle habits
+        container.querySelectorAll('.habits-today__item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const habitId = btn.dataset.habitId;
+                const today = DateUtils.today();
+                toggleHabitForDate(memberId, habitId, today);
+                updateStreaks(memberId);
+
+                // Check for celebration
+                const widgetData = getWidgetData(memberId);
+                const habits = widgetData.habits.filter(h => !h.archived);
+                const todayHabits = getTodayHabits(habits);
+                const todayLog = widgetData.log[today] || [];
+                const habit = habits.find(h => h.id === habitId);
+                const wasCompleted = !todayLog.includes(habitId); // It was just toggled
+
+                if (wasCompleted && habit) {
+                    const isAllDone = todayHabits.every(h => todayLog.includes(h.id) || h.id === habitId);
+                    const updatedHabit = getWidgetData(memberId).habits.find(h => h.id === habitId);
+                    showCelebration(updatedHabit || habit, isAllDone);
+                }
+
+                renderFullPage(container, memberId, member, activeTab, currentDate);
+            });
+        });
+
         // Month navigation
         document.getElementById('prevMonthBtn')?.addEventListener('click', () => {
             const newDate = new Date(currentDate);
             newDate.setMonth(newDate.getMonth() - 1);
-            renderStatsPage(container, memberId, member, newDate);
+            renderFullPage(container, memberId, member, activeTab, newDate);
         });
 
         document.getElementById('nextMonthBtn')?.addEventListener('click', () => {
             const newDate = new Date(currentDate);
             newDate.setMonth(newDate.getMonth() + 1);
-            renderStatsPage(container, memberId, member, newDate);
+            renderFullPage(container, memberId, member, activeTab, newDate);
         });
 
-        // Add first habit button
-        document.getElementById('addFirstHabitBtn')?.addEventListener('click', () => {
-            showManageHabitsModal(memberId, () => {
-                renderStatsPage(container, memberId, member, currentDate);
-            });
-        });
-
-        // Table cell clicks (toggle completion) - Desktop
-        container.querySelectorAll('.habits-tracker__cell[data-clickable="true"]').forEach(cell => {
+        // Calendar cell clicks (toggle completion)
+        container.querySelectorAll('.habits-tracker__cell[data-clickable="true"], .habits-mobile-cell[data-clickable="true"]').forEach(cell => {
             cell.addEventListener('click', () => {
                 const dateStr = cell.dataset.date;
                 const habitId = cell.dataset.habitId;
                 toggleHabitForDate(memberId, habitId, dateStr);
-                renderStatsPage(container, memberId, member, currentDate);
+                renderFullPage(container, memberId, member, activeTab, currentDate);
             });
-        });
-
-        // Mobile cell clicks (toggle completion)
-        container.querySelectorAll('.habits-mobile-cell[data-clickable="true"]').forEach(cell => {
-            cell.addEventListener('click', () => {
-                const dateStr = cell.dataset.date;
-                const habitId = cell.dataset.habitId;
-                toggleHabitForDate(memberId, habitId, dateStr);
-                renderStatsPage(container, memberId, member, currentDate);
-            });
-        });
-
-        // Toggle archived section
-        document.getElementById('toggleArchivedBtn')?.addEventListener('click', () => {
-            const list = container.querySelector('.habits-archived-list');
-            if (list) {
-                list.style.display = list.style.display === 'none' ? 'block' : 'none';
-            }
         });
 
         // Restore archived habit
@@ -910,7 +1298,7 @@ const Habits = (function() {
 
                 if (confirmed) {
                     restoreHabit(memberId, habitId);
-                    renderStatsPage(container, memberId, member, currentDate);
+                    renderFullPage(container, memberId, member, activeTab, currentDate);
                 }
             });
         });
@@ -923,13 +1311,13 @@ const Habits = (function() {
                 const habit = widgetData.archivedHabits?.find(h => h.id === habitId);
 
                 const confirmed = await Modal.confirm(
-                    `Permanently delete "${habit?.name || 'this habit'}"? This cannot be undone and all historical data will be lost.`,
+                    `Permanently delete "${habit?.name || 'this habit'}"? This cannot be undone.`,
                     'Delete Habit'
                 );
 
                 if (confirmed) {
                     deleteArchivedHabit(memberId, habitId);
-                    renderStatsPage(container, memberId, member, currentDate);
+                    renderFullPage(container, memberId, member, activeTab, currentDate);
                 }
             });
         });

@@ -34,7 +34,7 @@ const Storage = (function() {
             { id: 'habits', name: 'Habits', description: 'Build positive habits', icon: 'repeat', default: true },
             { id: 'workout', name: 'Fitness', description: 'Track workouts and progress', icon: 'dumbbell', default: true },
             { id: 'vision-board', name: 'Goals & Dreams', description: 'Visualize your future', icon: 'target', default: false },
-            { id: 'journal', name: 'Journal', description: 'Reflect and express yourself', icon: 'notebook-pen', default: false },
+            { id: 'kid-journal', name: 'My Journal', description: 'Private diary with password protection', icon: 'book-open', default: false },
             { id: 'gratitude', name: 'Gratitude', description: 'Daily gratitude practice', icon: 'heart', default: false },
             { id: 'screen-time', name: 'Screen Time', description: 'Manage device usage', icon: 'smartphone', default: false },
             { id: 'achievements', name: 'Achievements', description: 'Track accomplishments', icon: 'award', default: false },

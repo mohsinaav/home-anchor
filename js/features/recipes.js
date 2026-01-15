@@ -166,7 +166,9 @@ const Recipes = (function() {
     function renderWidget(container, memberId) {
         const widgetData = getWidgetData(memberId);
         const recipes = widgetData.recipes;
-        const recentRecipes = recipes.slice(0, 4);
+        const favoriteCount = getFavoriteCount(memberId);
+        const tagCount = getAllTags(memberId).length;
+        const recentRecipes = recipes.slice(0, 3);
 
         container.innerHTML = `
             <div class="recipes-widget">
@@ -183,53 +185,54 @@ const Recipes = (function() {
                         </button>
                     </div>
                 ` : `
+                    <!-- Stats Row - Styled like Routines -->
                     <div class="recipes-widget__stats">
-                        <div class="recipes-widget__stat">
+                        <div class="recipes-widget__stat recipes-widget__stat--primary">
                             <span class="recipes-widget__stat-value">${recipes.length}</span>
                             <span class="recipes-widget__stat-label">Recipes</span>
                         </div>
-                        <div class="recipes-widget__stat">
-                            <span class="recipes-widget__stat-value">${getFavoriteCount(memberId)}</span>
+                        <div class="recipes-widget__stat recipes-widget__stat--favorite">
+                            <span class="recipes-widget__stat-value">${favoriteCount}</span>
                             <span class="recipes-widget__stat-label">Favorites</span>
                         </div>
-                        <div class="recipes-widget__stat">
-                            <span class="recipes-widget__stat-value">${getAllTags(memberId).length}</span>
-                            <span class="recipes-widget__stat-label">Tags</span>
+                        <div class="recipes-widget__stat recipes-widget__stat--tags">
+                            <span class="recipes-widget__stat-value">${tagCount}</span>
+                            <span class="recipes-widget__stat-label">Categories</span>
                         </div>
                     </div>
 
-                    <div class="recipes-widget__section">
-                        <h4 class="recipes-widget__section-title">Recent Recipes</h4>
-                        <div class="recipes-widget__scroll">
+                    <!-- Recent Recipes - Compact Grid -->
+                    <div class="recipes-widget__recent">
+                        <div class="recipes-widget__recent-header">
+                            <h4>Recent Recipes</h4>
+                            <button class="recipes-widget__viewall" data-action="view-all">View all</button>
+                        </div>
+                        <div class="recipes-widget__recent-grid">
                             ${recentRecipes.map(recipe => `
-                                <button class="recipe-chip" data-recipe-id="${recipe.id}" style="--recipe-color: ${recipe.color || '#6366F1'};">
-                                    ${recipe.image ? `
-                                        <div class="recipe-chip__thumb">
+                                <button class="recipes-widget__card" data-recipe-id="${recipe.id}">
+                                    <div class="recipes-widget__card-icon" style="background: ${recipe.color || '#6366F1'}">
+                                        ${recipe.image ? `
                                             <img src="${recipe.image}" alt="${recipe.name}">
-                                        </div>
-                                    ` : `
-                                        <div class="recipe-chip__icon">
+                                        ` : `
                                             <i data-lucide="${recipe.icon || 'utensils'}"></i>
-                                        </div>
-                                    `}
-                                    <span class="recipe-chip__name">${recipe.name}</span>
+                                        `}
+                                        ${recipe.favorite ? `<span class="recipes-widget__card-fav"><i data-lucide="heart"></i></span>` : ''}
+                                    </div>
+                                    <span class="recipes-widget__card-name">${recipe.name}</span>
                                 </button>
                             `).join('')}
                         </div>
                     </div>
 
+                    <!-- Footer with Highlighted Buttons -->
                     <div class="recipes-widget__footer">
-                        <button class="btn btn--sm btn--ghost" data-action="view-all">
+                        <button class="btn btn--sm btn--outline" data-action="view-all">
                             <i data-lucide="book-open"></i>
-                            View All
-                        </button>
-                        <button class="btn btn--sm btn--ghost" data-action="import-recipes">
-                            <i data-lucide="file-text"></i>
-                            Import
+                            All Recipes
                         </button>
                         <button class="btn btn--sm btn--primary" data-action="add-recipe">
                             <i data-lucide="plus"></i>
-                            Add
+                            Add New
                         </button>
                     </div>
                 `}
@@ -251,14 +254,22 @@ const Recipes = (function() {
             btn.addEventListener('click', () => showAddRecipeModal(memberId));
         });
 
-        container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
-            showRecipesPage(memberId);
+        container.querySelectorAll('[data-action="view-all"]').forEach(btn => {
+            btn.addEventListener('click', () => showRecipesPage(memberId));
         });
 
         container.querySelector('[data-action="import-recipes"]')?.addEventListener('click', () => {
             showBulkImportModal(memberId);
         });
 
+        // Recipe cards (compact grid)
+        container.querySelectorAll('.recipes-widget__card').forEach(card => {
+            card.addEventListener('click', () => {
+                showRecipeDetail(memberId, card.dataset.recipeId);
+            });
+        });
+
+        // Legacy: recipe chips (keep for backward compatibility)
         container.querySelectorAll('.recipe-chip').forEach(card => {
             card.addEventListener('click', () => {
                 showRecipeDetail(memberId, card.dataset.recipeId);
@@ -269,40 +280,23 @@ const Recipes = (function() {
     /**
      * Show recipes page
      */
-    function showRecipesPage(memberId) {
+    function showRecipesPage(memberId, activeTab = 'all') {
         const main = document.getElementById('mainContent');
         if (!main) return;
         const member = Storage.getMember(memberId);
-        renderRecipesPage(main, memberId, member, '', null);
+        renderRecipesPage(main, memberId, member, '', null, 'recent', activeTab);
     }
 
     /**
-     * Render full recipes page
+     * Render full recipes page with tabs
      */
-    function renderRecipesPage(container, memberId, member, searchQuery, filterTag, sortBy = 'recent') {
+    function renderRecipesPage(container, memberId, member, searchQuery, filterTag, sortBy = 'recent', activeTab = 'all') {
         const widgetData = getWidgetData(memberId);
-        let recipes = widgetData.recipes;
         const allTags = getAllTags(memberId);
         const favoriteCount = getFavoriteCount(memberId);
 
-        // Apply filters
-        if (searchQuery) {
-            const q = searchQuery.toLowerCase();
-            recipes = recipes.filter(r => r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q)));
-        }
-        if (filterTag) {
-            if (filterTag === 'favorites') {
-                recipes = recipes.filter(r => r.favorite);
-            } else {
-                recipes = recipes.filter(r => r.tags && r.tags.includes(filterTag));
-            }
-        }
-
-        // Apply sorting
-        recipes = sortRecipes(recipes, sortBy);
-
         container.innerHTML = `
-            <div class="recipes-page">
+            <div class="recipes-page recipes-page--tabbed">
                 <!-- Colorful Hero Header -->
                 <div class="recipes-page__hero">
                     <div class="recipes-page__hero-bg">
@@ -337,19 +331,83 @@ const Recipes = (function() {
                                 <span class="recipes-hero-stat__label">Categories</span>
                             </div>
                         </div>
-                        <div class="recipes-page__hero-actions">
-                            <button class="btn btn--primary btn--lg recipes-page__add-btn" data-action="add-recipe">
-                                <i data-lucide="plus"></i>
-                                Add Recipe
-                            </button>
-                            <button class="btn btn--secondary btn--lg" data-action="import-recipes">
-                                <i data-lucide="file-text"></i>
-                                Bulk Import
-                            </button>
-                        </div>
                     </div>
                 </div>
 
+                <!-- Tabs Navigation -->
+                <div class="recipes-page__tabs">
+                    <button class="recipes-page__tab ${activeTab === 'all' ? 'recipes-page__tab--active' : ''}" data-tab="all">
+                        <i data-lucide="book-open"></i>
+                        <span>All Recipes</span>
+                    </button>
+                    <button class="recipes-page__tab ${activeTab === 'favorites' ? 'recipes-page__tab--active' : ''}" data-tab="favorites">
+                        <i data-lucide="heart"></i>
+                        <span>Favorites</span>
+                        ${favoriteCount > 0 ? `<span class="recipes-page__tab-badge">${favoriteCount}</span>` : ''}
+                    </button>
+                    <button class="recipes-page__tab ${activeTab === 'categories' ? 'recipes-page__tab--active' : ''}" data-tab="categories">
+                        <i data-lucide="tags"></i>
+                        <span>Categories</span>
+                    </button>
+                    <button class="recipes-page__tab ${activeTab === 'add' ? 'recipes-page__tab--active' : ''}" data-tab="add">
+                        <i data-lucide="plus-circle"></i>
+                        <span>Add New</span>
+                    </button>
+                </div>
+
+                <!-- Tab Content -->
+                <div class="recipes-page__tab-content">
+                    ${renderRecipesTabContent(activeTab, memberId, widgetData, allTags, favoriteCount, searchQuery, filterTag, sortBy)}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind events
+        bindRecipesPageEvents(container, memberId, member, activeTab, searchQuery, filterTag, sortBy);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderRecipesTabContent(activeTab, memberId, widgetData, allTags, favoriteCount, searchQuery, filterTag, sortBy) {
+        switch (activeTab) {
+            case 'all':
+                return renderAllRecipesTab(memberId, widgetData, allTags, searchQuery, filterTag, sortBy);
+            case 'favorites':
+                return renderFavoritesTab(memberId, widgetData, searchQuery, sortBy);
+            case 'categories':
+                return renderCategoriesTab(memberId, widgetData, allTags);
+            case 'add':
+                return renderAddRecipeTab();
+            default:
+                return renderAllRecipesTab(memberId, widgetData, allTags, searchQuery, filterTag, sortBy);
+        }
+    }
+
+    /**
+     * Render All Recipes tab
+     */
+    function renderAllRecipesTab(memberId, widgetData, allTags, searchQuery, filterTag, sortBy) {
+        let recipes = widgetData.recipes;
+
+        // Apply filters
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            recipes = recipes.filter(r => r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q)));
+        }
+        if (filterTag) {
+            recipes = recipes.filter(r => r.tags && r.tags.includes(filterTag));
+        }
+
+        // Apply sorting
+        recipes = sortRecipes(recipes, sortBy);
+
+        return `
+            <div class="recipes-tab recipes-tab--all">
                 <div class="recipes-page__toolbar">
                     <div class="recipes-page__search">
                         <i data-lucide="search"></i>
@@ -368,19 +426,17 @@ const Recipes = (function() {
                     </div>
                 </div>
 
-                <div class="recipes-page__filters">
-                    <button class="recipes-filter ${!filterTag ? 'recipes-filter--active' : ''}" data-filter="">
-                        <i data-lucide="grid-3x3"></i>
-                        All
-                    </button>
-                    <button class="recipes-filter recipes-filter--favorites ${filterTag === 'favorites' ? 'recipes-filter--active' : ''}" data-filter="favorites">
-                        <i data-lucide="heart"></i>
-                        Favorites (${favoriteCount})
-                    </button>
-                    ${allTags.map(tag => `
-                        <button class="recipes-filter ${filterTag === tag ? 'recipes-filter--active' : ''}" data-filter="${tag}">${tag}</button>
-                    `).join('')}
-                </div>
+                ${allTags.length > 0 ? `
+                    <div class="recipes-page__filters">
+                        <button class="recipes-filter ${!filterTag ? 'recipes-filter--active' : ''}" data-filter="">
+                            <i data-lucide="grid-3x3"></i>
+                            All
+                        </button>
+                        ${allTags.map(tag => `
+                            <button class="recipes-filter ${filterTag === tag ? 'recipes-filter--active' : ''}" data-filter="${tag}">${tag}</button>
+                        `).join('')}
+                    </div>
+                ` : ''}
 
                 <div class="recipes-page__content">
                     ${recipes.length === 0 ? `
@@ -395,8 +451,8 @@ const Recipes = (function() {
                                     <span class="recipes-empty-shape"></span>
                                 </div>
                             </div>
-                            <h3>No recipes found</h3>
-                            <p>Try a different search or filter, or add a new recipe!</p>
+                            <h3>${searchQuery || filterTag ? 'No recipes found' : 'No recipes yet'}</h3>
+                            <p>${searchQuery || filterTag ? 'Try a different search or filter' : 'Add your first recipe to get started!'}</p>
                             <button class="btn btn--primary" data-action="add-recipe">
                                 <i data-lucide="plus"></i>
                                 Add Your First Recipe
@@ -404,100 +460,320 @@ const Recipes = (function() {
                         </div>
                     ` : `
                         <div class="recipes-grid">
-                            ${recipes.map(recipe => `
-                                <div class="recipe-card ${recipe.image ? 'recipe-card--has-image' : ''} ${recipe.favorite ? 'recipe-card--favorite' : ''}" data-recipe-id="${recipe.id}" style="--card-color: ${recipe.color || '#6366F1'};">
-                                    <button class="recipe-card__favorite" data-action="toggle-favorite" data-id="${recipe.id}" title="${recipe.favorite ? 'Remove from favorites' : 'Add to favorites'}">
-                                        <i data-lucide="${recipe.favorite ? 'heart' : 'heart'}"></i>
-                                    </button>
-                                    ${recipe.image ? `
-                                        <div class="recipe-card__image">
-                                            <img src="${recipe.image}" alt="${recipe.name}">
-                                        </div>
-                                    ` : ''}
-                                    <div class="recipe-card__header">
-                                        <div class="recipe-card__icon">
-                                            <i data-lucide="${recipe.icon || 'utensils'}"></i>
-                                        </div>
-                                        <div class="recipe-card__actions">
-                                            <button class="recipe-card__action" data-action="edit" data-id="${recipe.id}">
-                                                <i data-lucide="pencil"></i>
-                                            </button>
-                                            <button class="recipe-card__action recipe-card__action--delete" data-action="delete" data-id="${recipe.id}">
-                                                <i data-lucide="trash-2"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                    <div class="recipe-card__body">
-                                        <h3 class="recipe-card__name">${recipe.name}</h3>
-                                        ${recipe.description ? `<p class="recipe-card__description">${recipe.description.substring(0, 60)}${recipe.description.length > 60 ? '...' : ''}</p>` : ''}
-                                        <div class="recipe-card__meta">
-                                            ${recipe.prepTime ? `<span class="recipe-card__meta-item"><i data-lucide="clock"></i>${recipe.prepTime}m</span>` : ''}
-                                            ${recipe.servings ? `<span class="recipe-card__meta-item"><i data-lucide="users"></i>${recipe.servings}</span>` : ''}
-                                            ${recipe.protein ? `<span class="recipe-card__meta-item recipe-card__meta-item--protein"><i data-lucide="beef"></i>${recipe.protein}g</span>` : ''}
-                                            ${recipe.requiresPrep ? `<span class="recipe-card__meta-item recipe-card__meta-item--prep" title="Requires day-before prep"><i data-lucide="alert-triangle"></i></span>` : ''}
-                                        </div>
-                                        ${(recipe.calories || recipe.carbs || recipe.fat) ? `
-                                            <div class="recipe-card__nutrition">
-                                                ${recipe.calories ? `<span class="recipe-card__nutrition-item"><strong>${recipe.calories}</strong> cal</span>` : ''}
-                                                ${recipe.carbs ? `<span class="recipe-card__nutrition-item"><strong>${recipe.carbs}g</strong> carbs</span>` : ''}
-                                                ${recipe.fat ? `<span class="recipe-card__nutrition-item"><strong>${recipe.fat}g</strong> fat</span>` : ''}
-                                            </div>
-                                        ` : ''}
-                                        ${recipe.tags && recipe.tags.length > 0 ? `
-                                            <div class="recipe-card__tags">
-                                                ${recipe.tags.map(tag => `<span class="recipe-tag">${tag}</span>`).join('')}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                </div>
-                            `).join('')}
+                            ${renderRecipeCards(recipes)}
                         </div>
                     `}
                 </div>
             </div>
         `;
+    }
 
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
+    /**
+     * Render Favorites tab
+     */
+    function renderFavoritesTab(memberId, widgetData, searchQuery, sortBy) {
+        let recipes = widgetData.recipes.filter(r => r.favorite);
+
+        // Apply search
+        if (searchQuery) {
+            const q = searchQuery.toLowerCase();
+            recipes = recipes.filter(r => r.name.toLowerCase().includes(q) || (r.description && r.description.toLowerCase().includes(q)));
         }
 
-        // Bind events
+        // Apply sorting
+        recipes = sortRecipes(recipes, sortBy);
+
+        return `
+            <div class="recipes-tab recipes-tab--favorites">
+                <div class="recipes-page__toolbar">
+                    <div class="recipes-page__search">
+                        <i data-lucide="search"></i>
+                        <input type="text" class="form-input" id="recipeSearch" placeholder="Search favorites..." value="${searchQuery || ''}">
+                    </div>
+                    <div class="recipes-page__sort">
+                        <label class="recipes-page__sort-label">
+                            <i data-lucide="arrow-up-down"></i>
+                            Sort:
+                        </label>
+                        <select class="form-input form-input--sm" id="recipeSort">
+                            ${SORT_OPTIONS.map(opt => `
+                                <option value="${opt.value}" ${sortBy === opt.value ? 'selected' : ''}>${opt.label}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="recipes-page__content">
+                    ${recipes.length === 0 ? `
+                        <div class="recipes-page__empty">
+                            <div class="recipes-page__empty-illustration">
+                                <div class="recipes-empty-icon recipes-empty-icon--heart">
+                                    <i data-lucide="heart"></i>
+                                </div>
+                            </div>
+                            <h3>No favorites yet</h3>
+                            <p>Click the heart icon on any recipe to add it here</p>
+                            <button class="btn btn--secondary" data-tab="all">
+                                <i data-lucide="book-open"></i>
+                                Browse Recipes
+                            </button>
+                        </div>
+                    ` : `
+                        <div class="recipes-grid">
+                            ${renderRecipeCards(recipes)}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Categories tab
+     */
+    function renderCategoriesTab(memberId, widgetData, allTags) {
+        // Group recipes by tag
+        const tagGroups = {};
+        allTags.forEach(tag => {
+            tagGroups[tag] = widgetData.recipes.filter(r => r.tags && r.tags.includes(tag));
+        });
+
+        // Uncategorized recipes
+        const uncategorized = widgetData.recipes.filter(r => !r.tags || r.tags.length === 0);
+
+        return `
+            <div class="recipes-tab recipes-tab--categories">
+                ${allTags.length === 0 && uncategorized.length === 0 ? `
+                    <div class="recipes-page__empty">
+                        <div class="recipes-page__empty-illustration">
+                            <div class="recipes-empty-icon">
+                                <i data-lucide="tags"></i>
+                            </div>
+                        </div>
+                        <h3>No categories yet</h3>
+                        <p>Add tags to your recipes to organize them into categories</p>
+                        <button class="btn btn--primary" data-action="add-recipe">
+                            <i data-lucide="plus"></i>
+                            Add Recipe with Tags
+                        </button>
+                    </div>
+                ` : `
+                    <div class="recipes-categories">
+                        ${allTags.map(tag => `
+                            <div class="recipes-category">
+                                <div class="recipes-category__header">
+                                    <h3 class="recipes-category__title">
+                                        <i data-lucide="tag"></i>
+                                        ${tag}
+                                    </h3>
+                                    <span class="recipes-category__count">${tagGroups[tag].length} recipe${tagGroups[tag].length !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="recipes-category__grid">
+                                    ${tagGroups[tag].length > 0 ? `
+                                        ${tagGroups[tag].slice(0, 4).map(recipe => `
+                                            <div class="recipe-card recipe-card--mini ${recipe.favorite ? 'recipe-card--favorite' : ''}" data-recipe-id="${recipe.id}" style="--card-color: ${recipe.color || '#6366F1'};">
+                                                ${recipe.image ? `
+                                                    <div class="recipe-card__image">
+                                                        <img src="${recipe.image}" alt="${recipe.name}">
+                                                    </div>
+                                                ` : `
+                                                    <div class="recipe-card__icon-mini">
+                                                        <i data-lucide="${recipe.icon || 'utensils'}"></i>
+                                                    </div>
+                                                `}
+                                                <span class="recipe-card__name-mini">${recipe.name}</span>
+                                            </div>
+                                        `).join('')}
+                                        ${tagGroups[tag].length > 4 ? `
+                                            <button class="recipes-category__more" data-filter="${tag}" data-tab="all">
+                                                +${tagGroups[tag].length - 4} more
+                                            </button>
+                                        ` : ''}
+                                    ` : `
+                                        <p class="recipes-category__empty">No recipes in this category</p>
+                                    `}
+                                </div>
+                            </div>
+                        `).join('')}
+
+                        ${uncategorized.length > 0 ? `
+                            <div class="recipes-category recipes-category--uncategorized">
+                                <div class="recipes-category__header">
+                                    <h3 class="recipes-category__title">
+                                        <i data-lucide="folder"></i>
+                                        Uncategorized
+                                    </h3>
+                                    <span class="recipes-category__count">${uncategorized.length} recipe${uncategorized.length !== 1 ? 's' : ''}</span>
+                                </div>
+                                <div class="recipes-category__grid">
+                                    ${uncategorized.slice(0, 4).map(recipe => `
+                                        <div class="recipe-card recipe-card--mini ${recipe.favorite ? 'recipe-card--favorite' : ''}" data-recipe-id="${recipe.id}" style="--card-color: ${recipe.color || '#6366F1'};">
+                                            ${recipe.image ? `
+                                                <div class="recipe-card__image">
+                                                    <img src="${recipe.image}" alt="${recipe.name}">
+                                                </div>
+                                            ` : `
+                                                <div class="recipe-card__icon-mini">
+                                                    <i data-lucide="${recipe.icon || 'utensils'}"></i>
+                                                </div>
+                                            `}
+                                            <span class="recipe-card__name-mini">${recipe.name}</span>
+                                        </div>
+                                    `).join('')}
+                                    ${uncategorized.length > 4 ? `
+                                        <button class="recipes-category__more" data-tab="all">
+                                            +${uncategorized.length - 4} more
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Add Recipe tab
+     */
+    function renderAddRecipeTab() {
+        return `
+            <div class="recipes-tab recipes-tab--add">
+                <div class="recipes-add-options">
+                    <div class="recipes-add-option" data-action="add-recipe">
+                        <div class="recipes-add-option__icon">
+                            <i data-lucide="edit-3"></i>
+                        </div>
+                        <h3>Create Recipe</h3>
+                        <p>Add a new recipe manually with all the details</p>
+                    </div>
+                    <div class="recipes-add-option" data-action="import-recipes">
+                        <div class="recipes-add-option__icon">
+                            <i data-lucide="file-text"></i>
+                        </div>
+                        <h3>Bulk Import</h3>
+                        <p>Import multiple recipes from text or paste</p>
+                    </div>
+                    <div class="recipes-add-option recipes-add-option--coming-soon">
+                        <div class="recipes-add-option__icon">
+                            <i data-lucide="link"></i>
+                        </div>
+                        <h3>Import from URL</h3>
+                        <p>Paste a recipe URL to auto-import</p>
+                        <span class="recipes-add-option__badge">Coming Soon</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render recipe cards HTML
+     */
+    function renderRecipeCards(recipes) {
+        return recipes.map(recipe => `
+            <div class="recipe-card ${recipe.image ? 'recipe-card--has-image' : ''} ${recipe.favorite ? 'recipe-card--favorite' : ''}" data-recipe-id="${recipe.id}" style="--card-color: ${recipe.color || '#6366F1'};">
+                <button class="recipe-card__favorite" data-action="toggle-favorite" data-id="${recipe.id}" title="${recipe.favorite ? 'Remove from favorites' : 'Add to favorites'}">
+                    <i data-lucide="${recipe.favorite ? 'heart' : 'heart'}"></i>
+                </button>
+                ${recipe.image ? `
+                    <div class="recipe-card__image">
+                        <img src="${recipe.image}" alt="${recipe.name}">
+                    </div>
+                ` : ''}
+                <div class="recipe-card__header">
+                    <div class="recipe-card__icon">
+                        <i data-lucide="${recipe.icon || 'utensils'}"></i>
+                    </div>
+                    <div class="recipe-card__actions">
+                        <button class="recipe-card__action" data-action="edit" data-id="${recipe.id}">
+                            <i data-lucide="pencil"></i>
+                        </button>
+                        <button class="recipe-card__action recipe-card__action--delete" data-action="delete" data-id="${recipe.id}">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="recipe-card__body">
+                    <h3 class="recipe-card__name">${recipe.name}</h3>
+                    ${recipe.description ? `<p class="recipe-card__description">${recipe.description.substring(0, 60)}${recipe.description.length > 60 ? '...' : ''}</p>` : ''}
+                    <div class="recipe-card__meta">
+                        ${recipe.prepTime ? `<span class="recipe-card__meta-item"><i data-lucide="clock"></i>${recipe.prepTime}m</span>` : ''}
+                        ${recipe.servings ? `<span class="recipe-card__meta-item"><i data-lucide="users"></i>${recipe.servings}</span>` : ''}
+                        ${recipe.protein ? `<span class="recipe-card__meta-item recipe-card__meta-item--protein"><i data-lucide="beef"></i>${recipe.protein}g</span>` : ''}
+                        ${recipe.requiresPrep ? `<span class="recipe-card__meta-item recipe-card__meta-item--prep" title="Requires day-before prep"><i data-lucide="alert-triangle"></i></span>` : ''}
+                    </div>
+                    ${(recipe.calories || recipe.carbs || recipe.fat) ? `
+                        <div class="recipe-card__nutrition">
+                            ${recipe.calories ? `<span class="recipe-card__nutrition-item"><strong>${recipe.calories}</strong> cal</span>` : ''}
+                            ${recipe.carbs ? `<span class="recipe-card__nutrition-item"><strong>${recipe.carbs}g</strong> carbs</span>` : ''}
+                            ${recipe.fat ? `<span class="recipe-card__nutrition-item"><strong>${recipe.fat}g</strong> fat</span>` : ''}
+                        </div>
+                    ` : ''}
+                    ${recipe.tags && recipe.tags.length > 0 ? `
+                        <div class="recipe-card__tags">
+                            ${recipe.tags.map(tag => `<span class="recipe-tag">${tag}</span>`).join('')}
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Bind events for recipes page
+     */
+    function bindRecipesPageEvents(container, memberId, member, activeTab, searchQuery, filterTag, sortBy) {
+        // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
+        // Tab switching
+        container.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                const filter = btn.dataset.filter || null;
+                renderRecipesPage(container, memberId, member, '', filter, 'recent', tab);
+            });
+        });
+
+        // Add recipe buttons
         container.querySelectorAll('[data-action="add-recipe"]').forEach(btn => {
-            btn.addEventListener('click', () => showAddRecipeModal(memberId, null, container, member));
+            btn.addEventListener('click', () => showAddRecipeModal(memberId, null, container, member, activeTab));
         });
 
         // Import button
-        container.querySelector('[data-action="import-recipes"]')?.addEventListener('click', () => {
-            showBulkImportModal(memberId, container, member);
+        container.querySelectorAll('[data-action="import-recipes"]').forEach(btn => {
+            btn.addEventListener('click', () => showBulkImportModal(memberId, container, member, activeTab));
         });
 
         // Sort dropdown
         document.getElementById('recipeSort')?.addEventListener('change', (e) => {
             const tag = container.querySelector('.recipes-filter--active')?.dataset.filter || null;
             const query = document.getElementById('recipeSearch')?.value || '';
-            renderRecipesPage(container, memberId, member, query, tag, e.target.value);
+            renderRecipesPage(container, memberId, member, query, tag, e.target.value, activeTab);
         });
 
+        // Search input
         let searchTimeout;
         document.getElementById('recipeSearch')?.addEventListener('input', (e) => {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const tag = container.querySelector('.recipes-filter--active')?.dataset.filter || null;
                 const sort = document.getElementById('recipeSort')?.value || 'recent';
-                renderRecipesPage(container, memberId, member, e.target.value, tag, sort);
+                renderRecipesPage(container, memberId, member, e.target.value, tag, sort, activeTab);
             }, 300);
         });
 
+        // Filter buttons (within All Recipes tab)
         container.querySelectorAll('.recipes-filter').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tag = btn.dataset.filter || null;
                 const query = document.getElementById('recipeSearch')?.value || '';
                 const sort = document.getElementById('recipeSort')?.value || 'recent';
-                renderRecipesPage(container, memberId, member, query, tag, sort);
+                renderRecipesPage(container, memberId, member, query, tag, sort, activeTab);
             });
         });
 
@@ -510,32 +786,43 @@ const Recipes = (function() {
                 const query = document.getElementById('recipeSearch')?.value || '';
                 const sort = document.getElementById('recipeSort')?.value || 'recent';
                 Toast.success(newState ? 'Added to favorites!' : 'Removed from favorites');
-                renderRecipesPage(container, memberId, member, query, tag, sort);
+                renderRecipesPage(container, memberId, member, query, tag, sort, activeTab);
             });
         });
 
+        // Recipe card click
         container.querySelectorAll('.recipe-card').forEach(card => {
             card.addEventListener('click', (e) => {
                 if (e.target.closest('.recipe-card__action') || e.target.closest('.recipe-card__favorite')) return;
-                showRecipeDetailPage(memberId, card.dataset.recipeId, container, member);
+                showRecipeDetailPage(memberId, card.dataset.recipeId, container, member, activeTab);
             });
         });
 
+        // Delete recipe
         container.querySelectorAll('[data-action="delete"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 if (confirm('Delete this recipe?')) {
                     deleteRecipe(memberId, btn.dataset.id);
                     const sort = document.getElementById('recipeSort')?.value || 'recent';
-                    renderRecipesPage(container, memberId, member, '', null, sort);
+                    renderRecipesPage(container, memberId, member, '', null, sort, activeTab);
                 }
             });
         });
 
+        // Edit recipe
         container.querySelectorAll('[data-action="edit"]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                showAddRecipeModal(memberId, btn.dataset.id, container, member);
+                showAddRecipeModal(memberId, btn.dataset.id, container, member, activeTab);
+            });
+        });
+
+        // Category more buttons
+        container.querySelectorAll('.recipes-category__more').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const filter = btn.dataset.filter || null;
+                renderRecipesPage(container, memberId, member, '', filter, 'recent', 'all');
             });
         });
     }
@@ -543,7 +830,7 @@ const Recipes = (function() {
     /**
      * Show recipe detail page
      */
-    function showRecipeDetailPage(memberId, recipeId, container, member) {
+    function showRecipeDetailPage(memberId, recipeId, container, member, activeTab = 'all') {
         const widgetData = getWidgetData(memberId);
         const recipe = widgetData.recipes.find(r => r.id === recipeId);
         if (!recipe) return;
@@ -692,11 +979,11 @@ const Recipes = (function() {
         }
 
         document.getElementById('backToRecipesBtn')?.addEventListener('click', () => {
-            renderRecipesPage(container, memberId, member, '', null);
+            renderRecipesPage(container, memberId, member, '', null, 'recent', activeTab);
         });
 
         container.querySelector('[data-action="edit"]')?.addEventListener('click', () => {
-            showAddRecipeModal(memberId, recipeId, container, member);
+            showAddRecipeModal(memberId, recipeId, container, member, activeTab);
         });
 
         container.querySelector('[data-action="add-to-grocery"]')?.addEventListener('click', () => {
@@ -736,7 +1023,7 @@ const Recipes = (function() {
     /**
      * Show add/edit recipe modal
      */
-    function showAddRecipeModal(memberId, recipeId = null, pageContainer = null, member = null) {
+    function showAddRecipeModal(memberId, recipeId = null, pageContainer = null, member = null, activeTab = 'all') {
         const widgetData = getWidgetData(memberId);
         const recipe = recipeId ? widgetData.recipes.find(r => r.id === recipeId) : null;
         const isEdit = !!recipe;
@@ -1013,7 +1300,7 @@ const Recipes = (function() {
             else { addRecipe(memberId, data); Toast.success('Recipe added!'); }
 
             Modal.close();
-            if (pageContainer && member) renderRecipesPage(pageContainer, memberId, member, '', null);
+            if (pageContainer && member) renderRecipesPage(pageContainer, memberId, member, '', null, 'recent', activeTab);
             else { const wb = document.getElementById('widget-recipes'); if (wb) renderWidget(wb, memberId); }
         });
     }
@@ -1056,8 +1343,8 @@ const Recipes = (function() {
                 added++;
             }
         });
-        if (added > 0) { Storage.setWidgetData(memberId, 'grocery', groceryData); Toast.success(`Added ${added} items to grocery list`); }
-        else { Toast.info('All ingredients already in grocery list'); }
+        if (added > 0) { Storage.setWidgetData(memberId, 'grocery', groceryData); Toast.success(`Added ${added} items to shopping list`); }
+        else { Toast.info('All ingredients already in shopping list'); }
     }
 
     function getRecipesForMealPlan(memberId) {
@@ -1078,7 +1365,7 @@ const Recipes = (function() {
     /**
      * Show bulk import modal - paste text to import multiple recipes
      */
-    function showBulkImportModal(memberId, pageContainer = null, member = null) {
+    function showBulkImportModal(memberId, pageContainer = null, member = null, activeTab = 'all') {
         const content = `
             <div class="recipe-import">
                 <div class="recipe-import__info">
@@ -1252,7 +1539,7 @@ Servings: 2"></textarea>
             Modal.close();
 
             if (pageContainer && member) {
-                renderRecipesPage(pageContainer, memberId, member, '', null);
+                renderRecipesPage(pageContainer, memberId, member, '', null, 'recent', activeTab);
             } else {
                 const wb = document.getElementById('widget-recipes');
                 if (wb) renderWidget(wb, memberId);

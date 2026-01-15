@@ -835,11 +835,11 @@ const Points = (function() {
                                 ${groupedHistory[date].map(entry => `
                                     <div class="points-day__activity points-day__activity--${entry.type}">
                                         <span class="points-day__icon">
-                                            ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : '⭐'}
+                                            ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : entry.type === 'deduction' ? '⚠️' : '⭐'}
                                         </span>
-                                        <span class="points-day__name">${entry.activityName}${entry.type === 'bonus' && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
+                                        <span class="points-day__name">${entry.activityName}${(entry.type === 'bonus' || entry.type === 'deduction') && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
                                         <span class="points-day__points points-day__points--${entry.type}">
-                                            ${entry.type === 'spent' ? '-' : '+'}${entry.points}
+                                            ${entry.type === 'spent' || entry.type === 'deduction' ? '-' : '+'}${entry.points}
                                         </span>
                                     </div>
                                 `).join('')}
@@ -962,6 +962,15 @@ const Points = (function() {
             lucide.createIcons();
         }
 
+        // Scroll history panel to top to show today's points first
+        setTimeout(() => {
+            const historyPanel = document.getElementById('panelHistory');
+            if (historyPanel) historyPanel.scrollTop = 0;
+            // Also scroll the main content to top
+            const mainContent = document.getElementById('mainContent');
+            if (mainContent) mainContent.scrollTop = 0;
+        }, 0);
+
         // Bind back button
         document.getElementById('backBtn')?.addEventListener('click', () => {
             if (typeof Tabs !== 'undefined' && Tabs.switchTo) {
@@ -1072,14 +1081,14 @@ const Points = (function() {
         const content = `
             <div class="add-bonus-modal">
                 <div class="form-group">
-                    <label class="form-label">${pointsLabel} to Add</label>
-                    <input type="number" class="form-input" id="bonusPoints" value="10" min="1" max="100" required>
-                    <p class="form-hint">Enter the number of bonus ${pointsLabelLower} to award</p>
+                    <label class="form-label">${pointsLabel} to Add/Remove</label>
+                    <input type="number" class="form-input" id="bonusPoints" value="10" min="-100" max="100" required>
+                    <p class="form-hint">Use positive numbers to add or negative (e.g., -10) to deduct ${pointsLabelLower}</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Reason</label>
-                    <input type="text" class="form-input" id="bonusReason" placeholder="e.g., Helped grandma, Forgot to log Tuesday" required>
-                    <p class="form-hint">Brief explanation for the bonus ${pointsLabelLower}</p>
+                    <input type="text" class="form-input" id="bonusReason" placeholder="e.g., Helped grandma, Broke a rule" required>
+                    <p class="form-hint">Brief explanation for the ${pointsLabelLower} adjustment</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Date</label>
@@ -1114,13 +1123,13 @@ const Points = (function() {
             const date = document.getElementById('bonusDate')?.value || today;
             const addedBy = document.getElementById('bonusAddedBy')?.value || 'Parent';
 
-            if (points < 1) {
-                Toast.error(`Please enter at least 1 ${pointsLabelLower.slice(0, -1)}`);
+            if (points === 0) {
+                Toast.error(`Please enter a non-zero value`);
                 return false;
             }
 
             if (!reason) {
-                Toast.error(`Please enter a reason for the bonus ${pointsLabelLower}`);
+                Toast.error(`Please enter a reason for the ${pointsLabelLower} adjustment`);
                 return false;
             }
 
@@ -1128,30 +1137,38 @@ const Points = (function() {
             const widgetData = getWidgetData(memberId);
             const now = new Date().toISOString();
 
-            // Create bonus history entry
+            // Determine if adding or deducting
+            const isDeduction = points < 0;
+            const absPoints = Math.abs(points);
+
+            // Create history entry
             const bonusEntry = {
-                activityId: `bonus-${Date.now()}`,
-                activityName: `Bonus ${pointsLabel}`,
-                activityIcon: 'gift',
+                activityId: `${isDeduction ? 'deduction' : 'bonus'}-${Date.now()}`,
+                activityName: isDeduction ? `${pointsLabel} Deduction` : `Bonus ${pointsLabel}`,
+                activityIcon: isDeduction ? 'minus-circle' : 'gift',
                 date: date,
                 completedAt: now,
-                points: points,
-                basePoints: points,
+                points: absPoints,
+                basePoints: absPoints,
                 bonus: 0,
-                type: 'bonus',
+                type: isDeduction ? 'deduction' : 'bonus',
                 reason: reason,
                 addedBy: addedBy
             };
 
-            // Update widget data
+            // Update widget data (points is signed, so negative values decrease balance)
             const updatedData = {
                 ...widgetData,
-                balance: (widgetData.balance || 0) + points,
+                balance: Math.max(0, (widgetData.balance || 0) + points), // Don't go below 0
                 history: [bonusEntry, ...(widgetData.history || []).slice(0, 99)]
             };
 
             Storage.setWidgetData(memberId, 'points', updatedData);
-            Toast.success(`Added ${points} bonus ${pointsLabelLower}!`);
+            if (isDeduction) {
+                Toast.success(`Deducted ${absPoints} ${pointsLabelLower}`);
+            } else {
+                Toast.success(`Added ${absPoints} bonus ${pointsLabelLower}!`);
+            }
 
             // Refresh the history page
             showHistoryPage(memberId);

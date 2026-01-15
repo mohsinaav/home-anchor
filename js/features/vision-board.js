@@ -559,6 +559,14 @@ const VisionBoard = (function() {
                 }
             });
         });
+
+        // Add goal to Task List
+        container.querySelectorAll('[data-action="add-to-tasks"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const goalId = btn.dataset.goalId;
+                addGoalToTaskList(memberId, goalId);
+            });
+        });
     }
 
     /**
@@ -700,101 +708,96 @@ const VisionBoard = (function() {
     }
 
     /**
-     * Render full page vision board
+     * Render full page vision board with tabs
      */
-    function renderFullPage(container, memberId, member) {
+    function renderFullPage(container, memberId, member, activeTab = 'board') {
         const widgetData = getWidgetData(memberId);
+        const zones = widgetData.zones || DEFAULT_ZONES;
         const goals = widgetData.goals || [];
         const activeGoals = getActiveGoals(goals);
         const completedGoals = getCompletedGoals(goals);
         const isKid = isKidMember(memberId);
 
+        // Calculate category stats
+        const categoryStats = {};
+        goals.forEach(g => {
+            const cat = g.category || 'other';
+            if (!categoryStats[cat]) categoryStats[cat] = { total: 0, completed: 0 };
+            categoryStats[cat].total++;
+            if (g.completed) categoryStats[cat].completed++;
+        });
+
+        // Get progress average
+        const goalsWithProgress = activeGoals.filter(g => calculateProgress(g) !== null);
+        const avgProgress = goalsWithProgress.length > 0
+            ? Math.round(goalsWithProgress.reduce((sum, g) => sum + calculateProgress(g), 0) / goalsWithProgress.length)
+            : 0;
+
         container.innerHTML = `
-            <div class="vision-board-page ${isKid ? 'vision-board-page--kid' : ''}">
-                <div class="vision-board-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+            <div class="vb-page ${isKid ? 'vb-page--kid' : ''}">
+                <!-- Hero Header -->
+                <div class="vb-page__hero">
+                    <button class="btn btn--ghost vb-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="vision-board-page__title">
-                        <i data-lucide="${isKid ? 'sparkles' : 'target'}"></i>
-                        ${isKid ? 'My Dreams' : 'Vision Board'}
-                    </h1>
+                    <div class="vb-page__hero-content">
+                        <h1 class="vb-page__hero-title">
+                            <i data-lucide="${isKid ? 'sparkles' : 'target'}"></i>
+                            ${isKid ? 'My Dreams' : 'Vision Board'}
+                        </h1>
+                        <p class="vb-page__hero-subtitle">${isKid ? 'Dream big and make it happen!' : 'Visualize your goals and track your progress'}</p>
+                    </div>
+                    <div class="vb-page__hero-stats">
+                        <div class="vb-hero-stat">
+                            <span class="vb-hero-stat__value">${activeGoals.length}</span>
+                            <span class="vb-hero-stat__label">Active</span>
+                        </div>
+                        <div class="vb-hero-stat">
+                            <span class="vb-hero-stat__value">${completedGoals.length}</span>
+                            <span class="vb-hero-stat__label">Achieved</span>
+                        </div>
+                        <div class="vb-hero-stat">
+                            <span class="vb-hero-stat__value">${avgProgress}%</span>
+                            <span class="vb-hero-stat__label">Avg Progress</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="vb-page__tabs">
+                    <button class="vb-tab ${activeTab === 'board' ? 'vb-tab--active' : ''}" data-tab="board">
+                        <i data-lucide="layout-grid"></i>
+                        <span>Board</span>
+                    </button>
+                    <button class="vb-tab ${activeTab === 'goals' ? 'vb-tab--active' : ''}" data-tab="goals">
+                        <i data-lucide="target"></i>
+                        <span>Goals</span>
+                        ${activeGoals.length > 0 ? `<span class="vb-tab__count">${activeGoals.length}</span>` : ''}
+                    </button>
+                    <button class="vb-tab ${activeTab === 'completed' ? 'vb-tab--active' : ''}" data-tab="completed">
+                        <i data-lucide="trophy"></i>
+                        <span>Achieved</span>
+                        ${completedGoals.length > 0 ? `<span class="vb-tab__count">${completedGoals.length}</span>` : ''}
+                    </button>
+                    <button class="vb-tab ${activeTab === 'stats' ? 'vb-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Stats</span>
+                    </button>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="vb-page__actions">
                     <button class="btn btn--primary" data-action="add-goal">
                         <i data-lucide="plus"></i>
                         ${isKid ? 'Add Dream' : 'Add Goal'}
                     </button>
                 </div>
 
-                <div class="vision-board-page__stats">
-                    <div class="vision-board-page-stat">
-                        <div class="vision-board-page-stat__icon vision-board-page-stat__icon--active">
-                            <i data-lucide="trending-up"></i>
-                        </div>
-                        <div class="vision-board-page-stat__info">
-                            <span class="vision-board-page-stat__value">${activeGoals.length}</span>
-                            <span class="vision-board-page-stat__label">In Progress</span>
-                        </div>
-                    </div>
-                    <div class="vision-board-page-stat">
-                        <div class="vision-board-page-stat__icon vision-board-page-stat__icon--completed">
-                            <i data-lucide="check-circle"></i>
-                        </div>
-                        <div class="vision-board-page-stat__info">
-                            <span class="vision-board-page-stat__value">${completedGoals.length}</span>
-                            <span class="vision-board-page-stat__label">Achieved</span>
-                        </div>
-                    </div>
-                    <div class="vision-board-page-stat">
-                        <div class="vision-board-page-stat__icon vision-board-page-stat__icon--total">
-                            <i data-lucide="list"></i>
-                        </div>
-                        <div class="vision-board-page-stat__info">
-                            <span class="vision-board-page-stat__value">${goals.length}</span>
-                            <span class="vision-board-page-stat__label">Total Goals</span>
-                        </div>
-                    </div>
+                <!-- Tab Content -->
+                <div class="vb-page__content">
+                    ${renderVBTabContent(activeTab, memberId, widgetData, zones, goals, activeGoals, completedGoals, categoryStats, isKid)}
                 </div>
-
-                ${activeGoals.length > 0 ? `
-                    <div class="vision-board-section">
-                        <h2 class="vision-board-section__title">
-                            <i data-lucide="rocket"></i>
-                            In Progress
-                        </h2>
-                        <div class="vision-board-grid">
-                            ${activeGoals.map(goal => renderGoalCard(goal, memberId)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${completedGoals.length > 0 ? `
-                    <div class="vision-board-section">
-                        <h2 class="vision-board-section__title vision-board-section__title--completed">
-                            <i data-lucide="trophy"></i>
-                            Achieved
-                        </h2>
-                        <div class="vision-board-grid vision-board-grid--completed">
-                            ${completedGoals.map(goal => renderGoalCard(goal, memberId, true)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${goals.length === 0 ? `
-                    <div class="vision-board-empty-page">
-                        <div class="vision-board-empty-page__content">
-                            <div class="vision-board-empty-page__icon">
-                                <i data-lucide="sparkles"></i>
-                            </div>
-                            <h2>Start Your Vision Board</h2>
-                            <p>Create goals that inspire you and track your journey towards achieving them.</p>
-                            <button class="btn btn--primary btn--lg" data-action="add-goal">
-                                <i data-lucide="plus"></i>
-                                Create Your First Goal
-                            </button>
-                        </div>
-                    </div>
-                ` : ''}
             </div>
         `;
 
@@ -802,7 +805,256 @@ const VisionBoard = (function() {
             lucide.createIcons();
         }
 
-        bindFullPageEvents(container, memberId, member);
+        bindFullPageEvents(container, memberId, member, activeTab);
+    }
+
+    /**
+     * Render tab content for Vision Board page
+     */
+    function renderVBTabContent(activeTab, memberId, widgetData, zones, goals, activeGoals, completedGoals, categoryStats, isKid) {
+        switch (activeTab) {
+            case 'board':
+                return renderBoardTab(memberId, widgetData, zones, goals, isKid);
+            case 'goals':
+                return renderGoalsTab(memberId, activeGoals, isKid);
+            case 'completed':
+                return renderCompletedTab(memberId, completedGoals, isKid);
+            case 'stats':
+                return renderVBStatsTab(memberId, goals, activeGoals, completedGoals, categoryStats, isKid);
+            default:
+                return renderBoardTab(memberId, widgetData, zones, goals, isKid);
+        }
+    }
+
+    /**
+     * Render Board tab - Zone-based template view
+     */
+    function renderBoardTab(memberId, widgetData, zones, goals, isKid) {
+        // Group zones into rows (2 zones per row)
+        const zoneRows = [];
+        for (let i = 0; i < zones.length; i += 2) {
+            zoneRows.push(zones.slice(i, i + 2));
+        }
+
+        return `
+            <div class="vb-board-tab">
+                <div class="vb-template ${isKid ? 'vb-template--kid' : ''}">
+                    <div class="vb-template__header">
+                        <h1 class="vb-template__title">
+                            <span>VISION</span>
+                            <span class="vb-template__divider"></span>
+                            <span>BOARD</span>
+                        </h1>
+                    </div>
+
+                    <div class="vb-template__grid">
+                        ${zoneRows.map((row, rowIndex) => `
+                            <div class="vb-template__row">
+                                ${row.map(zone => renderZoneBlock(zone, goals, memberId)).join('')}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <div class="vb-template__footer">
+                        <button class="btn btn--ghost btn--sm" data-action="add-zone">
+                            <i data-lucide="plus"></i>
+                            Add New Zone
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Goals tab - All active goals
+     */
+    function renderGoalsTab(memberId, activeGoals, isKid) {
+        if (activeGoals.length === 0) {
+            return `
+                <div class="vb-empty">
+                    <div class="vb-empty__icon">
+                        <i data-lucide="target"></i>
+                    </div>
+                    <h3>No Active ${isKid ? 'Dreams' : 'Goals'}</h3>
+                    <p>Start by adding your first ${isKid ? 'dream' : 'goal'} to track your progress!</p>
+                    <button class="btn btn--primary" data-action="add-goal">
+                        <i data-lucide="plus"></i>
+                        Add ${isKid ? 'Dream' : 'Goal'}
+                    </button>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="vb-goals-tab">
+                <div class="vision-board-grid">
+                    ${activeGoals.map(goal => renderGoalCard(goal, memberId)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Completed tab - All achieved goals
+     */
+    function renderCompletedTab(memberId, completedGoals, isKid) {
+        if (completedGoals.length === 0) {
+            return `
+                <div class="vb-empty">
+                    <div class="vb-empty__icon">
+                        <i data-lucide="trophy"></i>
+                    </div>
+                    <h3>No Achieved ${isKid ? 'Dreams' : 'Goals'} Yet</h3>
+                    <p>Keep working on your ${isKid ? 'dreams' : 'goals'} - you'll get there!</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="vb-completed-tab">
+                <div class="vision-board-grid vision-board-grid--completed">
+                    ${completedGoals.map(goal => renderGoalCard(goal, memberId, true)).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab - Overview statistics
+     */
+    function renderVBStatsTab(memberId, goals, activeGoals, completedGoals, categoryStats, isKid) {
+        const totalGoals = goals.length;
+        const completionRate = totalGoals > 0 ? Math.round((completedGoals.length / totalGoals) * 100) : 0;
+
+        // Get goals with progress tracking
+        const goalsWithProgress = activeGoals.filter(g => calculateProgress(g) !== null);
+        const avgProgress = goalsWithProgress.length > 0
+            ? Math.round(goalsWithProgress.reduce((sum, g) => sum + calculateProgress(g), 0) / goalsWithProgress.length)
+            : 0;
+
+        // Get goals with steps
+        const goalsWithSteps = activeGoals.filter(g => g.steps && g.steps.length > 0);
+        const totalSteps = goalsWithSteps.reduce((sum, g) => sum + (g.steps?.length || 0), 0);
+        const completedSteps = goalsWithSteps.reduce((sum, g) => sum + (g.steps?.filter(s => s.completed).length || 0), 0);
+
+        return `
+            <div class="vb-stats-tab">
+                <!-- Overview Cards -->
+                <div class="vb-stats__overview">
+                    <div class="vb-stats__card">
+                        <div class="vb-stats__card-icon" style="background: #dbeafe; color: #3b82f6;">
+                            <i data-lucide="target"></i>
+                        </div>
+                        <div class="vb-stats__card-content">
+                            <span class="vb-stats__card-value">${totalGoals}</span>
+                            <span class="vb-stats__card-label">Total ${isKid ? 'Dreams' : 'Goals'}</span>
+                        </div>
+                    </div>
+                    <div class="vb-stats__card">
+                        <div class="vb-stats__card-icon" style="background: #dcfce7; color: #22c55e;">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="vb-stats__card-content">
+                            <span class="vb-stats__card-value">${completedGoals.length}</span>
+                            <span class="vb-stats__card-label">Achieved</span>
+                        </div>
+                    </div>
+                    <div class="vb-stats__card">
+                        <div class="vb-stats__card-icon" style="background: #fef3c7; color: #f59e0b;">
+                            <i data-lucide="percent"></i>
+                        </div>
+                        <div class="vb-stats__card-content">
+                            <span class="vb-stats__card-value">${completionRate}%</span>
+                            <span class="vb-stats__card-label">Completion Rate</span>
+                        </div>
+                    </div>
+                    <div class="vb-stats__card">
+                        <div class="vb-stats__card-icon" style="background: #f3e8ff; color: #8b5cf6;">
+                            <i data-lucide="trending-up"></i>
+                        </div>
+                        <div class="vb-stats__card-content">
+                            <span class="vb-stats__card-value">${avgProgress}%</span>
+                            <span class="vb-stats__card-label">Avg Progress</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${totalSteps > 0 ? `
+                    <!-- Steps Progress -->
+                    <div class="vb-stats__section">
+                        <h3 class="vb-stats__section-title">
+                            <i data-lucide="list-checks"></i>
+                            Steps Progress
+                        </h3>
+                        <div class="vb-stats__steps-progress">
+                            <div class="vb-stats__steps-bar">
+                                <div class="vb-stats__steps-fill" style="width: ${Math.round((completedSteps / totalSteps) * 100)}%"></div>
+                            </div>
+                            <span class="vb-stats__steps-text">${completedSteps} of ${totalSteps} steps completed</span>
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Category Breakdown -->
+                <div class="vb-stats__section">
+                    <h3 class="vb-stats__section-title">
+                        <i data-lucide="pie-chart"></i>
+                        By Category
+                    </h3>
+                    <div class="vb-stats__categories">
+                        ${Object.entries(categoryStats).map(([catId, stats]) => {
+                            const cat = getCategory(catId);
+                            const pct = stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+                            return `
+                                <div class="vb-stats__category">
+                                    <div class="vb-stats__category-header">
+                                        <span class="vb-stats__category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                                            <i data-lucide="${cat.icon}"></i>
+                                        </span>
+                                        <span class="vb-stats__category-name">${cat.name}</span>
+                                        <span class="vb-stats__category-count">${stats.completed}/${stats.total}</span>
+                                    </div>
+                                    <div class="vb-stats__category-bar">
+                                        <div class="vb-stats__category-fill" style="width: ${pct}%; background: ${cat.color}"></div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                ${activeGoals.length > 0 ? `
+                    <!-- Active Goals Progress -->
+                    <div class="vb-stats__section">
+                        <h3 class="vb-stats__section-title">
+                            <i data-lucide="activity"></i>
+                            Active ${isKid ? 'Dreams' : 'Goals'} Progress
+                        </h3>
+                        <div class="vb-stats__goals-list">
+                            ${activeGoals.slice(0, 5).map(goal => {
+                                const progress = calculateProgress(goal) || 0;
+                                const cat = getCategory(goal.category);
+                                return `
+                                    <div class="vb-stats__goal-item">
+                                        <span class="vb-stats__goal-icon" style="color: ${cat.color}">
+                                            <i data-lucide="${goal.icon || cat.icon}"></i>
+                                        </span>
+                                        <div class="vb-stats__goal-info">
+                                            <span class="vb-stats__goal-title">${goal.title}</span>
+                                            <div class="vb-stats__goal-bar">
+                                                <div class="vb-stats__goal-fill" style="width: ${progress}%; background: ${cat.color}"></div>
+                                            </div>
+                                        </div>
+                                        <span class="vb-stats__goal-pct">${progress}%</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     /**
@@ -914,6 +1166,11 @@ const VisionBoard = (function() {
                     <button class="btn btn--sm btn--ghost btn--danger" data-action="delete" data-goal-id="${goal.id}">
                         <i data-lucide="trash-2"></i>
                     </button>
+                    ${!isCompleted && hasSteps ? `
+                        <button class="btn btn--sm btn--ghost vision-board-card__add-to-tasks" data-action="add-to-tasks" data-goal-id="${goal.id}" title="Add to Task List">
+                            <i data-lucide="list-plus"></i>
+                        </button>
+                    ` : ''}
                 </div>
             </div>
         `;
@@ -931,16 +1188,75 @@ const VisionBoard = (function() {
     /**
      * Bind full page events
      */
-    function bindFullPageEvents(container, memberId, member) {
+    function bindFullPageEvents(container, memberId, member, activeTab = 'board') {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
+        // Tab switching
+        container.querySelectorAll('.vb-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                renderFullPage(container, memberId, member, newTab);
+            });
+        });
+
         // Add goal buttons
         container.querySelectorAll('[data-action="add-goal"]').forEach(btn => {
             btn.addEventListener('click', () => {
-                showAddGoalModal(memberId, () => renderFullPage(container, memberId, member));
+                showAddGoalModal(memberId, () => renderFullPage(container, memberId, member, activeTab));
+            });
+        });
+
+        // Add zone button (in Board tab)
+        container.querySelector('[data-action="add-zone"]')?.addEventListener('click', () => {
+            showAddZoneModal(memberId, () => renderFullPage(container, memberId, member, activeTab));
+        });
+
+        // Zone interactions (in Board tab)
+        container.querySelectorAll('[data-action="add-goal-to-zone"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const zoneId = btn.dataset.zoneId;
+                showAddGoalModal(memberId, () => renderFullPage(container, memberId, member, activeTab), zoneId);
+            });
+        });
+
+        container.querySelectorAll('[data-action="expand-zone"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const zoneId = btn.dataset.zoneId;
+                showZoneExpandView(memberId, zoneId);
+            });
+        });
+
+        container.querySelectorAll('[data-action="edit-zone-title"]').forEach(el => {
+            el.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const zoneId = el.dataset.zoneId;
+                showEditZoneTitleModal(memberId, zoneId, () => renderFullPage(container, memberId, member, activeTab));
+            });
+        });
+
+        container.querySelectorAll('[data-action="delete-zone"]').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                const zoneId = btn.dataset.zoneId;
+                const confirmed = await showConfirmDialog('Delete Zone', 'Goals in this zone will be moved to Health. Continue?');
+                if (confirmed) {
+                    deleteZone(memberId, zoneId);
+                    renderFullPage(container, memberId, member, activeTab);
+                }
+            });
+        });
+
+        // Goal interactions in zones
+        container.querySelectorAll('.vb-zone__goal').forEach(goalEl => {
+            goalEl.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const goalId = goalEl.dataset.goalId;
+                showQuickUpdateModal(memberId, goalId, () => renderFullPage(container, memberId, member, activeTab));
             });
         });
 
@@ -948,7 +1264,7 @@ const VisionBoard = (function() {
         container.querySelectorAll('[data-action="update"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const goalId = btn.dataset.goalId;
-                showQuickUpdateModal(memberId, goalId, () => renderFullPage(container, memberId, member));
+                showQuickUpdateModal(memberId, goalId, () => renderFullPage(container, memberId, member, activeTab));
             });
         });
 
@@ -956,7 +1272,7 @@ const VisionBoard = (function() {
         container.querySelectorAll('[data-action="edit"]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const goalId = btn.dataset.goalId;
-                showEditGoalModal(memberId, goalId, () => renderFullPage(container, memberId, member));
+                showEditGoalModal(memberId, goalId, () => renderFullPage(container, memberId, member, activeTab));
             });
         });
 
@@ -967,8 +1283,16 @@ const VisionBoard = (function() {
                 const confirmed = await showConfirmDialog('Delete this goal?', 'This action cannot be undone.');
                 if (confirmed) {
                     deleteGoal(memberId, goalId);
-                    renderFullPage(container, memberId, member);
+                    renderFullPage(container, memberId, member, activeTab);
                 }
+            });
+        });
+
+        // Add goal to Task List
+        container.querySelectorAll('[data-action="add-to-tasks"]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const goalId = btn.dataset.goalId;
+                addGoalToTaskList(memberId, goalId);
             });
         });
     }
@@ -1808,9 +2132,15 @@ const VisionBoard = (function() {
                 checkbox.addEventListener('change', () => {
                     const index = parseInt(checkbox.dataset.stepToggle);
                     if (goal.steps[index]) {
-                        goal.steps[index].completed = checkbox.checked;
-                        goal.steps[index].completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
+                        const step = goal.steps[index];
+                        step.completed = checkbox.checked;
+                        step.completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
                         refreshStepsList();
+
+                        // Sync with Task List if this goal was added there
+                        if (typeof Tasks !== 'undefined' && Tasks.syncSubtaskFromVisionBoard) {
+                            Tasks.syncSubtaskFromVisionBoard(memberId, goal.title, step.title, step.completed);
+                        }
                     }
                 });
             });
@@ -2113,6 +2443,90 @@ const VisionBoard = (function() {
     }
 
     /**
+     * Add a goal to the Task List
+     * Creates a parent task with the goal title, and subtasks for each step
+     * Bi-directional sync: completing tasks updates Vision Board, and vice versa
+     */
+    function addGoalToTaskList(memberId, goalId) {
+        const widgetData = getWidgetData(memberId);
+        const goal = (widgetData.goals || []).find(g => g.id === goalId);
+
+        if (!goal) {
+            Toast.error('Goal not found');
+            return;
+        }
+
+        // Get task list data
+        const taskData = Storage.getWidgetData(memberId, 'task-list') || { tasks: [] };
+
+        // Check if this goal is already in the task list
+        const existingTask = taskData.tasks.find(t => t.fromGoalId === goalId);
+        if (existingTask) {
+            Toast.warning('This goal is already in your Task List');
+            return;
+        }
+
+        // Create the parent task
+        const newTask = {
+            id: `task-${Date.now()}`,
+            title: goal.title,
+            completed: false,
+            createdAt: DateUtils.today(),
+            fromGoal: goal.title,
+            fromGoalId: goalId,
+            subtasks: []
+        };
+
+        // Add steps as subtasks
+        if (goal.steps && goal.steps.length > 0) {
+            newTask.subtasks = goal.steps.map((step, index) => ({
+                id: `subtask-${Date.now()}-${index}`,
+                title: step.title,
+                completed: step.completed || false,
+                createdAt: DateUtils.today(),
+                stepTitle: step.title
+            }));
+        }
+
+        // Add to task list
+        taskData.tasks.push(newTask);
+        Storage.setWidgetData(memberId, 'task-list', taskData);
+
+        Toast.success('Goal added to Task List');
+    }
+
+    /**
+     * Sync Vision Board step completion from Task List
+     * Called when a subtask linked to a goal step is toggled
+     */
+    function syncStepFromTask(memberId, goalTitle, stepTitle, completed) {
+        const widgetData = getWidgetData(memberId);
+        const goal = (widgetData.goals || []).find(g => g.title === goalTitle);
+
+        if (!goal || !goal.steps) return;
+
+        const step = goal.steps.find(s => s.title === stepTitle);
+        if (!step) return;
+
+        step.completed = completed;
+        step.completedAt = completed ? DateUtils.today() : null;
+
+        // Check if all steps are completed
+        const allStepsComplete = goal.steps.every(s => s.completed);
+        if (allStepsComplete && !goal.completed) {
+            goal.completed = true;
+            goal.completedAt = DateUtils.today();
+            Toast.success(`Goal "${goal.title}" completed!`);
+        } else if (!allStepsComplete && goal.completed) {
+            // Reactivate goal if a step was unchecked
+            goal.completed = false;
+            goal.completedAt = null;
+        }
+
+        saveWidgetData(memberId, widgetData);
+    }
+
+    /**
      * Show confirm dialog
      */
     function showConfirmDialog(title, message) {
@@ -2139,6 +2553,7 @@ const VisionBoard = (function() {
     return {
         init,
         renderWidget,
-        showFullPage
+        showFullPage,
+        syncStepFromTask
     };
 })();

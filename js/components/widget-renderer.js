@@ -102,10 +102,10 @@ const WidgetRenderer = (function() {
                 if (typeof Grocery !== 'undefined' && Grocery.renderWidget) {
                     Grocery.renderWidget(container, member.id);
                 } else {
-                    renderPlaceholder(container, 'Grocery List', 'shopping-cart', 'Shopping list from meal plans');
+                    renderPlaceholder(container, 'Shopping List', 'shopping-cart', 'Shopping list from meal plans');
                 }
             },
-            title: 'Grocery List',
+            title: 'Shopping List',
             icon: 'shopping-cart'
         },
         'routine': {
@@ -1468,7 +1468,13 @@ const WidgetRenderer = (function() {
 
         const content = `
             <div class="add-widget-modal">
-                <p class="add-widget-modal__intro">Select widgets to add to ${member.name}'s dashboard:</p>
+                <div class="add-widget-modal__header">
+                    <p class="add-widget-modal__intro">Select widgets to add to ${member.name}'s dashboard:</p>
+                    <button type="button" class="btn btn--sm btn--ghost" id="selectAllWidgetsBtn">
+                        <i data-lucide="check-square"></i>
+                        Select All
+                    </button>
+                </div>
                 <div class="add-widget-modal__list">
                     ${unaddedWidgets.map(widget => `
                         <label class="add-widget-option" data-widget-id="${widget.id}">
@@ -1495,6 +1501,28 @@ const WidgetRenderer = (function() {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+
+        // Setup Select All button
+        const selectAllBtn = document.getElementById('selectAllWidgetsBtn');
+        const widgetList = document.querySelector('.add-widget-modal__list');
+
+        selectAllBtn?.addEventListener('click', () => {
+            const checkboxes = widgetList.querySelectorAll('.add-widget-option__checkbox');
+            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+
+            checkboxes.forEach(cb => {
+                cb.checked = !allChecked;
+            });
+
+            // Update button text
+            selectAllBtn.innerHTML = allChecked
+                ? '<i data-lucide="check-square"></i> Select All'
+                : '<i data-lucide="square"></i> Deselect All';
+
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
 
         Modal.bindFooterEvents(() => {
             const selectedWidgets = [];

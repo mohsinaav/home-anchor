@@ -12,33 +12,46 @@ const Schedule = (function() {
 
     /**
      * Add touch-friendly event listener that works on both desktop and mobile
+     * Uses a flag to prevent duplicate events from touch + click
      */
     function addTapEvent(element, handler) {
-        // Use touchend for faster response on mobile, with click as fallback
         let touchStartY = 0;
+        let touchStartX = 0;
         let hasMoved = false;
+        let touchHandled = false;
 
         element.addEventListener('touchstart', (e) => {
             touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
             hasMoved = false;
+            touchHandled = false;
         }, { passive: true });
 
         element.addEventListener('touchmove', (e) => {
             const touchY = e.touches[0].clientY;
-            if (Math.abs(touchY - touchStartY) > 10) {
+            const touchX = e.touches[0].clientX;
+            // Check both vertical and horizontal movement
+            if (Math.abs(touchY - touchStartY) > 10 || Math.abs(touchX - touchStartX) > 10) {
                 hasMoved = true;
             }
         }, { passive: true });
 
         element.addEventListener('touchend', (e) => {
             if (!hasMoved) {
-                e.preventDefault();
-                handler(e);
+                touchHandled = true;
+                // Use setTimeout to ensure the handler runs after any scroll/zoom decisions
+                setTimeout(() => handler(e), 0);
             }
-        });
+        }, { passive: true });
 
-        // Fallback for desktop
-        element.addEventListener('click', handler);
+        // Click fallback for desktop - skip if touch already handled
+        element.addEventListener('click', (e) => {
+            if (touchHandled) {
+                touchHandled = false; // Reset for next interaction
+                return;
+            }
+            handler(e);
+        });
     }
 
     // Common schedule icons
@@ -788,6 +801,11 @@ const Schedule = (function() {
 
         hideFormPanel();
         refreshTimeline(memberId, currentDay);
+
+        // Notify sidebar to refresh immediately
+        if (typeof State !== 'undefined') {
+            State.emit('scheduleUpdated', memberId);
+        }
     }
 
     /**
@@ -798,6 +816,11 @@ const Schedule = (function() {
         Toast.success('Activity deleted');
         hideFormPanel();
         refreshTimeline(memberId, day);
+
+        // Notify sidebar to refresh immediately
+        if (typeof State !== 'undefined') {
+            State.emit('scheduleUpdated', memberId);
+        }
     }
 
     /**

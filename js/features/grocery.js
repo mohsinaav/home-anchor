@@ -1,6 +1,6 @@
 /**
- * Grocery List Feature
- * Handles grocery list management with manual entry and auto-generation from meal plans
+ * Shopping List Feature
+ * Handles shopping list management with manual entry and auto-generation from meal plans
  * Enhanced with: smart suggestions, pantry tracking, unit conversion, share list
  */
 
@@ -56,6 +56,38 @@ const Grocery = (function() {
         'Rice', 'Pasta', 'Tomatoes', 'Onions', 'Bananas', 'Apples'
     ];
 
+    // Default pantry items - pre-categorized for easy setup
+    const DEFAULT_PANTRY_ITEMS = {
+        produce: [
+            'Garlic', 'Ginger', 'Lemons', 'Limes', 'Potatoes', 'Onions', 'Shallots'
+        ],
+        dairy: [
+            'Butter', 'Milk', 'Eggs', 'Cheese', 'Yogurt', 'Cream Cheese', 'Sour Cream'
+        ],
+        meat: [
+            'Chicken Breast', 'Ground Beef', 'Bacon'
+        ],
+        bakery: [
+            'Bread', 'Tortillas', 'Pita Bread'
+        ],
+        frozen: [
+            'Frozen Vegetables', 'Ice Cream', 'Frozen Fruit'
+        ],
+        pantry: [
+            'Rice', 'Pasta', 'Flour', 'Sugar', 'Brown Sugar', 'Salt', 'Black Pepper',
+            'Olive Oil', 'Vegetable Oil', 'Vinegar', 'Soy Sauce', 'Honey',
+            'Canned Tomatoes', 'Tomato Paste', 'Chicken Broth', 'Beans',
+            'Oats', 'Cereal', 'Peanut Butter', 'Jam', 'Nuts', 'Dried Herbs',
+            'Baking Powder', 'Baking Soda', 'Vanilla Extract', 'Cornstarch'
+        ],
+        beverages: [
+            'Coffee', 'Tea', 'Juice'
+        ],
+        household: [
+            'Dish Soap', 'Paper Towels', 'Trash Bags', 'Aluminum Foil', 'Plastic Wrap'
+        ]
+    };
+
     /**
      * Get widget data with defaults
      */
@@ -103,11 +135,13 @@ const Grocery = (function() {
 
     /**
      * Get smart suggestions based on purchase history
+     * Filters out items already in pantry or shopping list
      */
     function getSmartSuggestions(memberId) {
         const data = getWidgetData(memberId);
         const history = data.purchaseHistory || [];
         const currentItems = data.items.map(i => i.name.toLowerCase());
+        const pantryItems = (data.pantry || []).map(p => p.name.toLowerCase());
 
         // Count purchase frequency
         const frequency = {};
@@ -116,9 +150,9 @@ const Grocery = (function() {
             frequency[name] = (frequency[name] || 0) + 1;
         });
 
-        // Sort by frequency and filter out items already in list
+        // Sort by frequency and filter out items already in list OR in pantry
         const suggestions = Object.entries(frequency)
-            .filter(([name]) => !currentItems.includes(name))
+            .filter(([name]) => !currentItems.includes(name) && !pantryItems.includes(name))
             .sort((a, b) => b[1] - a[1])
             .slice(0, 8)
             .map(([name]) => {
@@ -126,10 +160,11 @@ const Grocery = (function() {
                 return name.charAt(0).toUpperCase() + name.slice(1);
             });
 
-        // If not enough suggestions, add from default quick adds
+        // If not enough suggestions, add from default quick adds (also filtering pantry)
         if (suggestions.length < 8) {
             const remaining = QUICK_ADDS.filter(item =>
                 !currentItems.includes(item.toLowerCase()) &&
+                !pantryItems.includes(item.toLowerCase()) &&
                 !suggestions.map(s => s.toLowerCase()).includes(item.toLowerCase())
             );
             suggestions.push(...remaining.slice(0, 8 - suggestions.length));
@@ -366,26 +401,32 @@ const Grocery = (function() {
                 </div>
 
                 <div class="grocery-widget__preview">
-                    ${uncheckedItems.length === 0 ? `
-                        <div class="grocery-widget__empty">
-                            <div class="grocery-widget__empty-icon">
-                                <i data-lucide="shopping-bag"></i>
-                            </div>
-                            <p>Your list is empty</p>
-                        </div>
-                    ` : `
-                        <div class="grocery-widget__stores">
-                            ${Object.values(storeGroups).filter(sg => sg.items.length > 0).map(({ store, items }) => `
-                                <div class="grocery-widget__store">
-                                    <div class="grocery-widget__store-header">
-                                        <div class="grocery-widget__store-icon" style="background: ${store.color}20; color: ${store.color}">
-                                            <i data-lucide="${store.icon}"></i>
-                                        </div>
-                                        <span class="grocery-widget__store-name">${store.name}</span>
-                                        <span class="grocery-widget__store-count">${items.length}</span>
+                    <div class="grocery-widget__stores">
+                        ${stores.map(store => {
+                            const storeItems = storeGroups[store.id]?.items || [];
+                            return `
+                            <div class="grocery-widget__store ${storeItems.length === 0 ? 'grocery-widget__store--empty' : ''}" data-store-section="${store.id}">
+                                <div class="grocery-widget__store-header">
+                                    <div class="grocery-widget__store-icon" style="background: ${store.color}20; color: ${store.color}">
+                                        <i data-lucide="${store.icon}"></i>
                                     </div>
+                                    <span class="grocery-widget__store-name">${store.name}</span>
+                                    ${storeItems.length > 0 ? `<span class="grocery-widget__store-count">${storeItems.length}</span>` : ''}
+                                    <button class="grocery-widget__quick-add-btn" data-quick-add-store="${store.id}" title="Add item to ${store.name}">
+                                        <i data-lucide="plus"></i>
+                                    </button>
+                                </div>
+                                <div class="grocery-widget__quick-add-row" data-quick-add-row="${store.id}" style="display: none;">
+                                    <input type="text" class="grocery-widget__quick-add-input"
+                                           data-quick-add-input="${store.id}"
+                                           placeholder="Add item...">
+                                    <button class="grocery-widget__quick-add-confirm" data-quick-add-confirm="${store.id}">
+                                        <i data-lucide="check"></i>
+                                    </button>
+                                </div>
+                                ${storeItems.length > 0 ? `
                                     <ul class="grocery-widget__store-items">
-                                        ${items.slice(0, 3).map(item => `
+                                        ${storeItems.slice(0, 3).map(item => `
                                             <li class="grocery-widget__store-item" data-item-id="${item.id}">
                                                 <label class="grocery-widget__checkbox-wrapper">
                                                     <input type="checkbox" class="grocery-widget__checkbox" data-toggle-item="${item.id}" ${item.checked ? 'checked' : ''}>
@@ -395,49 +436,60 @@ const Grocery = (function() {
                                                 </div>
                                             </li>
                                         `).join('')}
-                                        ${items.length > 3 ? `
+                                        ${storeItems.length > 3 ? `
                                             <li class="grocery-widget__store-more">
                                                 <button class="grocery-widget__view-all-btn" data-view-full-list="${memberId}" data-store-id="${store.id}">
-                                                    +${items.length - 3} more
+                                                    +${storeItems.length - 3} more
                                                 </button>
                                             </li>
                                         ` : ''}
                                     </ul>
-                                </div>
-                            `).join('')}
+                                ` : ''}
+                            </div>
+                        `}).join('')}
 
-                            ${unassignedItems.length > 0 ? `
-                                <div class="grocery-widget__store">
-                                    <div class="grocery-widget__store-header">
-                                        <div class="grocery-widget__store-icon" style="background: #f1f5f920; color: #64748B">
-                                            <i data-lucide="inbox"></i>
-                                        </div>
-                                        <span class="grocery-widget__store-name">Other Items</span>
-                                        <span class="grocery-widget__store-count">${unassignedItems.length}</span>
+                        ${unassignedItems.length > 0 ? `
+                            <div class="grocery-widget__store" data-store-section="unassigned">
+                                <div class="grocery-widget__store-header">
+                                    <div class="grocery-widget__store-icon" style="background: #f1f5f920; color: #64748B">
+                                        <i data-lucide="inbox"></i>
                                     </div>
-                                    <ul class="grocery-widget__store-items">
-                                        ${unassignedItems.slice(0, 3).map(item => `
-                                            <li class="grocery-widget__store-item" data-item-id="${item.id}">
-                                                <label class="grocery-widget__checkbox-wrapper">
-                                                    <input type="checkbox" class="grocery-widget__checkbox" data-toggle-item="${item.id}" ${item.checked ? 'checked' : ''}>
-                                                </label>
-                                                <div class="grocery-widget__item-content" data-item-name="${item.id}">
-                                                    <span class="grocery-widget__item-text">${item.name}</span>
-                                                </div>
-                                            </li>
-                                        `).join('')}
-                                        ${unassignedItems.length > 3 ? `
-                                            <li class="grocery-widget__store-more">
-                                                <button class="grocery-widget__view-all-btn" data-view-full-list="${memberId}">
-                                                    +${unassignedItems.length - 3} more
-                                                </button>
-                                            </li>
-                                        ` : ''}
-                                    </ul>
+                                    <span class="grocery-widget__store-name">Other Items</span>
+                                    <span class="grocery-widget__store-count">${unassignedItems.length}</span>
+                                    <button class="grocery-widget__quick-add-btn" data-quick-add-store="unassigned" title="Add item">
+                                        <i data-lucide="plus"></i>
+                                    </button>
                                 </div>
-                            ` : ''}
-                        </div>
-                    `}
+                                <div class="grocery-widget__quick-add-row" data-quick-add-row="unassigned" style="display: none;">
+                                    <input type="text" class="grocery-widget__quick-add-input"
+                                           data-quick-add-input="unassigned"
+                                           placeholder="Add item...">
+                                    <button class="grocery-widget__quick-add-confirm" data-quick-add-confirm="unassigned">
+                                        <i data-lucide="check"></i>
+                                    </button>
+                                </div>
+                                <ul class="grocery-widget__store-items">
+                                    ${unassignedItems.slice(0, 3).map(item => `
+                                        <li class="grocery-widget__store-item" data-item-id="${item.id}">
+                                            <label class="grocery-widget__checkbox-wrapper">
+                                                <input type="checkbox" class="grocery-widget__checkbox" data-toggle-item="${item.id}" ${item.checked ? 'checked' : ''}>
+                                            </label>
+                                            <div class="grocery-widget__item-content" data-item-name="${item.id}">
+                                                <span class="grocery-widget__item-text">${item.name}</span>
+                                            </div>
+                                        </li>
+                                    `).join('')}
+                                    ${unassignedItems.length > 3 ? `
+                                        <li class="grocery-widget__store-more">
+                                            <button class="grocery-widget__view-all-btn" data-view-full-list="${memberId}">
+                                                +${unassignedItems.length - 3} more
+                                            </button>
+                                        </li>
+                                    ` : ''}
+                                </ul>
+                            </div>
+                        ` : ''}
+                    </div>
                 </div>
             </div>
         `;
@@ -482,6 +534,95 @@ const Grocery = (function() {
                 startInlineEdit(textSpan, itemId, memberId, container);
             });
         });
+
+        // Bind quick-add buttons for each store
+        container.querySelectorAll('[data-quick-add-store]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const storeId = btn.dataset.quickAddStore;
+                const row = container.querySelector(`[data-quick-add-row="${storeId}"]`);
+                const input = container.querySelector(`[data-quick-add-input="${storeId}"]`);
+
+                // Hide all other quick-add rows first
+                container.querySelectorAll('.grocery-widget__quick-add-row').forEach(r => {
+                    if (r !== row) r.style.display = 'none';
+                });
+
+                // Toggle this row
+                if (row.style.display === 'none') {
+                    row.style.display = 'flex';
+                    input.focus();
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+
+        // Bind quick-add input Enter key
+        container.querySelectorAll('[data-quick-add-input]').forEach(input => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const storeId = input.dataset.quickAddInput;
+                    const itemName = input.value.trim();
+                    if (itemName) {
+                        addQuickItem(memberId, storeId, itemName, container, true);
+                    }
+                } else if (e.key === 'Escape') {
+                    const row = input.closest('.grocery-widget__quick-add-row');
+                    row.style.display = 'none';
+                    input.value = '';
+                }
+            });
+        });
+
+        // Bind quick-add confirm buttons
+        container.querySelectorAll('[data-quick-add-confirm]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storeId = btn.dataset.quickAddConfirm;
+                const input = container.querySelector(`[data-quick-add-input="${storeId}"]`);
+                const itemName = input.value.trim();
+                if (itemName) {
+                    addQuickItem(memberId, storeId, itemName, container, true);
+                }
+            });
+        });
+    }
+
+    /**
+     * Add item quickly from widget
+     */
+    function addQuickItem(memberId, storeId, itemName, container, keepInputOpen = false) {
+        if (!itemName) return;
+
+        const data = getWidgetData(memberId);
+        const newItem = {
+            id: `item-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            name: itemName,
+            checked: false,
+            store: storeId === 'unassigned' ? null : storeId,
+            category: 'other',
+            addedAt: new Date().toISOString()
+        };
+
+        data.items.push(newItem);
+        saveWidgetData(memberId, data);
+        addToPurchaseHistory(memberId, itemName);
+
+        // Re-render widget
+        renderWidget(container, memberId);
+
+        // Re-focus the input if requested
+        if (keepInputOpen) {
+            setTimeout(() => {
+                const newRow = container.querySelector(`[data-quick-add-row="${storeId}"]`);
+                const newInput = container.querySelector(`[data-quick-add-input="${storeId}"]`);
+                if (newRow && newInput) {
+                    newRow.style.display = 'flex';
+                    newInput.focus();
+                }
+            }, 0);
+        }
     }
 
     /**
@@ -498,7 +639,8 @@ const Grocery = (function() {
         spanElement.innerHTML = `<input type="text" class="grocery-widget__item-input" value="${currentName}" />`;
         const input = spanElement.querySelector('input');
         input.focus();
-        input.select();
+        // Position cursor at end of text
+        input.setSelectionRange(currentName.length, currentName.length);
 
         // Save on blur or Enter
         const saveEdit = () => {
@@ -535,7 +677,8 @@ const Grocery = (function() {
         spanElement.innerHTML = `<input type="text" class="grocery-store-item__edit-input" value="${currentName}" />`;
         const input = spanElement.querySelector('input');
         input.focus();
-        input.select();
+        // Position cursor at end of text
+        input.setSelectionRange(currentName.length, currentName.length);
 
         // Save on blur or Enter
         const saveEdit = () => {
@@ -561,12 +704,12 @@ const Grocery = (function() {
     /**
      * Show full grocery list page
      */
-    function showGroceryListPage(memberId, focusStoreId = null) {
+    function showGroceryListPage(memberId, focusStoreId = null, activeTab = 'list') {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        renderGroceryPage(main, memberId, member);
+        renderGroceryPage(main, memberId, member, activeTab);
 
         // If a store ID is provided, expand it and scroll to it
         if (focusStoreId) {
@@ -578,7 +721,7 @@ const Grocery = (function() {
                 if (store && sessionStoreStates[memberId] && sessionStoreStates[memberId][focusStoreId]) {
                     // Store is collapsed, expand it
                     toggleStoreCollapsed(memberId, focusStoreId);
-                    renderGroceryPage(main, memberId, member);
+                    renderGroceryPage(main, memberId, member, activeTab);
                 }
 
                 // Scroll to the store
@@ -591,9 +734,9 @@ const Grocery = (function() {
     }
 
     /**
-     * Render grocery page with all features
+     * Render grocery page with all features and tabs
      */
-    function renderGroceryPage(container, memberId, member) {
+    function renderGroceryPage(container, memberId, member, activeTab = 'list') {
         const data = getWidgetData(memberId);
         const items = data.items || [];
         const stores = getStores(memberId);
@@ -611,9 +754,6 @@ const Grocery = (function() {
 
         // Calculate progress
         const progress = items.length > 0 ? Math.round((checkedItems.length / items.length) * 100) : 0;
-
-        // Get smart suggestions
-        const suggestions = getSmartSuggestions(memberId);
 
         container.innerHTML = `
             <div class="grocery-page">
@@ -633,129 +773,84 @@ const Grocery = (function() {
                         <div class="grocery-page__hero-text">
                             <h1 class="grocery-page__hero-title">
                                 <i data-lucide="shopping-cart"></i>
-                                Grocery List
+                                Shopping List
                             </h1>
                             <p class="grocery-page__hero-subtitle">Smart shopping made easy</p>
                         </div>
                         <div class="grocery-page__hero-stats">
                             <div class="grocery-hero-stat">
+                                <span class="grocery-hero-stat__value">${items.length}</span>
+                                <span class="grocery-hero-stat__label">Total Items</span>
+                            </div>
+                            <div class="grocery-hero-stat">
                                 <span class="grocery-hero-stat__value">${uncheckedItems.length}</span>
                                 <span class="grocery-hero-stat__label">To Buy</span>
                             </div>
                             <div class="grocery-hero-stat">
-                                <span class="grocery-hero-stat__value">${categoryCount}</span>
-                                <span class="grocery-hero-stat__label">Categories</span>
+                                <span class="grocery-hero-stat__value">${stores.length}</span>
+                                <span class="grocery-hero-stat__label">Stores</span>
                             </div>
                             <div class="grocery-hero-stat">
                                 <span class="grocery-hero-stat__value">${pantryItems.length}</span>
                                 <span class="grocery-hero-stat__label">In Pantry</span>
                             </div>
                         </div>
-                        <div class="grocery-page__hero-actions">
-                            <button class="btn btn--primary btn--lg" id="generateFromMealsBtn">
-                                <i data-lucide="calendar"></i>
-                                From Meals
-                            </button>
-                            <button class="btn btn--secondary btn--lg" id="manageStoresBtn">
-                                <i data-lucide="store"></i>
-                                Stores
-                            </button>
-                            <button class="btn btn--secondary btn--lg" id="viewPantryBtn">
-                                <i data-lucide="package-check"></i>
-                                Pantry
-                            </button>
-                        </div>
                     </div>
                 </div>
 
-                <!-- Toolbar -->
-                <div class="grocery-page__toolbar">
-                    <button class="btn btn--secondary" id="shareListBtn" title="Share list">
-                        <i data-lucide="share-2"></i>
-                        Share
+                <!-- Tab Navigation -->
+                <div class="grocery-page__tabs">
+                    <button class="grocery-tab ${activeTab === 'list' ? 'grocery-tab--active' : ''}" data-tab="list">
+                        <i data-lucide="list"></i>
+                        <span>List</span>
+                        ${uncheckedItems.length > 0 ? `<span class="grocery-tab__count">${uncheckedItems.length}</span>` : ''}
                     </button>
-                    <button class="btn btn--ghost" id="clearCheckedBtn" ${checkedItems.length === 0 ? 'disabled' : ''}>
-                        <i data-lucide="trash-2"></i>
-                        Clear Done
+                    <button class="grocery-tab ${activeTab === 'stores' ? 'grocery-tab--active' : ''}" data-tab="stores">
+                        <i data-lucide="store"></i>
+                        <span>Stores</span>
+                    </button>
+                    <button class="grocery-tab ${activeTab === 'pantry' ? 'grocery-tab--active' : ''}" data-tab="pantry">
+                        <i data-lucide="package-check"></i>
+                        <span>Pantry</span>
+                        ${pantryItems.length > 0 ? `<span class="grocery-tab__count">${pantryItems.length}</span>` : ''}
+                    </button>
+                    <button class="grocery-tab ${activeTab === 'stats' ? 'grocery-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Stats</span>
                     </button>
                 </div>
 
+                <!-- Action Bar -->
+                <div class="grocery-page__actions">
+                    ${activeTab === 'list' ? `
+                        <button class="btn btn--primary" id="generateFromMealsBtn">
+                            <i data-lucide="calendar"></i>
+                            From Meals
+                        </button>
+                        <button class="btn btn--secondary" id="shareListBtn" title="Share list">
+                            <i data-lucide="share-2"></i>
+                            Share
+                        </button>
+                        <button class="btn btn--ghost" id="clearCheckedBtn" ${checkedItems.length === 0 ? 'disabled' : ''}>
+                            <i data-lucide="trash-2"></i>
+                            Clear Done
+                        </button>
+                    ` : activeTab === 'stores' ? `
+                        <button class="btn btn--primary" id="addStoreBtn">
+                            <i data-lucide="plus"></i>
+                            Add Store
+                        </button>
+                    ` : activeTab === 'pantry' ? `
+                        <button class="btn btn--primary" id="addPantryItemBtn">
+                            <i data-lucide="plus"></i>
+                            Add to Pantry
+                        </button>
+                    ` : ''}
+                </div>
+
+                <!-- Tab Content -->
                 <div class="grocery-page__content">
-                    <!-- Add Items Section -->
-                    <div class="grocery-page__add-section">
-                        <div class="grocery-add-form">
-                            <input type="text"
-                                   class="form-input grocery-add-form__input"
-                                   id="newItemInput"
-                                   placeholder="Add item (e.g., 2 lbs chicken, milk x3)..."
-                                   autocomplete="off">
-                            <button class="btn btn--primary" id="addItemBtn">
-                                <i data-lucide="plus"></i>
-                            </button>
-                        </div>
-
-                        <!-- Smart Suggestions -->
-                        <div class="grocery-suggestions">
-                            <span class="grocery-suggestions__label">
-                                <i data-lucide="sparkles"></i>
-                                Suggested:
-                            </span>
-                            <div class="grocery-suggestions__list">
-                                ${suggestions.map(item => {
-                                    const inPantry = isInPantry(memberId, item);
-                                    return `
-                                        <button class="grocery-suggestion ${inPantry ? 'grocery-suggestion--in-pantry' : ''}"
-                                                data-quick-add="${item}"
-                                                title="${inPantry ? 'In pantry' : 'Click to add'}">
-                                            ${item}
-                                            ${inPantry ? '<i data-lucide="package-check"></i>' : ''}
-                                        </button>
-                                    `;
-                                }).join('')}
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Grocery List -->
-                    <div class="grocery-page__list" id="groceryList">
-                        ${uncheckedItems.length === 0 && checkedItems.length === 0 ? `
-                            <div class="grocery-empty">
-                                <div class="grocery-empty__illustration">
-                                    <div class="grocery-empty__icon">
-                                        <i data-lucide="shopping-bag"></i>
-                                    </div>
-                                    <div class="grocery-empty__shapes">
-                                        <span class="grocery-empty__shape"></span>
-                                        <span class="grocery-empty__shape"></span>
-                                        <span class="grocery-empty__shape"></span>
-                                    </div>
-                                </div>
-                                <h3>Your grocery list is empty</h3>
-                                <p>Add items above or generate from your meal plan</p>
-                                <button class="btn btn--primary" id="emptyGenerateBtn">
-                                    <i data-lucide="calendar"></i>
-                                    Generate from Meal Plan
-                                </button>
-                            </div>
-                        ` : `
-                            ${renderStoreGroupedList(memberId, uncheckedItems, stores)}
-
-                            ${checkedItems.length > 0 ? `
-                                <div class="grocery-checked-section">
-                                    <button class="grocery-checked-toggle" id="toggleCheckedBtn">
-                                        <i data-lucide="chevron-down"></i>
-                                        <span>Checked off (${checkedItems.length})</span>
-                                    </button>
-                                    <div class="grocery-checked-list" id="checkedItemsList">
-                                        ${checkedItems.map(item => {
-                                            const cat = CATEGORIES.find(c => c.id === item.category) || CATEGORIES.find(c => c.id === 'other');
-                                            return renderGroceryItem(item, memberId, cat, true);
-                                        }).join('')}
-                                    </div>
-                                </div>
-                            ` : ''}
-                        `}
-                    </div>
+                    ${renderGroceryTabContent(activeTab, memberId, data, items, uncheckedItems, checkedItems, stores, pantryItems, groupedItems)}
                 </div>
             </div>
         `;
@@ -766,10 +861,437 @@ const Grocery = (function() {
         }
 
         // Bind events
-        bindGroceryPageEvents(container, memberId, member);
+        bindGroceryPageEvents(container, memberId, member, activeTab);
 
-        // Initialize swipe handlers
-        initSwipeHandlers(container, memberId, member);
+        // Initialize swipe handlers for list tab
+        if (activeTab === 'list') {
+            initSwipeHandlers(container, memberId, member);
+        }
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderGroceryTabContent(activeTab, memberId, data, items, uncheckedItems, checkedItems, stores, pantryItems, groupedItems) {
+        switch (activeTab) {
+            case 'list':
+                return renderGroceryListTab(memberId, uncheckedItems, checkedItems, stores);
+            case 'stores':
+                return renderStoresTab(memberId, stores, items);
+            case 'pantry':
+                return renderPantryTab(memberId, pantryItems);
+            case 'stats':
+                return renderGroceryStatsTab(memberId, data, items, checkedItems, stores, pantryItems);
+            default:
+                return renderGroceryListTab(memberId, uncheckedItems, checkedItems, stores);
+        }
+    }
+
+    /**
+     * Render List tab - Main shopping list
+     */
+    function renderGroceryListTab(memberId, uncheckedItems, checkedItems, stores) {
+        const suggestions = getSmartSuggestions(memberId);
+
+        return `
+            <div class="grocery-list-tab">
+                <!-- Add Items Section -->
+                <div class="grocery-page__add-section">
+                    <div class="grocery-add-form">
+                        <input type="text"
+                               class="form-input grocery-add-form__input"
+                               id="newItemInput"
+                               placeholder="Add item (e.g., 2 lbs chicken, milk x3)..."
+                               autocomplete="off">
+                        <button class="btn btn--primary" id="addItemBtn">
+                            <i data-lucide="plus"></i>
+                        </button>
+                    </div>
+
+                    <!-- Smart Suggestions -->
+                    <div class="grocery-suggestions">
+                        <span class="grocery-suggestions__label">
+                            <i data-lucide="sparkles"></i>
+                            Suggested:
+                        </span>
+                        <div class="grocery-suggestions__list">
+                            ${suggestions.map(item => {
+                                const inPantry = isInPantry(memberId, item);
+                                return `
+                                    <button class="grocery-suggestion ${inPantry ? 'grocery-suggestion--in-pantry' : ''}"
+                                            data-quick-add="${item}"
+                                            title="${inPantry ? 'In pantry' : 'Click to add'}">
+                                        ${item}
+                                        ${inPantry ? '<i data-lucide="package-check"></i>' : ''}
+                                    </button>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Grocery List -->
+                <div class="grocery-page__list" id="groceryList">
+                    ${uncheckedItems.length === 0 && checkedItems.length === 0 ? `
+                        <div class="grocery-empty">
+                            <div class="grocery-empty__illustration">
+                                <div class="grocery-empty__icon">
+                                    <i data-lucide="shopping-bag"></i>
+                                </div>
+                                <div class="grocery-empty__shapes">
+                                    <span class="grocery-empty__shape"></span>
+                                    <span class="grocery-empty__shape"></span>
+                                    <span class="grocery-empty__shape"></span>
+                                </div>
+                            </div>
+                            <h3>Your shopping list is empty</h3>
+                            <p>Add items above or generate from your meal plan</p>
+                            <button class="btn btn--primary" id="emptyGenerateBtn">
+                                <i data-lucide="calendar"></i>
+                                Generate from Meal Plan
+                            </button>
+                        </div>
+                    ` : `
+                        ${renderStoreGroupedList(memberId, uncheckedItems, stores)}
+
+                        ${checkedItems.length > 0 ? `
+                            <div class="grocery-checked-section">
+                                <button class="grocery-checked-toggle" id="toggleCheckedBtn">
+                                    <i data-lucide="chevron-down"></i>
+                                    <span>Checked off (${checkedItems.length})</span>
+                                </button>
+                                <div class="grocery-checked-list" id="checkedItemsList">
+                                    ${checkedItems.map(item => {
+                                        const cat = CATEGORIES.find(c => c.id === item.category) || CATEGORIES.find(c => c.id === 'other');
+                                        return renderGroceryItem(item, memberId, cat, true);
+                                    }).join('')}
+                                </div>
+                            </div>
+                        ` : ''}
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stores tab - Manage shopping stores
+     */
+    function renderStoresTab(memberId, stores, items) {
+        return `
+            <div class="grocery-stores-tab">
+                ${stores.length === 0 ? `
+                    <div class="grocery-empty">
+                        <div class="grocery-empty__icon">
+                            <i data-lucide="store"></i>
+                        </div>
+                        <h3>No Stores Added</h3>
+                        <p>Add your favorite stores to organize your shopping list</p>
+                        <button class="btn btn--primary" id="addStoreEmptyBtn">
+                            <i data-lucide="plus"></i>
+                            Add Store
+                        </button>
+                    </div>
+                ` : `
+                    <div class="grocery-stores-list">
+                        ${stores.map(store => {
+                            const storeItems = items.filter(i => i.store === store.id && !i.checked);
+                            return `
+                                <div class="grocery-store-card" data-store-id="${store.id}">
+                                    <div class="grocery-store-card__header">
+                                        <div class="grocery-store-card__icon" style="background: ${store.color}20; color: ${store.color}">
+                                            <i data-lucide="${store.icon}"></i>
+                                        </div>
+                                        <div class="grocery-store-card__info">
+                                            <h3 class="grocery-store-card__name">${store.name}</h3>
+                                            <span class="grocery-store-card__count">${storeItems.length} item${storeItems.length !== 1 ? 's' : ''}</span>
+                                        </div>
+                                        <div class="grocery-store-card__actions">
+                                            <button class="btn btn--icon btn--ghost btn--sm" data-edit-store="${store.id}" title="Edit store">
+                                                <i data-lucide="edit-2"></i>
+                                            </button>
+                                            <button class="btn btn--icon btn--ghost btn--sm" data-delete-store="${store.id}" title="Delete store">
+                                                <i data-lucide="trash-2"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    ${storeItems.length > 0 ? `
+                                        <div class="grocery-store-card__items">
+                                            ${storeItems.slice(0, 5).map(item => `
+                                                <span class="grocery-store-card__item">${item.name}</span>
+                                            `).join('')}
+                                            ${storeItems.length > 5 ? `<span class="grocery-store-card__more">+${storeItems.length - 5} more</span>` : ''}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Pantry tab - Items in pantry
+     */
+    function renderPantryTab(memberId, pantryItems) {
+        // Group pantry items by category
+        const groupedPantry = {};
+        pantryItems.forEach(item => {
+            const cat = item.category || 'other';
+            if (!groupedPantry[cat]) groupedPantry[cat] = [];
+            groupedPantry[cat].push(item);
+        });
+
+        // Get pantry item names for checking defaults
+        const pantryNames = pantryItems.map(p => p.name.toLowerCase());
+
+        return `
+            <div class="grocery-pantry-tab">
+                ${pantryItems.length === 0 ? `
+                    <div class="pantry-setup">
+                        <div class="pantry-setup__header">
+                            <div class="pantry-setup__icon">
+                                <i data-lucide="package"></i>
+                            </div>
+                            <h3>Set Up Your Pantry</h3>
+                            <p>Select items you have at home. This helps avoid buying duplicates!</p>
+                        </div>
+                        <div class="pantry-setup__categories">
+                            ${CATEGORIES.filter(cat => cat.id !== 'other').map(cat => {
+                                const items = DEFAULT_PANTRY_ITEMS[cat.id] || [];
+                                return `
+                                    <div class="pantry-setup__category">
+                                        <div class="pantry-setup__category-header">
+                                            <div class="pantry-setup__category-icon" style="background: ${cat.bgColor}; color: ${cat.color}">
+                                                <i data-lucide="${cat.icon}"></i>
+                                            </div>
+                                            <span>${cat.name}</span>
+                                            <input type="text" class="pantry-setup__custom-input"
+                                                   data-category-input="${cat.id}"
+                                                   placeholder="+ Add custom..."
+                                                   style="margin-left: auto;">
+                                        </div>
+                                        <div class="pantry-setup__items">
+                                            ${items.length > 0 ? items.map(item => `
+                                                <button class="pantry-setup__item" data-setup-item="${item}" data-setup-category="${cat.id}">
+                                                    <i data-lucide="plus"></i>
+                                                    ${item}
+                                                </button>
+                                            `).join('') : `
+                                                <span class="pantry-setup__empty-hint">Type above to add items</span>
+                                            `}
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="pantry-setup__footer">
+                            <button class="btn btn--secondary" id="addCustomPantryBtn">
+                                <i data-lucide="edit-3"></i>
+                                Add Custom Item
+                            </button>
+                        </div>
+                    </div>
+                ` : `
+                    <div class="grocery-pantry-header">
+                        <div class="grocery-pantry-search">
+                            <div class="grocery-pantry-search__wrapper">
+                                <i data-lucide="search"></i>
+                                <input type="text" id="pantrySearchInput" placeholder="Search pantry..." class="form-input">
+                            </div>
+                        </div>
+                        <button class="btn btn--secondary btn--sm" id="addMorePantryBtn">
+                            <i data-lucide="plus"></i>
+                            Add More
+                        </button>
+                    </div>
+                    <div class="grocery-pantry-list" id="pantryList">
+                        ${Object.entries(groupedPantry).map(([catId, catItems]) => {
+                            const cat = CATEGORIES.find(c => c.id === catId) || CATEGORIES.find(c => c.id === 'other');
+                            return `
+                                <div class="grocery-pantry-category">
+                                    <div class="grocery-pantry-category__header">
+                                        <div class="grocery-pantry-category__icon" style="background: ${cat.bgColor}; color: ${cat.color}">
+                                            <i data-lucide="${cat.icon}"></i>
+                                        </div>
+                                        <span class="grocery-pantry-category__name">${cat.name}</span>
+                                        <span class="grocery-pantry-category__count">${catItems.length}</span>
+                                    </div>
+                                    <div class="grocery-pantry-category__items">
+                                        ${catItems.map(item => `
+                                            <div class="grocery-pantry-item" data-pantry-item="${item.name}">
+                                                <span class="grocery-pantry-item__name">${item.name}</span>
+                                                <div class="grocery-pantry-item__actions">
+                                                    <button class="btn btn--icon btn--ghost btn--sm" data-add-from-pantry="${item.name}" title="Add to shopping list">
+                                                        <i data-lucide="shopping-cart"></i>
+                                                    </button>
+                                                    <button class="btn btn--icon btn--ghost btn--sm" data-remove-pantry="${item.name}" title="Remove from pantry">
+                                                        <i data-lucide="x"></i>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab - Shopping statistics
+     */
+    function renderGroceryStatsTab(memberId, data, items, checkedItems, stores, pantryItems) {
+        const totalItems = items.length;
+        const completedItems = checkedItems.length;
+        const progress = totalItems > 0 ? Math.round((completedItems / totalItems) * 100) : 0;
+        const purchaseHistory = data.purchaseHistory || [];
+
+        // Get most purchased items
+        const frequency = {};
+        purchaseHistory.forEach(item => {
+            const name = item.name.toLowerCase();
+            frequency[name] = (frequency[name] || 0) + 1;
+        });
+        const topItems = Object.entries(frequency)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5)
+            .map(([name, count]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), count }));
+
+        // Category breakdown
+        const categoryBreakdown = {};
+        items.forEach(item => {
+            const cat = item.category || 'other';
+            if (!categoryBreakdown[cat]) categoryBreakdown[cat] = { total: 0, checked: 0 };
+            categoryBreakdown[cat].total++;
+            if (item.checked) categoryBreakdown[cat].checked++;
+        });
+
+        // Store breakdown
+        const storeBreakdown = stores.map(store => ({
+            ...store,
+            itemCount: items.filter(i => i.store === store.id && !i.checked).length
+        }));
+
+        return `
+            <div class="grocery-stats-tab">
+                <!-- Overview Cards -->
+                <div class="grocery-stats__overview">
+                    <div class="grocery-stats__card">
+                        <div class="grocery-stats__card-icon" style="background: #dbeafe; color: #3b82f6;">
+                            <i data-lucide="shopping-cart"></i>
+                        </div>
+                        <div class="grocery-stats__card-content">
+                            <span class="grocery-stats__card-value">${totalItems}</span>
+                            <span class="grocery-stats__card-label">Total Items</span>
+                        </div>
+                    </div>
+                    <div class="grocery-stats__card">
+                        <div class="grocery-stats__card-icon" style="background: #dcfce7; color: #22c55e;">
+                            <i data-lucide="check-circle"></i>
+                        </div>
+                        <div class="grocery-stats__card-content">
+                            <span class="grocery-stats__card-value">${completedItems}</span>
+                            <span class="grocery-stats__card-label">Checked Off</span>
+                        </div>
+                    </div>
+                    <div class="grocery-stats__card">
+                        <div class="grocery-stats__card-icon" style="background: #fef3c7; color: #f59e0b;">
+                            <i data-lucide="percent"></i>
+                        </div>
+                        <div class="grocery-stats__card-content">
+                            <span class="grocery-stats__card-value">${progress}%</span>
+                            <span class="grocery-stats__card-label">Progress</span>
+                        </div>
+                    </div>
+                    <div class="grocery-stats__card">
+                        <div class="grocery-stats__card-icon" style="background: #f3e8ff; color: #8b5cf6;">
+                            <i data-lucide="package"></i>
+                        </div>
+                        <div class="grocery-stats__card-content">
+                            <span class="grocery-stats__card-value">${pantryItems.length}</span>
+                            <span class="grocery-stats__card-label">In Pantry</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${topItems.length > 0 ? `
+                    <!-- Most Purchased -->
+                    <div class="grocery-stats__section">
+                        <h3 class="grocery-stats__section-title">
+                            <i data-lucide="trending-up"></i>
+                            Most Purchased
+                        </h3>
+                        <div class="grocery-stats__top-items">
+                            ${topItems.map((item, idx) => `
+                                <div class="grocery-stats__top-item">
+                                    <span class="grocery-stats__top-rank">#${idx + 1}</span>
+                                    <span class="grocery-stats__top-name">${item.name}</span>
+                                    <span class="grocery-stats__top-count">${item.count}x</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- By Store -->
+                ${storeBreakdown.some(s => s.itemCount > 0) ? `
+                    <div class="grocery-stats__section">
+                        <h3 class="grocery-stats__section-title">
+                            <i data-lucide="store"></i>
+                            Items by Store
+                        </h3>
+                        <div class="grocery-stats__stores">
+                            ${storeBreakdown.filter(s => s.itemCount > 0).map(store => `
+                                <div class="grocery-stats__store-bar">
+                                    <div class="grocery-stats__store-header">
+                                        <span class="grocery-stats__store-icon" style="color: ${store.color}">
+                                            <i data-lucide="${store.icon}"></i>
+                                        </span>
+                                        <span class="grocery-stats__store-name">${store.name}</span>
+                                        <span class="grocery-stats__store-count">${store.itemCount}</span>
+                                    </div>
+                                    <div class="grocery-stats__store-progress">
+                                        <div class="grocery-stats__store-fill" style="width: ${Math.min(100, (store.itemCount / Math.max(...storeBreakdown.map(s => s.itemCount))) * 100)}%; background: ${store.color}"></div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- By Category -->
+                ${Object.keys(categoryBreakdown).length > 0 ? `
+                    <div class="grocery-stats__section">
+                        <h3 class="grocery-stats__section-title">
+                            <i data-lucide="pie-chart"></i>
+                            By Category
+                        </h3>
+                        <div class="grocery-stats__categories">
+                            ${Object.entries(categoryBreakdown).map(([catId, stats]) => {
+                                const cat = CATEGORIES.find(c => c.id === catId) || CATEGORIES.find(c => c.id === 'other');
+                                return `
+                                    <div class="grocery-stats__category">
+                                        <div class="grocery-stats__category-header">
+                                            <span class="grocery-stats__category-icon" style="background: ${cat.bgColor}; color: ${cat.color}">
+                                                <i data-lucide="${cat.icon}"></i>
+                                            </span>
+                                            <span class="grocery-stats__category-name">${cat.name}</span>
+                                            <span class="grocery-stats__category-count">${stats.checked}/${stats.total}</span>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     /**
@@ -1015,7 +1537,9 @@ const Grocery = (function() {
                         <!-- Simple checkbox list of items -->
                         ${totalItems > 0 ? `
                             <div class="grocery-store__items">
-                                ${storeItems.map(item => `
+                                ${storeItems.map(item => {
+                                    const inPantry = isInPantry(memberId, item.name);
+                                    return `
                                     <div class="grocery-store-item" data-item-id="${item.id}">
                                         <label class="grocery-store-item__checkbox-wrapper">
                                             <input
@@ -1026,17 +1550,15 @@ const Grocery = (function() {
                                         </label>
                                         <div class="grocery-store-item__content" data-item-inline-edit="${item.id}">
                                             <span class="grocery-store-item__name ${item.checked ? 'grocery-store-item__name--checked' : ''}">${item.name}</span>
+                                            ${inPantry ? '<span class="grocery-store-item__pantry-badge" title="Already in pantry"><i data-lucide="package-check"></i></span>' : ''}
                                         </div>
                                         <div class="grocery-store-item__actions">
-                                            <button class="btn btn--icon btn--ghost btn--sm" data-edit-item="${item.id}" title="Edit details">
-                                                <i data-lucide="edit-2"></i>
-                                            </button>
                                             <button class="btn btn--icon btn--ghost btn--sm" data-delete-item="${item.id}" title="Delete">
                                                 <i data-lucide="trash-2"></i>
                                             </button>
                                         </div>
                                     </div>
-                                `).join('')}
+                                `}).join('')}
                             </div>
                         ` : ''}
                     </div>
@@ -1083,7 +1605,7 @@ const Grocery = (function() {
     /**
      * Bind grocery page events
      */
-    function bindGroceryPageEvents(container, memberId, member) {
+    function bindGroceryPageEvents(container, memberId, member, activeTab = 'list') {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             // Reset store collapsed states when leaving the page
@@ -1094,7 +1616,15 @@ const Grocery = (function() {
             }
         });
 
-        // Add item input
+        // Tab switching
+        container.querySelectorAll('.grocery-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                renderGroceryPage(container, memberId, member, newTab);
+            });
+        });
+
+        // Add item input (List tab)
         const newItemInput = document.getElementById('newItemInput');
         newItemInput?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
@@ -1103,46 +1633,157 @@ const Grocery = (function() {
             }
         });
 
-        // Add item button
+        // Add item button (List tab)
         document.getElementById('addItemBtn')?.addEventListener('click', () => {
             addItemFromInput(container, memberId, member, newItemInput);
         });
 
-        // Smart suggestions / Quick adds
+        // Smart suggestions / Quick adds (List tab)
         container.querySelectorAll('[data-quick-add]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const itemName = btn.dataset.quickAdd;
                 addItem(memberId, { name: itemName });
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
                 Toast.success(`Added ${itemName}`);
             });
         });
 
-        // Generate from meals
+        // Generate from meals (List tab)
         document.getElementById('generateFromMealsBtn')?.addEventListener('click', () => {
-            showGenerateFromMealsModal(memberId, container, member);
+            showGenerateFromMealsModal(memberId, container, member, activeTab);
         });
 
         document.getElementById('emptyGenerateBtn')?.addEventListener('click', () => {
-            showGenerateFromMealsModal(memberId, container, member);
+            showGenerateFromMealsModal(memberId, container, member, activeTab);
         });
 
-        // View pantry
-        document.getElementById('viewPantryBtn')?.addEventListener('click', () => {
-            showPantryModal(memberId, container, member);
+        // Add store button (Stores tab)
+        document.getElementById('addStoreBtn')?.addEventListener('click', () => {
+            showAddStoreModal(memberId, container, member, activeTab);
         });
 
-        // Manage stores
-        document.getElementById('manageStoresBtn')?.addEventListener('click', () => {
-            showManageStoresModal(memberId, container, member);
+        document.getElementById('addStoreEmptyBtn')?.addEventListener('click', () => {
+            showAddStoreModal(memberId, container, member, activeTab);
         });
 
-        // Toggle store collapsed
+        // Edit store (Stores tab)
+        container.querySelectorAll('[data-edit-store]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storeId = btn.dataset.editStore;
+                showEditStoreModal(memberId, storeId, container, member, activeTab);
+            });
+        });
+
+        // Delete store (Stores tab)
+        container.querySelectorAll('[data-delete-store]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const storeId = btn.dataset.deleteStore;
+                const confirmed = await Modal.confirm('Delete this store? Items will be moved to unassigned.', 'Delete Store');
+                if (confirmed) {
+                    deleteStore(memberId, storeId);
+                    renderGroceryPage(container, memberId, member, activeTab);
+                    Toast.success('Store deleted');
+                }
+            });
+        });
+
+        // Add pantry item button (Pantry tab)
+        document.getElementById('addPantryItemBtn')?.addEventListener('click', () => {
+            showAddPantryItemModal(memberId, container, member, activeTab);
+        });
+
+        document.getElementById('addPantryEmptyBtn')?.addEventListener('click', () => {
+            showAddPantryItemModal(memberId, container, member, activeTab);
+        });
+
+        // Custom item button in setup (Pantry tab)
+        document.getElementById('addCustomPantryBtn')?.addEventListener('click', () => {
+            showAddPantryItemModal(memberId, container, member, activeTab);
+        });
+
+        // Add More button when pantry has items (Pantry tab)
+        document.getElementById('addMorePantryBtn')?.addEventListener('click', () => {
+            showAddMorePantryModal(memberId, container, member, activeTab);
+        });
+
+        // Quick add from setup (Pantry tab)
+        container.querySelectorAll('[data-setup-item]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const itemName = btn.dataset.setupItem;
+                const category = btn.dataset.setupCategory;
+                togglePantryItem(memberId, itemName, category);
+                // Add visual feedback - mark as added
+                btn.classList.add('pantry-setup__item--added');
+                btn.innerHTML = `<i data-lucide="check"></i> ${itemName}`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                Toast.success(`Added ${itemName} to pantry`);
+            });
+        });
+
+        // Inline custom input per category in setup (Pantry tab)
+        container.querySelectorAll('[data-category-input]').forEach(input => {
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const itemName = input.value.trim();
+                    const category = input.dataset.categoryInput;
+                    if (itemName) {
+                        if (isInPantry(memberId, itemName)) {
+                            Toast.info(`${itemName} is already in your pantry`);
+                        } else {
+                            togglePantryItem(memberId, itemName, category);
+                            // Add as a button to the items list
+                            const itemsContainer = input.closest('.pantry-setup__category').querySelector('.pantry-setup__items');
+                            const emptyHint = itemsContainer.querySelector('.pantry-setup__empty-hint');
+                            if (emptyHint) emptyHint.remove();
+
+                            const newBtn = document.createElement('button');
+                            newBtn.className = 'pantry-setup__item pantry-setup__item--added';
+                            newBtn.innerHTML = `<i data-lucide="check"></i> ${itemName}`;
+                            itemsContainer.appendChild(newBtn);
+                            if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                            Toast.success(`Added ${itemName}`);
+                            input.value = '';
+                        }
+                    }
+                }
+            });
+        });
+
+        // Add from pantry to shopping list (Pantry tab)
+        container.querySelectorAll('[data-add-from-pantry]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const itemName = btn.dataset.addFromPantry;
+                showStoreSelectionModal(memberId, itemName, container, member, activeTab);
+            });
+        });
+
+        // Remove from pantry (Pantry tab)
+        container.querySelectorAll('[data-remove-pantry]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const itemName = btn.dataset.removePantry;
+                togglePantryItem(memberId, itemName);
+                renderGroceryPage(container, memberId, member, activeTab);
+                Toast.success(`Removed ${itemName} from pantry`);
+            });
+        });
+
+        // Pantry search (Pantry tab)
+        document.getElementById('pantrySearchInput')?.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            container.querySelectorAll('.grocery-pantry-item').forEach(item => {
+                const name = item.dataset.pantryItem.toLowerCase();
+                item.style.display = name.includes(query) ? '' : 'none';
+            });
+        });
+
+        // Toggle store collapsed (List tab)
         container.querySelectorAll('[data-toggle-store]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const storeId = btn.dataset.toggleStore;
                 toggleStoreCollapsed(memberId, storeId);
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
             });
         });
 
@@ -1185,7 +1826,7 @@ const Grocery = (function() {
             const confirmed = await Modal.confirm('Remove all checked items from the list?', 'Clear Checked Items');
             if (confirmed) {
                 clearCheckedItems(memberId);
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
                 Toast.success('Checked items cleared');
             }
         });
@@ -1215,14 +1856,19 @@ const Grocery = (function() {
                 const data = getWidgetData(memberId);
                 const item = data.items.find(i => i.id === itemId);
 
-                toggleItemChecked(memberId, itemId);
+                const result = toggleItemChecked(memberId, itemId);
 
                 // Add to purchase history when checking off
                 if (item && !item.checked) {
                     addToPurchaseHistory(memberId, item.name);
                 }
 
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
+
+                // Show pantry prompt if item was checked off and not already in pantry
+                if (result && result.shouldPromptPantry) {
+                    showAddToPantryPrompt(memberId, result.name, result.category, container, member, activeTab);
+                }
             });
         });
 
@@ -1231,7 +1877,7 @@ const Grocery = (function() {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 adjustQuantity(memberId, btn.dataset.qtyPlus, 1);
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
             });
         });
 
@@ -1239,7 +1885,7 @@ const Grocery = (function() {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 adjustQuantity(memberId, btn.dataset.qtyMinus, -1);
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
             });
         });
 
@@ -1254,7 +1900,7 @@ const Grocery = (function() {
                 if (item) {
                     const added = togglePantryItem(memberId, item.name, item.category);
                     Toast.success(added ? `${item.name} added to pantry` : `${item.name} removed from pantry`);
-                    renderGroceryPage(container, memberId, member);
+                    renderGroceryPage(container, memberId, member, activeTab);
                 }
             });
         });
@@ -1264,7 +1910,7 @@ const Grocery = (function() {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const itemId = btn.dataset.editItem;
-                showEditItemModal(memberId, itemId, container, member);
+                showEditItemModal(memberId, itemId, container, member, activeTab);
             });
         });
 
@@ -1274,7 +1920,7 @@ const Grocery = (function() {
                 e.stopPropagation();
                 const itemId = btn.dataset.deleteItem;
                 deleteItem(memberId, itemId);
-                renderGroceryPage(container, memberId, member);
+                renderGroceryPage(container, memberId, member, activeTab);
             });
         });
     }
@@ -1314,7 +1960,7 @@ const Grocery = (function() {
             return;
         }
 
-        let text = '🛒 Grocery List\n\n';
+        let text = '🛒 Shopping List\n\n';
 
         // Group by stores
         stores.forEach(store => {
@@ -1343,7 +1989,7 @@ const Grocery = (function() {
         // Try native share API first
         if (navigator.share) {
             navigator.share({
-                title: 'Grocery List',
+                title: 'Shopping List',
                 text: text
             }).catch(() => {
                 // Fall back to copy
@@ -1395,7 +2041,7 @@ const Grocery = (function() {
                     <div class="pantry-empty">
                         <i data-lucide="package"></i>
                         <p>Your pantry is empty</p>
-                        <span class="form-hint">Mark items as "in pantry" from your grocery list</span>
+                        <span class="form-hint">Mark items as "in pantry" from your shopping list</span>
                     </div>
                 ` : `
                     <div class="pantry-categories">
@@ -1583,10 +2229,14 @@ const Grocery = (function() {
     }
 
     /**
-     * Add item to grocery list
+     * Add item to shopping list
+     * Returns { data, inPantry } to allow caller to show warning
      */
-    function addItem(memberId, itemData) {
+    function addItem(memberId, itemData, options = {}) {
         const data = getWidgetData(memberId);
+
+        // Check if item is in pantry (skip if moving from pantry)
+        const inPantry = options.skipPantryWarning ? false : isInPantry(memberId, itemData.name);
 
         // Check if item already exists (by name)
         const existingIndex = data.items.findIndex(
@@ -1616,25 +2266,43 @@ const Grocery = (function() {
         }
 
         saveWidgetData(memberId, data);
-        return data;
+
+        // Show warning if item is in pantry
+        if (inPantry) {
+            Toast.warning(`${itemData.name} is already in your pantry`);
+        }
+
+        return { data, inPantry };
     }
 
     /**
      * Toggle item checked status
+     * Returns item info for pantry prompt
      */
     function toggleItemChecked(memberId, itemId) {
         const data = getWidgetData(memberId);
         const item = data.items.find(i => i.id === itemId);
 
         if (item) {
+            const wasChecked = item.checked;
             item.checked = !item.checked;
             item.checkedAt = item.checked ? new Date().toISOString() : null;
             saveWidgetData(memberId, data);
+
+            // Return item info for pantry prompt (only when checking off, not unchecking)
+            if (!wasChecked && item.checked) {
+                return {
+                    name: item.name,
+                    category: item.category,
+                    shouldPromptPantry: !isInPantry(memberId, item.name)
+                };
+            }
         }
+        return null;
     }
 
     /**
-     * Delete item from grocery list
+     * Delete item from shopping list
      */
     function deleteItem(memberId, itemId) {
         const data = getWidgetData(memberId);
@@ -1779,7 +2447,7 @@ const Grocery = (function() {
         const content = `
             <div class="manage-stores-modal">
                 <p class="form-hint" style="margin-bottom: var(--space-4);">
-                    Organize your grocery list by the stores you shop at. Drag to reorder.
+                    Organize your shopping list by the stores you shop at. Drag to reorder.
                 </p>
 
                 ${stores.length === 0 ? `
@@ -2021,9 +2689,42 @@ const Grocery = (function() {
     }
 
     /**
+     * Show add store modal (from Stores tab)
+     */
+    function showAddStoreModal(memberId, pageContainer, member, activeTab = 'stores') {
+        const content = `
+            <form id="addStoreForm">
+                <div class="form-group">
+                    <label class="form-label">Store Name</label>
+                    <input type="text" class="form-input" id="newStoreName" placeholder="e.g., Walmart, Safeway, CVS..." required>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Store',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add Store')
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('newStoreName')?.value?.trim();
+            if (!name) {
+                Toast.error('Store name is required');
+                return false;
+            }
+
+            addStore(memberId, name);
+            Toast.success(`${name} added`);
+            renderGroceryPage(pageContainer, memberId, member, activeTab);
+            return true;
+        });
+    }
+
+    /**
      * Show edit store modal
      */
-    function showEditStoreModal(memberId, storeId, pageContainer, member) {
+    function showEditStoreModal(memberId, storeId, pageContainer, member, activeTab = 'stores') {
         const data = getWidgetData(memberId);
         const store = data.stores.find(s => s.id === storeId);
         if (!store) return;
@@ -2052,7 +2753,310 @@ const Grocery = (function() {
 
             updateStore(memberId, storeId, { name });
             Toast.success('Store updated');
-            refreshStoreManagementModal(memberId, pageContainer, member);
+            renderGroceryPage(pageContainer, memberId, member, activeTab);
+            return true;
+        });
+    }
+
+    /**
+     * Show quick prompt to add item to pantry after checking off
+     */
+    /**
+     * Detect the best category for an item based on name
+     */
+    function detectItemCategory(itemName) {
+        const name = itemName.toLowerCase();
+
+        // Check if item exists in DEFAULT_PANTRY_ITEMS
+        for (const [catId, items] of Object.entries(DEFAULT_PANTRY_ITEMS)) {
+            if (items.some(item => item.toLowerCase() === name)) {
+                return catId;
+            }
+        }
+
+        // Common keyword mappings for items not in defaults
+        const categoryKeywords = {
+            produce: ['apple', 'banana', 'orange', 'tomato', 'lettuce', 'spinach', 'carrot', 'broccoli', 'cucumber', 'pepper', 'avocado', 'mango', 'grape', 'berry', 'berries', 'strawberry', 'blueberry', 'melon', 'watermelon', 'peach', 'pear', 'plum', 'cherry', 'celery', 'cabbage', 'kale', 'mushroom', 'zucchini', 'squash', 'corn', 'peas', 'beans', 'asparagus', 'cauliflower', 'eggplant', 'radish', 'beet', 'turnip', 'parsley', 'cilantro', 'basil', 'mint', 'thyme', 'rosemary', 'dill', 'scallion', 'leek', 'fruit', 'vegetable', 'veggie', 'salad', 'herb'],
+            dairy: ['milk', 'cheese', 'yogurt', 'cream', 'butter', 'egg', 'cottage', 'ricotta', 'mozzarella', 'cheddar', 'parmesan', 'feta', 'gouda', 'brie', 'swiss', 'provolone', 'half and half', 'whipping', 'sour cream', 'cream cheese', 'kefir'],
+            meat: ['chicken', 'beef', 'pork', 'lamb', 'turkey', 'duck', 'fish', 'salmon', 'tuna', 'shrimp', 'crab', 'lobster', 'bacon', 'sausage', 'ham', 'steak', 'ground', 'ribs', 'wing', 'thigh', 'breast', 'drumstick', 'fillet', 'cod', 'tilapia', 'trout', 'halibut', 'meatball', 'hot dog', 'deli', 'prosciutto', 'pepperoni', 'salami'],
+            bakery: ['bread', 'bagel', 'muffin', 'croissant', 'roll', 'bun', 'tortilla', 'pita', 'naan', 'baguette', 'sourdough', 'ciabatta', 'pretzel', 'donut', 'doughnut', 'cake', 'pie', 'pastry', 'cookie', 'brownie', 'scone'],
+            frozen: ['frozen', 'ice cream', 'popsicle', 'pizza', 'waffle', 'french fries', 'tater tots', 'tv dinner', 'pot pie', 'burrito', 'ice', 'sorbet', 'gelato', 'frozen yogurt'],
+            pantry: ['rice', 'pasta', 'noodle', 'flour', 'sugar', 'salt', 'pepper', 'oil', 'vinegar', 'sauce', 'can', 'canned', 'soup', 'broth', 'stock', 'beans', 'lentil', 'chickpea', 'cereal', 'oat', 'granola', 'nut', 'almond', 'walnut', 'peanut', 'cashew', 'seed', 'honey', 'syrup', 'jam', 'jelly', 'spread', 'spice', 'seasoning', 'herb', 'baking', 'yeast', 'cornstarch', 'cocoa', 'chocolate', 'chip', 'cracker', 'chip', 'snack', 'popcorn', 'pretzel', 'dried', 'raisin', 'crouton', 'breadcrumb', 'panko', 'ketchup', 'mustard', 'mayo', 'mayonnaise', 'relish', 'bbq', 'hot sauce', 'salsa', 'dressing'],
+            beverages: ['coffee', 'tea', 'juice', 'soda', 'water', 'sparkling', 'lemonade', 'drink', 'beverage', 'wine', 'beer', 'spirit', 'liquor', 'cocktail', 'smoothie', 'shake', 'energy drink', 'sports drink', 'coconut water', 'almond milk', 'oat milk', 'soy milk'],
+            household: ['soap', 'detergent', 'cleaner', 'paper towel', 'toilet paper', 'tissue', 'napkin', 'trash bag', 'garbage bag', 'foil', 'wrap', 'plastic', 'ziploc', 'bag', 'sponge', 'brush', 'mop', 'broom', 'bleach', 'disinfectant', 'air freshener', 'candle', 'battery', 'light bulb', 'laundry', 'fabric softener', 'dryer sheet', 'dish', 'dishwasher']
+        };
+
+        // Check keywords
+        for (const [catId, keywords] of Object.entries(categoryKeywords)) {
+            if (keywords.some(keyword => name.includes(keyword))) {
+                return catId;
+            }
+        }
+
+        return 'other';
+    }
+
+    function showAddToPantryPrompt(memberId, itemName, category, pageContainer, member, activeTab) {
+        // Auto-detect better category if current is 'other' or not set
+        const detectedCategory = (category && category !== 'other') ? category : detectItemCategory(itemName);
+        const categoryInfo = CATEGORIES.find(c => c.id === detectedCategory) || CATEGORIES.find(c => c.id === 'other');
+
+        const content = `
+            <div class="pantry-prompt">
+                <p>Would you like to add <strong>${itemName}</strong> to your pantry?</p>
+                <p class="pantry-prompt__category">
+                    Category: <span style="background: ${categoryInfo.bgColor}; color: ${categoryInfo.color}; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                        ${categoryInfo.name}
+                    </span>
+                </p>
+                <p class="pantry-prompt__hint">Items in your pantry won't be suggested, helping you track what you have at home.</p>
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Add to Pantry?',
+            content,
+            footer: Modal.createFooter('No Thanks', 'Add to Pantry')
+        });
+
+        Modal.bindFooterEvents(() => {
+            togglePantryItem(memberId, itemName, detectedCategory);
+            Toast.success(`${itemName} added to ${categoryInfo.name}`);
+            renderGroceryPage(pageContainer, memberId, member, activeTab);
+            return true;
+        });
+    }
+
+    /**
+     * Show add more pantry items modal with selectable defaults
+     */
+    function showAddMorePantryModal(memberId, pageContainer, member, activeTab = 'pantry') {
+        const data = getWidgetData(memberId);
+        const pantryNames = (data.pantry || []).map(p => p.name.toLowerCase());
+
+        let content = `<div class="add-more-pantry">
+            <p class="form-hint" style="margin-bottom: var(--space-4);">
+                Tap items to add them to your pantry, or add a custom item below.
+            </p>
+            <div class="add-more-pantry__categories">`;
+
+        Object.entries(DEFAULT_PANTRY_ITEMS).forEach(([catId, items]) => {
+            const cat = CATEGORIES.find(c => c.id === catId) || CATEGORIES.find(c => c.id === 'other');
+            const availableItems = items.filter(item => !pantryNames.includes(item.toLowerCase()));
+
+            if (availableItems.length > 0) {
+                content += `
+                    <div class="add-more-pantry__category">
+                        <div class="add-more-pantry__category-header">
+                            <div style="width: 20px; height: 20px; border-radius: 6px; background: ${cat.bgColor}; color: ${cat.color}; display: flex; align-items: center; justify-content: center;">
+                                <i data-lucide="${cat.icon}" style="width: 12px; height: 12px;"></i>
+                            </div>
+                            <span>${cat.name}</span>
+                        </div>
+                        <div class="add-more-pantry__items">
+                            ${availableItems.map(item => `
+                                <button type="button" class="add-more-pantry__item" data-modal-pantry-item="${item}" data-modal-pantry-category="${catId}">
+                                    <i data-lucide="plus"></i>
+                                    ${item}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+        });
+
+        content += `</div>
+            <div class="add-more-pantry__custom">
+                <label class="form-label" style="margin-bottom: var(--space-2);">Add Custom Item</label>
+                <div class="add-more-pantry__custom-row">
+                    <input type="text" class="form-input" id="customPantryInput" placeholder="Item name...">
+                    <select class="form-select" id="customPantryCategorySelect">
+                        ${CATEGORIES.map(cat => `
+                            <option value="${cat.id}">${cat.name}</option>
+                        `).join('')}
+                    </select>
+                    <button type="button" class="btn btn--primary" id="addCustomPantryItemBtn">Add</button>
+                </div>
+            </div>
+        </div>`;
+
+        Modal.open({
+            title: 'Add to Pantry',
+            content,
+            footer: `<button class="btn btn--secondary" data-modal-close>Done</button>`
+        });
+
+        // Bind click events for items
+        document.querySelectorAll('[data-modal-pantry-item]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const itemName = btn.dataset.modalPantryItem;
+                const category = btn.dataset.modalPantryCategory;
+                togglePantryItem(memberId, itemName, category);
+                btn.classList.add('add-more-pantry__item--added');
+                btn.innerHTML = `<i data-lucide="check"></i> ${itemName}`;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+                Toast.success(`Added ${itemName}`);
+            });
+        });
+
+        // Bind custom item input
+        document.getElementById('addCustomPantryItemBtn')?.addEventListener('click', () => {
+            const input = document.getElementById('customPantryInput');
+            const categorySelect = document.getElementById('customPantryCategorySelect');
+            const name = input?.value?.trim();
+            const category = categorySelect?.value || 'other';
+            if (name) {
+                if (isInPantry(memberId, name)) {
+                    Toast.info(`${name} is already in your pantry`);
+                } else {
+                    togglePantryItem(memberId, name, category);
+
+                    // Show visual feedback - add chip to the custom section
+                    const customSection = document.querySelector('.add-more-pantry__custom');
+                    let addedContainer = customSection.querySelector('.add-more-pantry__added');
+                    if (!addedContainer) {
+                        addedContainer = document.createElement('div');
+                        addedContainer.className = 'add-more-pantry__added';
+                        addedContainer.style.cssText = 'display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-3);';
+                        customSection.appendChild(addedContainer);
+                    }
+
+                    const chip = document.createElement('span');
+                    chip.className = 'add-more-pantry__item add-more-pantry__item--added';
+                    chip.innerHTML = `<i data-lucide="check"></i> ${name}`;
+                    addedContainer.appendChild(chip);
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+
+                    Toast.success(`Added ${name}`);
+                    input.value = '';
+                    input.focus();
+                }
+            }
+        });
+
+        // Enter key for custom input
+        document.getElementById('customPantryInput')?.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('addCustomPantryItemBtn')?.click();
+            }
+        });
+
+        // Close button
+        document.querySelector('[data-modal-close]')?.addEventListener('click', () => {
+            Modal.close();
+            renderGroceryPage(pageContainer, memberId, member, activeTab);
+        });
+    }
+
+    /**
+     * Show store selection modal when adding pantry item to shopping list
+     */
+    function showStoreSelectionModal(memberId, itemName, pageContainer, member, activeTab = 'pantry') {
+        const stores = getStores(memberId);
+
+        const content = `
+            <div class="store-selection">
+                <p class="form-hint" style="margin-bottom: var(--space-3);">
+                    Where do you want to buy <strong>${itemName}</strong>?
+                </p>
+                <div class="store-selection__options">
+                    ${stores.map(store => `
+                        <button type="button" class="store-selection__btn" data-select-store="${store.id}">
+                            <span class="store-selection__icon" style="background: ${store.color}20; color: ${store.color}">
+                                <i data-lucide="shopping-bag"></i>
+                            </span>
+                            <span class="store-selection__name">${store.name}</span>
+                        </button>
+                    `).join('')}
+                    <button type="button" class="store-selection__btn store-selection__btn--other" data-select-store="">
+                        <span class="store-selection__icon">
+                            <i data-lucide="list"></i>
+                        </span>
+                        <span class="store-selection__name">Other Items</span>
+                    </button>
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Select Store',
+            content,
+            showFooter: false
+        });
+
+        // Initialize Lucide icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind store selection buttons
+        document.querySelectorAll('[data-select-store]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storeId = btn.dataset.selectStore;
+                const store = stores.find(s => s.id === storeId);
+
+                // Add item to list with selected store (skip pantry warning since we're moving from pantry)
+                addItem(memberId, { name: itemName, store: storeId || null }, { skipPantryWarning: true });
+
+                // Auto-remove from pantry
+                togglePantryItem(memberId, itemName);
+
+                Modal.close();
+                renderGroceryPage(pageContainer, memberId, member, activeTab);
+
+                const storeName = store ? store.name : 'Other Items';
+                Toast.success(`Added ${itemName} to ${storeName} (removed from pantry)`);
+            });
+        });
+    }
+
+    /**
+     * Show add pantry item modal (from Pantry tab)
+     */
+    function showAddPantryItemModal(memberId, pageContainer, member, activeTab = 'pantry') {
+        const content = `
+            <form id="addPantryForm">
+                <div class="form-group">
+                    <label class="form-label">Item Name</label>
+                    <input type="text" class="form-input" id="pantryItemName" placeholder="e.g., Rice, Olive Oil, Salt..." required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="pantryItemCategory">
+                        ${CATEGORIES.map(cat => `
+                            <option value="${cat.id}">${cat.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add to Pantry',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add to Pantry')
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('pantryItemName')?.value?.trim();
+            const category = document.getElementById('pantryItemCategory')?.value || 'other';
+
+            if (!name) {
+                Toast.error('Item name is required');
+                return false;
+            }
+
+            // Check if already in pantry
+            if (isInPantry(memberId, name)) {
+                Toast.info(`${name} is already in your pantry`);
+                return false;
+            }
+
+            togglePantryItem(memberId, name, category);
+            Toast.success(`${name} added to pantry`);
+            renderGroceryPage(pageContainer, memberId, member, activeTab);
             return true;
         });
     }
@@ -2206,7 +3210,7 @@ const Grocery = (function() {
         const content = `
             <div class="generate-grocery-modal">
                 <p class="generate-grocery-modal__intro">
-                    Select meals to add their ingredients to your grocery list.
+                    Select meals to add their ingredients to your shopping list.
                     ${mealsWithIngredients > 0 ? `<strong>${mealsWithIngredients} meal(s)</strong> have recipes with ingredients.` : 'No matching recipes found - add ingredients manually.'}
                 </p>
                 <div class="generate-grocery-modal__meals">
@@ -2245,7 +3249,7 @@ const Grocery = (function() {
             title: 'Add from Meal Plan',
             content,
             size: 'large',
-            footer: Modal.createFooter('Cancel', 'Add to Grocery List')
+            footer: Modal.createFooter('Cancel', 'Add to Shopping List')
         });
 
         lucide.createIcons();
@@ -2288,7 +3292,7 @@ const Grocery = (function() {
             // Re-render after modal closes
             setTimeout(() => {
                 renderGroceryPage(pageContainer, memberId, member);
-                Toast.success(`Added ${addedCount} items to grocery list`);
+                Toast.success(`Added ${addedCount} items to shopping list`);
             }, 250);
 
             return true;
@@ -2296,7 +3300,7 @@ const Grocery = (function() {
     }
 
     /**
-     * Open grocery list from meal plan widget
+     * Open shopping list from meal plan widget
      */
     function openFromMealPlan(memberId) {
         showGroceryListPage(memberId);

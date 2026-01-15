@@ -5361,6 +5361,12 @@
     text-align: center;
 }
 
+.kid-journal-page__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
 .kid-journal-page__view-toggle {
     display: flex;
     gap: var(--space-2);

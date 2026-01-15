@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40">
+  <!-- Option 1: House Outline with Anchor Inside (kept for future use) -->
+  <path d="M20 5L5 17v18h30V17L20 5z" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linejoin="round"/>
+  <g transform="translate(20, 24)">
+    <circle cx="0" cy="-8" r="3" fill="none" stroke="#6366F1" stroke-width="2"/>
+    <line x1="0" y1="-5" x2="0" y2="9" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+    <line x1="-6" y1="1" x2="6" y2="1" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+    <path d="M0 9 Q-7 9 -9 3" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+    <path d="M0 9 Q7 9 9 3" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round"/>
+  </g>
+</svg>

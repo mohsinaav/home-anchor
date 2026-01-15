@@ -134,6 +134,43 @@ const Journal = (function() {
     }
 
     /**
+     * Get most common mood from entries
+     */
+    function getMostCommonMood(entries) {
+        if (!entries || entries.length === 0) return null;
+
+        const moodCounts = {};
+        entries.forEach(entry => {
+            if (entry.mood) {
+                moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+            }
+        });
+
+        if (Object.keys(moodCounts).length === 0) return null;
+
+        const topMoodId = Object.entries(moodCounts)
+            .sort((a, b) => b[1] - a[1])[0][0];
+
+        return MOODS.find(m => m.id === topMoodId);
+    }
+
+    /**
+     * Get mood color with opacity for theming
+     */
+    function getMoodThemeColor(moodId, opacity = 0.15) {
+        const mood = MOODS.find(m => m.id === moodId);
+        if (!mood) return null;
+
+        // Convert hex to RGB and add opacity
+        const hex = mood.color;
+        const r = parseInt(hex.slice(1, 3), 16);
+        const g = parseInt(hex.slice(3, 5), 16);
+        const b = parseInt(hex.slice(5, 7), 16);
+
+        return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+    }
+
+    /**
      * Render the journal widget (requires PIN to access)
      */
     function renderWidget(container, memberId) {
@@ -142,34 +179,65 @@ const Journal = (function() {
         const streak = calculateStreak(entries);
         const writtenToday = hasWrittenToday(entries);
         const prompt = getDailyPrompt();
+        const todayEntry = getTodayEntry(entries);
+        const mostCommonMood = getMostCommonMood(entries);
+
+        // Get mood for theming (today's mood or most common)
+        const themeMood = todayEntry?.mood || mostCommonMood?.id;
+        const moodThemeColor = themeMood ? getMoodThemeColor(themeMood, 0.2) : null;
+        const moodThemeColorLight = themeMood ? getMoodThemeColor(themeMood, 0.08) : null;
+
+        // Get current mood for display
+        const currentMood = todayEntry?.mood ? MOODS.find(m => m.id === todayEntry.mood) : null;
 
         container.innerHTML = `
-            <div class="journal-widget">
+            <div class="journal-widget ${themeMood ? 'journal-widget--mood-themed' : ''}"
+                 ${moodThemeColor ? `style="--mood-theme-color: ${moodThemeColor}; --mood-theme-color-light: ${moodThemeColorLight};"` : ''}>
                 <div class="journal-widget__locked">
-                    <div class="journal-widget__header">
-                        <div class="journal-widget__streak ${streak > 0 ? 'journal-widget__streak--active' : ''}">
-                            <i data-lucide="flame"></i>
-                            <span>${streak} day${streak !== 1 ? 's' : ''}</span>
+                    <!-- Stats Row -->
+                    <div class="journal-widget__stats">
+                        <div class="journal-widget__stat">
+                            <span class="journal-widget__stat-value">${entries.length}</span>
+                            <span class="journal-widget__stat-label">entries</span>
                         </div>
-                        ${writtenToday ? `
-                            <span class="journal-widget__badge">
-                                <i data-lucide="check-circle"></i>
-                                Written today
+                        <div class="journal-widget__stat journal-widget__stat--streak ${streak > 0 ? 'journal-widget__stat--active' : ''}">
+                            <span class="journal-widget__stat-value">
+                                <i data-lucide="flame"></i>
+                                ${streak}
                             </span>
-                        ` : ''}
+                            <span class="journal-widget__stat-label">day streak</span>
+                        </div>
+                        <div class="journal-widget__stat">
+                            ${mostCommonMood ? `
+                                <span class="journal-widget__stat-value">${mostCommonMood.emoji}</span>
+                                <span class="journal-widget__stat-label">${mostCommonMood.label.toLowerCase()}</span>
+                            ` : `
+                                <span class="journal-widget__stat-value">-</span>
+                                <span class="journal-widget__stat-label">top mood</span>
+                            `}
+                        </div>
                     </div>
 
+                    <!-- Journal Cover -->
                     <div class="journal-widget__notebook">
                         <div class="journal-widget__cover">
-                            <i data-lucide="notebook-pen"></i>
+                            <div class="journal-widget__cover-icon">
+                                <i data-lucide="notebook-pen"></i>
+                            </div>
                             <h3>My Journal</h3>
                             <p class="journal-widget__cover-prompt">${prompt}</p>
+                            ${writtenToday ? `
+                                <span class="journal-widget__written-badge">
+                                    <i data-lucide="check"></i>
+                                    Written today ${currentMood ? currentMood.emoji : ''}
+                                </span>
+                            ` : ''}
                         </div>
                     </div>
 
                     <div class="journal-widget__actions">
                         <button class="btn btn--primary btn--block" data-action="open-journal" data-member-id="${memberId}">
-                            <i data-lucide="lock"></i>
+                            <i data-lucide="book-open"></i>
                             Open Journal
                         </button>
                     </div>
@@ -462,9 +530,9 @@ const Journal = (function() {
         // Group entries by month
         const groupedEntries = {};
         pastEntries.forEach(entry => {
-            const date = new Date(entry.date);
+            const date = DateUtils.parseLocalDate ? DateUtils.parseLocalDate(entry.date) : new Date(entry.date);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const monthLabel = date.toLocaleDateString('en-US', { year: 'numeric', month: 'long' });
+            const monthLabel = `${DateUtils.getMonthName ? DateUtils.getMonthName(date) : date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}`;
 
             if (!groupedEntries[monthKey]) {
                 groupedEntries[monthKey] = {
@@ -487,16 +555,11 @@ const Journal = (function() {
                                 <div class="journal-history__list">
                                     ${group.entries.map(entry => {
                                         const mood = getMoodById(entry.mood);
-                                        const entryDate = new Date(entry.date);
                                         return `
                                             <div class="journal-history__entry" data-entry-id="${entry.id}">
                                                 <div class="journal-history__entry-header">
                                                     <span class="journal-history__entry-date">
-                                                        ${entryDate.toLocaleDateString('en-US', {
-                                                            weekday: 'short',
-                                                            month: 'short',
-                                                            day: 'numeric'
-                                                        })}
+                                                        ${DateUtils.formatWithDay(entry.date)}
                                                     </span>
                                                     ${mood ? `
                                                         <span class="journal-history__entry-mood"
@@ -949,7 +1012,7 @@ const Journal = (function() {
         }
 
         const mood = getMoodById(entry.mood);
-        const entryDate = new Date(entry.date);
+        const entryDate = DateUtils.parseLocalDate(entry.date);
 
         const content = `
             <div class="journal-entry-modal">

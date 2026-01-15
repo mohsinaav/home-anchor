@@ -128,6 +128,8 @@ const Calendar = (function() {
                         const isToday = DateUtils.isToday(date);
                         const isPast = DateUtils.isPast(date) && !isToday;
                         const hasEvents = dayEvents.length > 0;
+                        // Get unique colors for mobile dots (up to 3)
+                        const uniqueColors = [...new Set(dayEvents.map(e => memberColors[e.memberId] || e.color || '#6366F1'))].slice(0, 3);
 
                         return `
                             <div
@@ -153,6 +155,11 @@ const Calendar = (function() {
                                         <span class="calendar__more">+${dayEvents.length - 3} more</span>
                                     ` : ''}
                                 </div>
+                                ${hasEvents ? `
+                                    <div class="calendar__mobile-dots">
+                                        ${uniqueColors.map(color => `<span class="calendar__mobile-dot" style="background-color: ${color}"></span>`).join('')}
+                                    </div>
+                                ` : ''}
                             </div>
                         `;
                     }).join('')}
@@ -203,14 +210,22 @@ const Calendar = (function() {
             showAddEventModal();
         });
 
-        // Day click to add event
+        // Day click - show events on mobile, add event on desktop
         container?.querySelectorAll('.calendar__day').forEach(day => {
             day.addEventListener('click', (e) => {
                 // Don't trigger if clicking on an event
                 if (e.target.closest('.calendar__event')) return;
 
                 const date = day.dataset.date;
-                showAddEventModal(date);
+                const isMobile = window.innerWidth <= 480;
+                const hasEvents = day.classList.contains('calendar__day--has-events');
+
+                // On mobile with events, show the day's events first
+                if (isMobile && hasEvents) {
+                    showDayEventsPanel(date);
+                } else {
+                    showAddEventModal(date);
+                }
             });
         });
 
@@ -254,6 +269,16 @@ const Calendar = (function() {
                     </select>
                 </div>
                 <div class="form-group">
+                    <label class="form-label">Repeat</label>
+                    <select class="form-input form-select" id="eventRepeat">
+                        <option value="none">Does not repeat</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="biweekly">Every 2 weeks</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                    </select>
+                </div>
+                <div class="form-group">
                     <label class="form-label">
                         <input type="checkbox" id="eventNotificationEnabled" class="form-checkbox" style="margin-right: 8px;" checked>
                         <i data-lucide="bell" style="width: 16px; height: 16px; vertical-align: middle; margin-right: 4px;"></i>
@@ -275,6 +300,7 @@ const Calendar = (function() {
             const date = document.getElementById('eventDate')?.value;
             const time = document.getElementById('eventTime')?.value || null;
             const memberId = document.getElementById('eventMember')?.value;
+            const repeat = document.getElementById('eventRepeat')?.value || 'none';
             const notificationEnabled = document.getElementById('eventNotificationEnabled')?.checked || false;
 
             if (!title || !date) {
@@ -283,21 +309,60 @@ const Calendar = (function() {
             }
 
             const member = Storage.getMember(memberId);
-
-            Storage.addCalendarEvent({
+            const baseEvent = {
                 title,
-                date,
                 time,
                 memberId,
                 color: member?.avatar?.color || '#6366F1',
-                notificationEnabled: notificationEnabled && time !== null, // Only enable if time is set
-                notificationMinutes: 15 // Default to 15 minutes before
-            });
+                notificationEnabled: notificationEnabled && time !== null,
+                notificationMinutes: 15,
+                repeat: repeat
+            };
+
+            // Create recurring events if repeat is selected
+            if (repeat !== 'none') {
+                const eventDates = generateRecurringDates(date, repeat, 12); // Generate 12 occurrences
+                eventDates.forEach(eventDate => {
+                    Storage.addCalendarEvent({ ...baseEvent, date: eventDate });
+                });
+                Toast.success(`${eventDates.length} recurring events added`);
+            } else {
+                Storage.addCalendarEvent({ ...baseEvent, date });
+                Toast.success('Event added');
+            }
 
             render(container);
-            Toast.success('Event added');
             return true;
         });
+    }
+
+    /**
+     * Generate recurring dates based on repeat type
+     */
+    function generateRecurringDates(startDate, repeatType, count) {
+        const dates = [];
+        let current = new Date(startDate);
+
+        for (let i = 0; i < count; i++) {
+            dates.push(DateUtils.formatISO(current));
+
+            switch (repeatType) {
+                case 'weekly':
+                    current.setDate(current.getDate() + 7);
+                    break;
+                case 'biweekly':
+                    current.setDate(current.getDate() + 14);
+                    break;
+                case 'monthly':
+                    current.setMonth(current.getMonth() + 1);
+                    break;
+                case 'yearly':
+                    current.setFullYear(current.getFullYear() + 1);
+                    break;
+            }
+        }
+
+        return dates;
     }
 
     /**
@@ -370,6 +435,82 @@ const Calendar = (function() {
             Modal.close();
             // Wait for modal close animation before opening edit modal
             setTimeout(() => showEditEventModal(event), 250);
+        });
+
+        document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
+            Modal.close();
+        });
+    }
+
+    /**
+     * Show day events panel (for mobile)
+     */
+    function showDayEventsPanel(dateStr) {
+        const events = Storage.getCalendarEvents();
+        const dayEvents = events.filter(e => e.date === dateStr);
+        const members = Storage.getMembers();
+
+        if (dayEvents.length === 0) return;
+
+        const memberColors = {};
+        members.forEach(m => { memberColors[m.id] = m.avatar?.color || '#6366F1'; });
+
+        const content = `
+            <div class="day-events-panel">
+                <div class="day-events-panel__date">
+                    <i data-lucide="calendar"></i>
+                    ${DateUtils.formatLong(dateStr)}
+                </div>
+                <div class="day-events-panel__list">
+                    ${dayEvents.map(event => {
+                        const member = members.find(m => m.id === event.memberId);
+                        const color = memberColors[event.memberId] || event.color || '#6366F1';
+                        return `
+                            <div class="day-events-panel__item" data-event-id="${event.id}">
+                                <span class="day-events-panel__dot" style="background-color: ${color}"></span>
+                                <div class="day-events-panel__info">
+                                    <div class="day-events-panel__title">${event.title}</div>
+                                    <div class="day-events-panel__meta">
+                                        ${event.time ? `<span>${DateUtils.formatTime(event.time)}</span>` : ''}
+                                        <span>${member?.name || 'Unknown'}</span>
+                                    </div>
+                                </div>
+                                <i data-lucide="chevron-right" class="day-events-panel__arrow"></i>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Events',
+            content,
+            footer: `
+                <button class="btn btn--secondary" data-modal-cancel>Close</button>
+                <button class="btn btn--primary" id="addEventOnDay">
+                    <i data-lucide="plus"></i>
+                    Add Another Event
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Event item click to view details
+        document.querySelectorAll('.day-events-panel__item').forEach(item => {
+            item.addEventListener('click', () => {
+                Modal.close();
+                setTimeout(() => showEventModal(item.dataset.eventId), 250);
+            });
+        });
+
+        // Add event button
+        document.getElementById('addEventOnDay')?.addEventListener('click', () => {
+            Modal.close();
+            setTimeout(() => showAddEventModal(dateStr), 250);
         });
 
         document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
@@ -461,11 +602,12 @@ const Calendar = (function() {
     }
 
     /**
-     * Get today's highlights (calendar events only)
+     * Get today's highlights (calendar events + schedule blocks)
      */
     function getTodayHighlights() {
         const today = DateUtils.today();
         const events = Storage.getCalendarEvents();
+        const members = Storage.getMembers();
         const highlights = [];
 
         // Add calendar events for today
@@ -475,11 +617,40 @@ const Calendar = (function() {
                 type: 'calendar',
                 title: event.title,
                 time: event.time,
+                endTime: event.endTime,
                 memberName: member?.name || 'Unknown',
                 memberId: event.memberId,
                 color: member?.avatar?.color || event.color || '#6366F1',
                 icon: 'calendar'
             });
+        });
+
+        // Also add schedule time blocks for each member (to show unified view)
+        members.forEach(member => {
+            const schedule = Storage.getMemberScheduleForToday(member.id);
+            if (schedule && schedule.length > 0) {
+                schedule.forEach(block => {
+                    // Only add schedule blocks that are notable (not just routine)
+                    // Don't add if there's already a calendar event with same title at same time
+                    const isDuplicate = highlights.some(h =>
+                        h.time === block.start &&
+                        h.title.toLowerCase() === block.title.toLowerCase() &&
+                        h.memberId === member.id
+                    );
+                    if (!isDuplicate) {
+                        highlights.push({
+                            type: 'schedule',
+                            title: block.title,
+                            time: block.start,
+                            endTime: block.end,
+                            memberName: member.name,
+                            memberId: member.id,
+                            color: block.color || member.avatar?.color || '#6366F1',
+                            icon: block.icon || 'clock'
+                        });
+                    }
+                });
+            }
         });
 
         // Sort by time

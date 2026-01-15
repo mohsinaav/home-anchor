@@ -17,7 +17,9 @@ const SettingsPage = (function() {
         { id: 'emerald', name: 'Emerald', primary: '#10B981', accent: '#34D399' },
         { id: 'teal', name: 'Teal', primary: '#14B8A6', accent: '#2DD4BF' },
         { id: 'cyan', name: 'Cyan', primary: '#06B6D4', accent: '#22D3EE' },
-        { id: 'blue', name: 'Blue', primary: '#3B82F6', accent: '#60A5FA' }
+        { id: 'blue', name: 'Blue', primary: '#3B82F6', accent: '#60A5FA' },
+        { id: 'slate', name: 'Slate', primary: '#64748B', accent: '#94A3B8' },
+        { id: 'zinc', name: 'Zinc', primary: '#71717A', accent: '#A1A1AA' }
     ];
 
     /**
@@ -379,6 +381,9 @@ const SettingsPage = (function() {
      * Render security settings
      */
     function renderSecuritySettings() {
+        const settings = Storage.getSettings();
+        const allowKidsJournalPassword = settings.allowKidsJournalPassword === true;
+
         return `
             <div class="security-settings">
                 <div class="setting-group">
@@ -395,6 +400,19 @@ const SettingsPage = (function() {
                             <i data-lucide="key"></i>
                             Change PIN
                         </button>
+                    </div>
+                </div>
+
+                <div class="setting-group" style="margin-top: var(--space-6);">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Allow Kids to Set Journal Password</label>
+                            <p class="setting-description">Let kids create their own password for their diary. Teens can always set their own password regardless of this setting.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="allowKidsJournalPasswordToggle" ${allowKidsJournalPassword ? 'checked' : ''}>
+                            <span class="toggle-switch__slider"></span>
+                        </label>
                     </div>
                 </div>
             </div>
@@ -899,6 +917,12 @@ const SettingsPage = (function() {
         // Change PIN button
         container.querySelector('#changePinBtn')?.addEventListener('click', () => {
             changePin(container);
+        });
+
+        // Allow Kids Journal Password toggle
+        container.querySelector('#allowKidsJournalPasswordToggle')?.addEventListener('change', (e) => {
+            Storage.updateSettings({ allowKidsJournalPassword: e.target.checked });
+            Toast.show(e.target.checked ? 'Kids can now set their own journal password' : 'Kids can no longer set journal passwords', 'success');
         });
 
         // Notification settings

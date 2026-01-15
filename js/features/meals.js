@@ -352,7 +352,7 @@ const Meals = (function() {
                 <div class="meals-widget__footer">
                     <button class="btn btn--sm btn--ghost" data-action="generate-grocery" data-member-id="${memberId}">
                         <i data-lucide="shopping-cart"></i>
-                        Grocery List
+                        Shopping List
                     </button>
                     <button class="btn btn--sm btn--ghost" data-action="import-meals" data-member-id="${memberId}">
                         <i data-lucide="file-text"></i>
@@ -413,12 +413,12 @@ const Meals = (function() {
             showWeeklyPlannerPage(memberId);
         });
 
-        // Generate grocery list - open grocery page
+        // Generate shopping list - open shopping page
         container.querySelector('[data-action="generate-grocery"]')?.addEventListener('click', () => {
             if (typeof Grocery !== 'undefined' && Grocery.showGroceryListPage) {
                 Grocery.showGroceryListPage(memberId);
             } else {
-                Toast.info('Grocery list feature coming soon!');
+                Toast.info('Shopping list feature coming soon!');
             }
         });
 
@@ -1576,7 +1576,7 @@ const Meals = (function() {
                     </p>
                     <button class="btn btn--primary" id="goToGroceryBtn">
                         <i data-lucide="shopping-cart"></i>
-                        Go to Grocery List
+                        Go to Shopping List
                     </button>
                 </div>
             </div>
@@ -1900,12 +1900,12 @@ const Meals = (function() {
             });
         });
 
-        // Go to grocery list button
+        // Go to shopping list button
         document.getElementById('goToGroceryBtn')?.addEventListener('click', () => {
             if (typeof Grocery !== 'undefined' && Grocery.showGroceryListPage) {
                 Grocery.showGroceryListPage(memberId);
             } else {
-                Toast.info('Grocery list feature coming soon!');
+                Toast.info('Shopping list feature coming soon!');
             }
         });
 
@@ -1921,7 +1921,7 @@ const Meals = (function() {
             });
         });
 
-        // Meal completion toggle buttons
+        // Meal completion toggle buttons (works for both desktop table and mobile accordion)
         document.querySelectorAll('[data-toggle-complete]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1931,20 +1931,32 @@ const Meals = (function() {
 
                 const isCompleted = toggleMealCompletion(memberId, date, mealType, variant);
 
-                // Update UI immediately
+                // Update UI immediately - support both desktop (planner-cell) and mobile (accordion-meal)
                 const cell = btn.closest('.planner-cell');
-                const itemsContainer = cell.querySelector('.planner-cell__items');
+                const accordionMeal = btn.closest('.accordion-meal');
                 const icon = btn.querySelector('i');
 
-                btn.classList.toggle('planner-cell__check--done', isCompleted);
-                cell.classList.toggle('planner-cell--completed', isCompleted);
-                itemsContainer?.classList.toggle('planner-cell__items--done', isCompleted);
+                if (cell) {
+                    // Desktop table view
+                    const itemsContainer = cell.querySelector('.planner-cell__items');
+                    btn.classList.toggle('planner-cell__check--done', isCompleted);
+                    cell.classList.toggle('planner-cell--completed', isCompleted);
+                    itemsContainer?.classList.toggle('planner-cell__items--done', isCompleted);
+                } else if (accordionMeal) {
+                    // Mobile accordion view
+                    const itemsContainer = accordionMeal.querySelector('.accordion-meal__items');
+                    btn.classList.toggle('accordion-meal__check--done', isCompleted);
+                    accordionMeal.classList.toggle('accordion-meal--completed', isCompleted);
+                    itemsContainer?.classList.toggle('accordion-meal__items--done', isCompleted);
+                }
 
-                // Update icon
+                // Update icon - use direct SVG update for better mobile performance
                 if (icon) {
-                    icon.setAttribute('data-lucide', isCompleted ? 'check-circle-2' : 'circle');
+                    const newIconName = isCompleted ? 'check-circle-2' : 'circle';
+                    icon.setAttribute('data-lucide', newIconName);
+                    // Only update this specific icon, not all icons on page
                     if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
+                        lucide.createIcons({ nodes: [icon] });
                     }
                 }
 

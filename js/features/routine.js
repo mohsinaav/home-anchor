@@ -755,9 +755,9 @@ const Routine = (function() {
     }
 
     /**
-     * Show full routines page
+     * Show full routines page with tabs
      */
-    function showRoutinesPage(memberId) {
+    function showRoutinesPage(memberId, activeTab = 'due') {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
@@ -773,9 +773,11 @@ const Routine = (function() {
         const done = routines.filter(r => getRoutineStatus(r).status === 'done');
         const snoozed = routines.filter(r => getRoutineStatus(r).status === 'snoozed');
 
+        // Due today count (actionable items)
+        const dueCount = overdue.length + dueSoon.length + neverDone.length;
+
         // Calculate completion stats
         const last7Days = [];
-        const today = new Date();
         for (let i = 6; i >= 0; i--) {
             const d = DateUtils.addDays(new Date(), -i);
             const dateStr = DateUtils.formatISO(d);
@@ -789,148 +791,80 @@ const Routine = (function() {
                 isToday
             });
         }
-        const maxCompletions = Math.max(...last7Days.map(d => d.count), 1);
         const totalCompletionsThisWeek = last7Days.reduce((sum, d) => sum + d.count, 0);
         const bestStreak = Math.max(...routines.map(r => r.bestStreak || 0), 0);
-        const categoryCounts = {};
-        routines.forEach(r => {
-            const cat = r.category || 'other';
-            categoryCounts[cat] = (categoryCounts[cat] || 0) + 1;
-        });
-        const categoryCount = Object.keys(categoryCounts).length;
 
         main.innerHTML = `
             <div class="routines-page">
                 <!-- Hero Header -->
                 <div class="routines-page__hero">
-                    <div class="routines-page__hero-bg">
-                        <div class="routines-hero-shape routines-hero-shape--1"></div>
-                        <div class="routines-hero-shape routines-hero-shape--2"></div>
-                        <div class="routines-hero-shape routines-hero-shape--3"></div>
-                        <div class="routines-hero-shape routines-hero-shape--4"></div>
-                    </div>
+                    <button class="btn btn--ghost routines-page__back" id="backBtn" title="Go back">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
                     <div class="routines-page__hero-content">
-                        <button class="btn btn--ghost routines-page__back" id="backBtn" title="Go back to home">
-                            <i data-lucide="arrow-left"></i>
-                            Back
-                        </button>
-                        <div class="routines-page__hero-text">
-                            <h1 class="routines-page__hero-title">Routines</h1>
-                            <p class="routines-page__hero-subtitle">Track recurring tasks and build lasting habits</p>
+                        <h1 class="routines-page__hero-title">
+                            <i data-lucide="repeat"></i>
+                            Routines
+                        </h1>
+                        <p class="routines-page__hero-subtitle">Track recurring tasks and build consistency</p>
+                    </div>
+                    <div class="routines-page__hero-stats">
+                        <div class="routines-hero-stat">
+                            <span class="routines-hero-stat__value">${routines.length}</span>
+                            <span class="routines-hero-stat__label">Total</span>
                         </div>
-                        <div class="routines-page__hero-stats">
-                            <div class="routines-hero-stat" title="Total number of routines">
-                                <span class="routines-hero-stat__value">${routines.length}</span>
-                                <span class="routines-hero-stat__label">Routines</span>
-                            </div>
-                            <div class="routines-hero-stat" title="Routines completed in the last 7 days">
-                                <span class="routines-hero-stat__value">${totalCompletionsThisWeek}</span>
-                                <span class="routines-hero-stat__label">This Week</span>
-                            </div>
-                            <div class="routines-hero-stat" title="Longest consecutive completion streak">
-                                <span class="routines-hero-stat__value">${bestStreak}</span>
-                                <span class="routines-hero-stat__label">Best Streak</span>
-                            </div>
+                        <div class="routines-hero-stat">
+                            <span class="routines-hero-stat__value">${totalCompletionsThisWeek}</span>
+                            <span class="routines-hero-stat__label">This Week</span>
                         </div>
-                        <div class="routines-page__hero-actions">
-                            <button class="btn btn--primary btn--lg" id="addRoutineBtn" title="Create a new routine">
-                                <i data-lucide="plus"></i>
-                                Add Routine
-                            </button>
+                        <div class="routines-hero-stat">
+                            <span class="routines-hero-stat__value">${bestStreak}</span>
+                            <span class="routines-hero-stat__label">Best Streak</span>
                         </div>
                     </div>
                 </div>
 
+                <!-- Tab Navigation -->
+                <div class="routines-page__tabs">
+                    <button class="routines-tab ${activeTab === 'due' ? 'routines-tab--active' : ''}" data-tab="due">
+                        <i data-lucide="alert-circle"></i>
+                        <span>Due</span>
+                        ${dueCount > 0 ? `<span class="routines-tab__count">${dueCount}</span>` : ''}
+                    </button>
+                    <button class="routines-tab ${activeTab === 'all' ? 'routines-tab--active' : ''}" data-tab="all">
+                        <i data-lucide="list"></i>
+                        <span>All</span>
+                    </button>
+                    <button class="routines-tab ${activeTab === 'history' ? 'routines-tab--active' : ''}" data-tab="history">
+                        <i data-lucide="calendar"></i>
+                        <span>History</span>
+                    </button>
+                    <button class="routines-tab ${activeTab === 'stats' ? 'routines-tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-2"></i>
+                        <span>Stats</span>
+                    </button>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="routines-page__actions">
+                    <button class="btn btn--primary" id="addRoutineBtn">
+                        <i data-lucide="plus"></i>
+                        Add Routine
+                    </button>
+                    ${overdue.length > 0 ? `
+                        <button class="btn btn--secondary" id="markAllOverdueBtn">
+                            <i data-lucide="check-check"></i>
+                            Mark ${overdue.length} Overdue Done
+                        </button>
+                    ` : ''}
+                </div>
+
+                <!-- Tab Content -->
                 <div class="routines-page__content">
-                    <!-- Weekly Activity -->
-                    <div class="routines-weekly">
-                        <div class="routines-weekly__header">
-                            <h3 class="routines-weekly__title">This Week</h3>
-                            <span class="routines-weekly__total">${totalCompletionsThisWeek} completed</span>
-                        </div>
-                        <div class="routines-weekly__days">
-                            ${last7Days.map(day => `
-                                <div class="routines-weekly__day ${day.isToday ? 'routines-weekly__day--today' : ''} ${day.count > 0 ? 'routines-weekly__day--active' : ''}">
-                                    <span class="routines-weekly__day-name">${day.dayName}</span>
-                                    <span class="routines-weekly__day-num">${day.dayNum}</span>
-                                    <span class="routines-weekly__day-count">${day.count}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    ${overdue.length > 0 ? `
-                        <div class="routines-page__batch-action">
-                            <button class="btn btn--sm btn--secondary" id="markAllOverdueBtn" title="Mark all overdue routines as completed">
-                                Mark All ${overdue.length} Overdue as Done
-                            </button>
-                        </div>
-                    ` : ''}
-
-                    ${overdue.length > 0 ? `
-                        <div class="routines-section routines-section--overdue">
-                            <h3 class="routines-section__title">Overdue (${overdue.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(overdue, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${dueSoon.length > 0 ? `
-                        <div class="routines-section routines-section--due-soon">
-                            <h3 class="routines-section__title">Due Soon (${dueSoon.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(dueSoon, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${neverDone.length > 0 ? `
-                        <div class="routines-section routines-section--never-done">
-                            <h3 class="routines-section__title">Never Done (${neverDone.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(neverDone, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${upcoming.length > 0 ? `
-                        <div class="routines-section routines-section--upcoming">
-                            <h3 class="routines-section__title">Upcoming (${upcoming.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(upcoming, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${done.length > 0 ? `
-                        <div class="routines-section routines-section--done">
-                            <h3 class="routines-section__title">Done Today (${done.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(done, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${snoozed.length > 0 ? `
-                        <div class="routines-section routines-section--snoozed">
-                            <h3 class="routines-section__title">Snoozed (${snoozed.length})</h3>
-                            <div class="routines-section__list">
-                                ${renderRoutineCards(snoozed, memberId, data.completionLog)}
-                            </div>
-                        </div>
-                    ` : ''}
-
-                    ${routines.length === 0 ? `
-                        <div class="routines-page__empty">
-                            <h3>No routines yet</h3>
-                            <p>Add your recurring tasks to keep track of them</p>
-                            <button class="btn btn--primary" id="addFirstBtn" title="Create your first routine">
-                                <i data-lucide="plus"></i>
-                                Add Your First Routine
-                            </button>
-                        </div>
-                    ` : ''}
+                    ${renderRoutinesTabContent(activeTab, memberId, data, routines, {
+                        overdue, dueSoon, neverDone, upcoming, done, snoozed, last7Days
+                    })}
                 </div>
             </div>
         `;
@@ -938,26 +872,373 @@ const Routine = (function() {
         if (typeof lucide !== 'undefined') lucide.createIcons();
 
         // Bind events
+        bindRoutinesPageEvents(main, memberId, activeTab);
+    }
+
+    /**
+     * Render tab content for routines page
+     */
+    function renderRoutinesTabContent(activeTab, memberId, data, routines, groups) {
+        const { overdue, dueSoon, neverDone, upcoming, done, snoozed, last7Days } = groups;
+
+        switch (activeTab) {
+            case 'due':
+                return renderDueTab(memberId, data, overdue, dueSoon, neverDone, done, snoozed);
+            case 'all':
+                return renderAllRoutinesTab(memberId, data, routines);
+            case 'history':
+                return renderHistoryTab(memberId, data, last7Days);
+            case 'stats':
+                return renderStatsTab(memberId, data, routines);
+            default:
+                return renderDueTab(memberId, data, overdue, dueSoon, neverDone, done, snoozed);
+        }
+    }
+
+    /**
+     * Render Due tab - Actionable routines
+     */
+    function renderDueTab(memberId, data, overdue, dueSoon, neverDone, done, snoozed) {
+        const hasActionable = overdue.length > 0 || dueSoon.length > 0 || neverDone.length > 0;
+
+        if (!hasActionable && done.length === 0 && snoozed.length === 0) {
+            return `
+                <div class="routines-empty">
+                    <div class="routines-empty__icon">
+                        <i data-lucide="check-circle-2"></i>
+                    </div>
+                    <h3>All caught up!</h3>
+                    <p>No routines due right now. Great job staying on top of things!</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="routines-due">
+                ${overdue.length > 0 ? `
+                    <div class="routines-section routines-section--overdue">
+                        <h3 class="routines-section__title">
+                            <i data-lucide="alert-triangle"></i>
+                            Overdue (${overdue.length})
+                        </h3>
+                        <div class="routines-section__list">
+                            ${renderRoutineCards(overdue, memberId, data.completionLog)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${dueSoon.length > 0 ? `
+                    <div class="routines-section routines-section--due-soon">
+                        <h3 class="routines-section__title">
+                            <i data-lucide="clock"></i>
+                            Due Soon (${dueSoon.length})
+                        </h3>
+                        <div class="routines-section__list">
+                            ${renderRoutineCards(dueSoon, memberId, data.completionLog)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${neverDone.length > 0 ? `
+                    <div class="routines-section routines-section--new">
+                        <h3 class="routines-section__title">
+                            <i data-lucide="sparkles"></i>
+                            New (${neverDone.length})
+                        </h3>
+                        <div class="routines-section__list">
+                            ${renderRoutineCards(neverDone, memberId, data.completionLog)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${done.length > 0 ? `
+                    <div class="routines-section routines-section--done">
+                        <h3 class="routines-section__title">
+                            <i data-lucide="check-circle"></i>
+                            Done Today (${done.length})
+                        </h3>
+                        <div class="routines-section__list">
+                            ${renderRoutineCards(done, memberId, data.completionLog)}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${snoozed.length > 0 ? `
+                    <div class="routines-section routines-section--snoozed">
+                        <h3 class="routines-section__title">
+                            <i data-lucide="alarm-clock-off"></i>
+                            Snoozed (${snoozed.length})
+                        </h3>
+                        <div class="routines-section__list">
+                            ${renderRoutineCards(snoozed, memberId, data.completionLog)}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Render All tab - All routines grouped by category
+     */
+    function renderAllRoutinesTab(memberId, data, routines) {
+        if (routines.length === 0) {
+            return `
+                <div class="routines-empty">
+                    <div class="routines-empty__icon">
+                        <i data-lucide="inbox"></i>
+                    </div>
+                    <h3>No routines yet</h3>
+                    <p>Create your first routine to get started tracking recurring tasks.</p>
+                    <button class="btn btn--primary" id="addFirstBtn">
+                        <i data-lucide="plus"></i>
+                        Add Your First Routine
+                    </button>
+                </div>
+            `;
+        }
+
+        // Group by category
+        const byCategory = {};
+        routines.forEach(r => {
+            const cat = r.category || 'other';
+            if (!byCategory[cat]) byCategory[cat] = [];
+            byCategory[cat].push(r);
+        });
+
+        return `
+            <div class="routines-all">
+                ${Object.entries(byCategory).map(([catKey, catRoutines]) => {
+                    const cat = CATEGORIES[catKey] || CATEGORIES.other;
+                    return `
+                        <div class="routines-category">
+                            <h3 class="routines-category__title" style="color: ${cat.color}">
+                                <i data-lucide="${cat.icon}"></i>
+                                ${cat.label} (${catRoutines.length})
+                            </h3>
+                            <div class="routines-category__list">
+                                ${renderRoutineCards(catRoutines, memberId, data.completionLog)}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render History tab - Weekly activity and recent completions
+     */
+    function renderHistoryTab(memberId, data, last7Days) {
+        const totalCompletions = last7Days.reduce((sum, d) => sum + d.count, 0);
+
+        // Get last 30 days of completions for calendar
+        const last30Days = [];
+        for (let i = 29; i >= 0; i--) {
+            const d = DateUtils.addDays(new Date(), -i);
+            const dateStr = DateUtils.formatISO(d);
+            const dayCompletions = data.completionLog[dateStr] || [];
+            last30Days.push({
+                date: dateStr,
+                dayName: WEEKDAYS[d.getDay()],
+                dayNum: d.getDate(),
+                month: d.toLocaleDateString('en-US', { month: 'short' }),
+                count: dayCompletions.length,
+                completions: dayCompletions
+            });
+        }
+
+        return `
+            <div class="routines-history">
+                <!-- Weekly Summary -->
+                <div class="routines-history__week">
+                    <div class="routines-history__week-header">
+                        <h3>This Week</h3>
+                        <span class="routines-history__week-total">${totalCompletions} completed</span>
+                    </div>
+                    <div class="routines-history__week-days">
+                        ${last7Days.map(day => `
+                            <div class="routines-history__day ${day.isToday ? 'routines-history__day--today' : ''} ${day.count > 0 ? 'routines-history__day--active' : ''}">
+                                <span class="routines-history__day-name">${day.dayName}</span>
+                                <span class="routines-history__day-num">${day.dayNum}</span>
+                                <span class="routines-history__day-count">${day.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="routines-history__recent">
+                    <h3>Last 30 Days</h3>
+                    <div class="routines-history__calendar">
+                        ${last30Days.map(day => `
+                            <div class="routines-history__cal-day ${day.count > 0 ? 'routines-history__cal-day--active' : ''} ${day.dayName === WEEKDAYS[new Date().getDay()] && day.dayNum === new Date().getDate() ? 'routines-history__cal-day--today' : ''}"
+                                 title="${day.month} ${day.dayNum}: ${day.count} completed">
+                                <span class="routines-history__cal-num">${day.dayNum}</span>
+                                ${day.count > 0 ? `<span class="routines-history__cal-count">${day.count}</span>` : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab - Statistics and streaks
+     */
+    function renderStatsTab(memberId, data, routines) {
+        // Calculate various stats
+        const totalRoutines = routines.length;
+        const totalCompletions = Object.values(data.completionLog).reduce((sum, arr) => sum + arr.length, 0);
+        const currentStreaks = routines.filter(r => (r.streak || 0) > 0).length;
+        const bestStreak = Math.max(...routines.map(r => r.bestStreak || 0), 0);
+        const avgStreak = routines.length > 0
+            ? Math.round(routines.reduce((sum, r) => sum + (r.streak || 0), 0) / routines.length)
+            : 0;
+
+        // Category breakdown
+        const byCategory = {};
+        routines.forEach(r => {
+            const cat = r.category || 'other';
+            if (!byCategory[cat]) byCategory[cat] = { count: 0, completions: 0 };
+            byCategory[cat].count++;
+        });
+
+        // Top performers (by streak)
+        const topPerformers = [...routines]
+            .filter(r => (r.streak || 0) > 0)
+            .sort((a, b) => (b.streak || 0) - (a.streak || 0))
+            .slice(0, 5);
+
+        return `
+            <div class="routines-stats">
+                <!-- Overview Cards -->
+                <div class="routines-stats__overview">
+                    <div class="routines-stats__card">
+                        <div class="routines-stats__card-icon" style="background: #dbeafe; color: #3b82f6;">
+                            <i data-lucide="list-checks"></i>
+                        </div>
+                        <div class="routines-stats__card-content">
+                            <span class="routines-stats__card-value">${totalRoutines}</span>
+                            <span class="routines-stats__card-label">Total Routines</span>
+                        </div>
+                    </div>
+                    <div class="routines-stats__card">
+                        <div class="routines-stats__card-icon" style="background: #dcfce7; color: #22c55e;">
+                            <i data-lucide="check-circle-2"></i>
+                        </div>
+                        <div class="routines-stats__card-content">
+                            <span class="routines-stats__card-value">${totalCompletions}</span>
+                            <span class="routines-stats__card-label">All Time Completions</span>
+                        </div>
+                    </div>
+                    <div class="routines-stats__card">
+                        <div class="routines-stats__card-icon" style="background: #fef3c7; color: #f59e0b;">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="routines-stats__card-content">
+                            <span class="routines-stats__card-value">${currentStreaks}</span>
+                            <span class="routines-stats__card-label">Active Streaks</span>
+                        </div>
+                    </div>
+                    <div class="routines-stats__card">
+                        <div class="routines-stats__card-icon" style="background: #f3e8ff; color: #8b5cf6;">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="routines-stats__card-content">
+                            <span class="routines-stats__card-value">${bestStreak}</span>
+                            <span class="routines-stats__card-label">Best Streak</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${topPerformers.length > 0 ? `
+                    <!-- Top Performers -->
+                    <div class="routines-stats__section">
+                        <h3 class="routines-stats__section-title">
+                            <i data-lucide="award"></i>
+                            Top Streaks
+                        </h3>
+                        <div class="routines-stats__performers">
+                            ${topPerformers.map((r, idx) => `
+                                <div class="routines-stats__performer">
+                                    <span class="routines-stats__performer-rank">#${idx + 1}</span>
+                                    <span class="routines-stats__performer-icon" style="color: ${r.color || '#6366F1'}">
+                                        <i data-lucide="${r.icon || 'check'}"></i>
+                                    </span>
+                                    <span class="routines-stats__performer-name">${r.title}</span>
+                                    <span class="routines-stats__performer-streak">
+                                        <i data-lucide="flame"></i>
+                                        ${r.streak}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                <!-- Category Breakdown -->
+                <div class="routines-stats__section">
+                    <h3 class="routines-stats__section-title">
+                        <i data-lucide="pie-chart"></i>
+                        By Category
+                    </h3>
+                    <div class="routines-stats__categories">
+                        ${Object.entries(byCategory).map(([catKey, catData]) => {
+                            const cat = CATEGORIES[catKey] || CATEGORIES.other;
+                            return `
+                                <div class="routines-stats__category">
+                                    <span class="routines-stats__category-icon" style="background: ${cat.color}20; color: ${cat.color}">
+                                        <i data-lucide="${cat.icon}"></i>
+                                    </span>
+                                    <span class="routines-stats__category-name">${cat.label}</span>
+                                    <span class="routines-stats__category-count">${catData.count}</span>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind routines page events
+     */
+    function bindRoutinesPageEvents(container, memberId, activeTab) {
+        // Back button
         document.getElementById('backBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
+        // Tab switching
+        container.querySelectorAll('.routines-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const newTab = tab.dataset.tab;
+                showRoutinesPage(memberId, newTab);
+            });
+        });
+
+        // Add routine button
         document.getElementById('addRoutineBtn')?.addEventListener('click', () => {
-            showAddModal(memberId, () => showRoutinesPage(memberId));
+            showAddModal(memberId, () => showRoutinesPage(memberId, activeTab));
         });
 
+        // Add first routine button (empty state)
         document.getElementById('addFirstBtn')?.addEventListener('click', () => {
-            showAddModal(memberId, () => showRoutinesPage(memberId));
+            showAddModal(memberId, () => showRoutinesPage(memberId, activeTab));
         });
 
+        // Mark all overdue done
         document.getElementById('markAllOverdueBtn')?.addEventListener('click', () => {
             const count = markAllOverdueDone(memberId);
             Toast.success(`Marked ${count} routines as done`);
-            showRoutinesPage(memberId);
+            showRoutinesPage(memberId, activeTab);
         });
 
         // Routine card events
-        bindRoutineCardEvents(main, memberId, () => showRoutinesPage(memberId));
+        bindRoutineCardEvents(container, memberId, () => showRoutinesPage(memberId, activeTab));
     }
 
     /**
@@ -1544,10 +1825,26 @@ const Routine = (function() {
     }
 
     /**
-     * Show routine detail
+     * Show routine detail - navigates to routines page and scrolls to the specific routine
      */
-    function showRoutineDetail(memberId, routineId, onSuccess = null) {
-        showEditModal(memberId, routineId, onSuccess);
+    function showRoutineDetail(memberId, routineId) {
+        // Navigate to the routines page (Due tab shows actionable routines with snooze/skip options)
+        showRoutinesPage(memberId, 'due');
+
+        // After page renders, scroll to and highlight the specific routine
+        setTimeout(() => {
+            const routineCard = document.querySelector(`[data-routine-id="${routineId}"]`);
+            if (routineCard) {
+                // Scroll into view smoothly
+                routineCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Add highlight animation
+                routineCard.classList.add('routine-card--highlighted');
+                setTimeout(() => {
+                    routineCard.classList.remove('routine-card--highlighted');
+                }, 2000);
+            }
+        }, 100);
     }
 
     /**
