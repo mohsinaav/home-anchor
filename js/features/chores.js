@@ -260,6 +260,7 @@ const Chores = (function() {
         };
 
         Storage.setWidgetData(memberId, 'chores', updatedData);
+        Storage.trackAction(memberId, 'chores', 'completed');
 
         // Award points if points widget exists
         const pointsData = Storage.getWidgetData(memberId, 'points');

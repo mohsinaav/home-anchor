@@ -407,6 +407,7 @@ const Gratitude = (function() {
                 ...widgetData,
                 entries: trimmedEntries
             });
+            Storage.trackAction(memberId, 'gratitude', 'entry');
             Toast.success('Gratitude saved!');
         }
 

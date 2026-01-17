@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Anchor - Usage Viewer</title>
+    <style>
+        :root {
+            --primary: #6366F1;
+            --primary-light: #EEF2FF;
+            --primary-dark: #4F46E5;
+            --secondary: #06B6D4;
+            --success: #10B981;
+            --success-light: #D1FAE5;
+            --warning: #F59E0B;
+            --warning-light: #FEF3C7;
+            --error: #EF4444;
+            --purple: #8B5CF6;
+            --purple-light: #EDE9FE;
+            --pink: #EC4899;
+            --pink-light: #FCE7F3;
+            --orange: #F97316;
+            --orange-light: #FFEDD5;
+            --gray-50: #F9FAFB;
+            --gray-100: #F3F4F6;
+            --gray-200: #E5E7EB;
+            --gray-300: #D1D5DB;
+            --gray-400: #9CA3AF;
+            --gray-500: #6B7280;
+            --gray-600: #4B5563;
+            --gray-700: #374151;
+            --gray-800: #1F2937;
+            --gray-900: #111827;
+            --white: #FFFFFF;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 2rem 1rem;
+        }
+
+        .viewer {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .viewer__header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: white;
+        }
+
+        .viewer__title {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .viewer__subtitle {
+            opacity: 0.9;
+            font-size: 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .viewer__input-section {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 1.5rem;
+        }
+
+        .viewer__label {
+            display: block;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .viewer__textarea {
+            width: 100%;
+            height: 100px;
+            padding: 1rem;
+            border: 2px solid var(--gray-200);
+            border-radius: var(--radius-sm);
+            font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+            font-size: 0.8rem;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        .viewer__textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .viewer__actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .viewer__btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .viewer__btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .viewer__btn--secondary {
+            background: var(--gray-100);
+            color: var(--gray-700);
+        }
+
+        .viewer__btn--secondary:hover {
+            background: var(--gray-200);
+        }
+
+        .viewer__error {
+            color: var(--error);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+            padding: 0.75rem;
+            background: #FEF2F2;
+            border-radius: var(--radius-sm);
+            display: none;
+        }
+
+        .viewer__error.visible {
+            display: block;
+        }
+
+        .report {
+            display: none;
+        }
+
+        .report.visible {
+            display: block;
+        }
+
+        /* Hero Summary Card */
+        .report__hero {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
+            text-align: center;
+        }
+
+        .report__app-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+        }
+
+        .report__week-info {
+            margin-bottom: 1.5rem;
+        }
+
+        .report__week-label {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .report__week-range {
+            font-size: 1.75rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-top: 0.25rem;
+        }
+
+        .report__stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .report__stat-box {
+            padding: 1.25rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .report__stat-box--total {
+            background: linear-gradient(135deg, var(--primary-light) 0%, #C7D2FE 100%);
+        }
+
+        .report__stat-box--members {
+            background: linear-gradient(135deg, var(--success-light) 0%, #A7F3D0 100%);
+        }
+
+        .report__stat-box--widgets {
+            background: linear-gradient(135deg, var(--warning-light) 0%, #FDE68A 100%);
+        }
+
+        .report__stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            line-height: 1;
+        }
+
+        .report__stat-label {
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            margin-top: 0.5rem;
+        }
+
+        /* Activity Breakdown */
+        .report__section {
+            background: var(--white);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow);
+        }
+
+        .report__section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--gray-900);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        /* Activity Chart */
+        .activity-chart {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .activity-bar {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .activity-bar__label {
+            width: 100px;
+            font-size: 0.85rem;
+            color: var(--gray-700);
+            font-weight: 500;
+            text-align: right;
+            flex-shrink: 0;
+        }
+
+        .activity-bar__track {
+            flex: 1;
+            height: 28px;
+            background: var(--gray-100);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .activity-bar__fill {
+            height: 100%;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            padding: 0 12px;
+            transition: width 0.5s ease;
+            min-width: fit-content;
+        }
+
+        .activity-bar__value {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+        }
+
+        /* Member Cards */
+        .members-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1rem;
+        }
+
+        .member-card {
+            background: var(--white);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--gray-100);
+        }
+
+        .member-card__header {
+            padding: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-bottom: 1px solid var(--gray-100);
+        }
+
+        .member-card__avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .member-card__avatar--adult {
+            background: linear-gradient(135deg, #DBEAFE 0%, #93C5FD 100%);
+        }
+
+        .member-card__avatar--kid {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+        }
+
+        .member-card__avatar--teen {
+            background: linear-gradient(135deg, #EDE9FE 0%, #C4B5FD 100%);
+        }
+
+        .member-card__avatar--toddler {
+            background: linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%);
+        }
+
+        .member-card__info {
+            flex: 1;
+        }
+
+        .member-card__name {
+            font-weight: 700;
+            color: var(--gray-900);
+            font-size: 1.1rem;
+        }
+
+        .member-card__type {
+            font-size: 0.75rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-top: 0.125rem;
+        }
+
+        .member-card__total {
+            text-align: right;
+        }
+
+        .member-card__total-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .member-card__total-label {
+            font-size: 0.7rem;
+            color: var(--gray-500);
+            text-transform: uppercase;
+        }
+
+        .member-card__body {
+            padding: 1rem 1.25rem;
+        }
+
+        .member-card__activities {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .activity-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.375rem;
+            padding: 0.5rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            position: relative;
+            cursor: help;
+        }
+
+        .activity-pill__icon {
+            font-size: 1rem;
+        }
+
+        .activity-pill__label {
+            font-size: 0.75rem;
+            opacity: 0.9;
+        }
+
+        /* Custom Tooltip */
+        .activity-pill .tooltip {
+            visibility: hidden;
+            opacity: 0;
+            position: absolute;
+            bottom: calc(100% + 8px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--gray-900);
+            color: white;
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            white-space: nowrap;
+            z-index: 100;
+            transition: opacity 0.2s ease, visibility 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .activity-pill .tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 6px solid transparent;
+            border-top-color: var(--gray-900);
+        }
+
+        .activity-pill:hover .tooltip {
+            visibility: visible;
+            opacity: 1;
+        }
+
+        .activity-pill--tasks { background: #DBEAFE; color: #1D4ED8; }
+        .activity-pill--habits { background: #D1FAE5; color: #047857; }
+        .activity-pill--journal { background: #EDE9FE; color: #6D28D9; }
+        .activity-pill--workout { background: #DCFCE7; color: #15803D; }
+        .activity-pill--meals { background: #FFEDD5; color: #C2410C; }
+        .activity-pill--points { background: #FEF3C7; color: #B45309; }
+        .activity-pill--rewards { background: #FCE7F3; color: #BE185D; }
+        .activity-pill--chores { background: #CFFAFE; color: #0E7490; }
+        .activity-pill--screen { background: #F3E8FF; color: #7C3AED; }
+        .activity-pill--achievements { background: #FEF9C3; color: #A16207; }
+        .activity-pill--grocery { background: #ECFDF5; color: #059669; }
+        .activity-pill--gratitude { background: #FDF2F8; color: #DB2777; }
+
+        /* Insights Section */
+        .insights-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .insight-card {
+            padding: 1.25rem;
+            border-radius: var(--radius-sm);
+            text-align: center;
+        }
+
+        .insight-card--mvp {
+            background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+        }
+
+        .insight-card--streak {
+            background: linear-gradient(135deg, #FFEDD5 0%, #FDBA74 100%);
+        }
+
+        .insight-card--top-widget {
+            background: linear-gradient(135deg, #DBEAFE 0%, #93C5FD 100%);
+        }
+
+        .insight-card--engagement {
+            background: linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 100%);
+        }
+
+        .insight-card__icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .insight-card__value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gray-900);
+        }
+
+        .insight-card__label {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+            margin-top: 0.25rem;
+        }
+
+        /* Empty State */
+        .empty-report {
+            text-align: center;
+            padding: 4rem 2rem;
+            background: var(--white);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+        }
+
+        .empty-report__icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .empty-report__title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gray-700);
+            margin-bottom: 0.5rem;
+        }
+
+        .empty-report__text {
+            color: var(--gray-500);
+        }
+
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .viewer__input-section {
+                display: none;
+            }
+            .report__section,
+            .member-card,
+            .report__hero {
+                box-shadow: none;
+                border: 1px solid var(--gray-200);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            body {
+                padding: 1rem 0.5rem;
+            }
+
+            .viewer__title {
+                font-size: 1.5rem;
+            }
+
+            .report__stats-row {
+                grid-template-columns: 1fr;
+            }
+
+            .report__week-range {
+                font-size: 1.25rem;
+            }
+
+            .activity-bar__label {
+                width: 70px;
+                font-size: 0.75rem;
+            }
+
+            .members-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="viewer">
+        <div class="viewer__header">
+            <h1 class="viewer__title">
+                <span>📊</span> Home Anchor Usage Viewer
+            </h1>
+            <p class="viewer__subtitle">See how your family is using the app this week</p>
+        </div>
+
+        <div class="viewer__input-section">
+            <label class="viewer__label" for="jsonInput">Paste usage report JSON:</label>
+            <textarea
+                id="jsonInput"
+                class="viewer__textarea"
+                placeholder='{"app":"HomeAnchor","week":"2026-W03",...}'
+            ></textarea>
+            <div class="viewer__error" id="errorMsg"></div>
+            <div class="viewer__actions">
+                <button class="viewer__btn" onclick="viewReport()">
+                    <span>📖</span> View Report
+                </button>
+                <button class="viewer__btn viewer__btn--secondary" onclick="loadSample()">
+                    <span>📋</span> Load Sample
+                </button>
+            </div>
+        </div>
+
+        <div class="report" id="reportOutput"></div>
+    </div>
+
+    <script>
+        // Widget metadata for display
+        const WIDGET_META = {
+            'task-list': { icon: '📋', label: 'Tasks', color: 'tasks' },
+            'tasklist': { icon: '📋', label: 'Tasks', color: 'tasks' },
+            'habits': { icon: '✅', label: 'Habits', color: 'habits' },
+            'journal': { icon: '📔', label: 'Journal', color: 'journal' },
+            'workout': { icon: '💪', label: 'Workouts', color: 'workout' },
+            'meal-plan': { icon: '🍽️', label: 'Meals', color: 'meals' },
+            'mealplan': { icon: '🍽️', label: 'Meals', color: 'meals' },
+            'points': { icon: '⭐', label: 'Points', color: 'points' },
+            'rewards': { icon: '🎁', label: 'Rewards', color: 'rewards' },
+            'achievements': { icon: '🏆', label: 'Badges', color: 'achievements' },
+            'chores': { icon: '🧹', label: 'Chores', color: 'chores' },
+            'screen-time': { icon: '📱', label: 'Screen Time', color: 'screen' },
+            'screentime': { icon: '📱', label: 'Screen Time', color: 'screen' },
+            'kid-tasks': { icon: '📝', label: 'Tasks', color: 'tasks' },
+            'kidtasks': { icon: '📝', label: 'Tasks', color: 'tasks' },
+            'kid-journal': { icon: '📓', label: 'Journal', color: 'journal' },
+            'kidjournal': { icon: '📓', label: 'Journal', color: 'journal' },
+            'kid-workout': { icon: '🏃', label: 'Activities', color: 'workout' },
+            'kidworkout': { icon: '🏃', label: 'Activities', color: 'workout' },
+            'grocery': { icon: '🛒', label: 'Groceries', color: 'grocery' },
+            'gratitude': { icon: '🙏', label: 'Gratitude', color: 'gratitude' }
+        };
+
+        const MEMBER_AVATARS = {
+            'adult': { emoji: '👤', gradient: 'adult' },
+            'kid': { emoji: '👦', gradient: 'kid' },
+            'teen': { emoji: '🧑', gradient: 'teen' },
+            'toddler': { emoji: '👶', gradient: 'toddler' }
+        };
+
+        const CHART_COLORS = [
+            '#6366F1', '#10B981', '#F59E0B', '#EC4899', '#8B5CF6',
+            '#06B6D4', '#EF4444', '#14B8A6', '#F97316', '#84CC16'
+        ];
+
+        function viewReport() {
+            const input = document.getElementById('jsonInput');
+            const errorEl = document.getElementById('errorMsg');
+            const reportEl = document.getElementById('reportOutput');
+
+            errorEl.classList.remove('visible');
+            reportEl.classList.remove('visible');
+
+            const jsonText = input.value.trim();
+            if (!jsonText) {
+                showError('Please paste a usage report first.');
+                return;
+            }
+
+            try {
+                const data = JSON.parse(jsonText);
+
+                if (data.app !== 'HomeAnchor') {
+                    showError('This doesn\'t look like a Home Anchor usage report.');
+                    return;
+                }
+
+                reportEl.innerHTML = renderReport(data);
+                reportEl.classList.add('visible');
+
+                // Animate bars after render
+                setTimeout(animateBars, 100);
+
+            } catch (e) {
+                showError('Invalid JSON format. Please check and try again.');
+            }
+        }
+
+        function showError(msg) {
+            const errorEl = document.getElementById('errorMsg');
+            errorEl.textContent = msg;
+            errorEl.classList.add('visible');
+        }
+
+        function loadSample() {
+            const sampleData = {
+                "app": "HomeAnchor",
+                "week": "2026-W03",
+                "generated": "2026-01-16T10:30:00Z",
+                "members": {
+                    "Mom": {
+                        "type": "adult",
+                        "task-list": { "created": 8, "completed": 6 },
+                        "habits": { "checkin": 28 },
+                        "journal": { "entry": 5 },
+                        "meal-plan": { "planned": 14 },
+                        "grocery": { "checked": 23 }
+                    },
+                    "Dad": {
+                        "type": "adult",
+                        "task-list": { "created": 5, "completed": 4 },
+                        "habits": { "checkin": 21 },
+                        "journal": { "entry": 3 }
+                    },
+                    "Emma": {
+                        "type": "kid",
+                        "kid-tasks": { "created": 4, "completed": 7 },
+                        "kid-journal": { "entry": 4 },
+                        "kid-workout": { "logged": 5 },
+                        "points": { "completed": 12 },
+                        "chores": { "completed": 8 },
+                        "rewards": { "redeemed": 2 },
+                        "achievements": { "unlocked": 1 }
+                    },
+                    "Jake": {
+                        "type": "teen",
+                        "kid-tasks": { "created": 3, "completed": 5 },
+                        "habits": { "checkin": 14 },
+                        "screen-time": { "logged": 7 },
+                        "chores": { "completed": 6 },
+                        "points": { "completed": 8 }
+                    },
+                    "Lily": {
+                        "type": "toddler",
+                        "kid-workout": { "logged": 3 },
+                        "points": { "completed": 5 }
+                    }
+                },
+                "total": 198
+            };
+            document.getElementById('jsonInput').value = JSON.stringify(sampleData, null, 2);
+            viewReport();
+        }
+
+        function renderReport(data) {
+            const members = data.members || {};
+            const memberCount = Object.keys(members).length;
+
+            if (memberCount === 0) {
+                return `
+                    <div class="empty-report">
+                        <div class="empty-report__icon">📭</div>
+                        <div class="empty-report__title">No Activity This Week</div>
+                        <p class="empty-report__text">This report shows no recorded activity.</p>
+                    </div>
+                `;
+            }
+
+            // Calculate statistics
+            const stats = calculateStats(data);
+            const weekRange = getWeekRange(data.week);
+
+            return `
+                <!-- Hero Summary -->
+                <div class="report__hero">
+                    <div class="report__app-badge">
+                        <span>🏠</span> Home Anchor Weekly Report
+                    </div>
+                    <div class="report__week-info">
+                        <div class="report__week-label">Week ${data.week?.split('-W')[1] || ''}</div>
+                        <div class="report__week-range">${weekRange}</div>
+                    </div>
+                    <div class="report__stats-row">
+                        <div class="report__stat-box report__stat-box--total">
+                            <div class="report__stat-value">${data.total || stats.totalActivities}</div>
+                            <div class="report__stat-label">Total Activities</div>
+                        </div>
+                        <div class="report__stat-box report__stat-box--members">
+                            <div class="report__stat-value">${memberCount}</div>
+                            <div class="report__stat-label">Family Members</div>
+                        </div>
+                        <div class="report__stat-box report__stat-box--widgets">
+                            <div class="report__stat-value">${stats.activeWidgets}</div>
+                            <div class="report__stat-label">Widgets Used</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Quick Insights -->
+                <div class="report__section">
+                    <h3 class="report__section-title"><span>💡</span> Weekly Highlights</h3>
+                    <div class="insights-grid">
+                        <div class="insight-card insight-card--mvp">
+                            <div class="insight-card__icon">🏆</div>
+                            <div class="insight-card__value">${stats.mvp.name}</div>
+                            <div class="insight-card__label">Most Active (${stats.mvp.count} activities)</div>
+                        </div>
+                        <div class="insight-card insight-card--top-widget">
+                            <div class="insight-card__icon">${stats.topWidget.icon}</div>
+                            <div class="insight-card__value">${stats.topWidget.label}</div>
+                            <div class="insight-card__label">Most Used Widget (${stats.topWidget.count})</div>
+                        </div>
+                        <div class="insight-card insight-card--engagement">
+                            <div class="insight-card__icon">📈</div>
+                            <div class="insight-card__value">${stats.avgPerMember}</div>
+                            <div class="insight-card__label">Avg per Member</div>
+                        </div>
+                        <div class="insight-card insight-card--streak">
+                            <div class="insight-card__icon">🔥</div>
+                            <div class="insight-card__value">${stats.dailyAvg}</div>
+                            <div class="insight-card__label">Daily Average</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Breakdown Chart -->
+                <div class="report__section">
+                    <h3 class="report__section-title"><span>📊</span> Activity Breakdown</h3>
+                    <div class="activity-chart">
+                        ${renderActivityChart(stats.widgetTotals)}
+                    </div>
+                </div>
+
+                <!-- Family Members -->
+                <div class="report__section">
+                    <h3 class="report__section-title"><span>👨‍👩‍👧‍👦</span> Family Members</h3>
+                    <div class="members-grid">
+                        ${Object.entries(members).map(([name, data]) => renderMemberCard(name, data, stats.memberTotals[name])).join('')}
+                    </div>
+                </div>
+            `;
+        }
+
+        function calculateStats(data) {
+            const members = data.members || {};
+            const memberTotals = {};
+            const widgetTotals = {};
+            let totalActivities = 0;
+            let mvp = { name: '-', count: 0 };
+            const widgetsUsed = new Set();
+
+            Object.entries(members).forEach(([name, memberData]) => {
+                let memberTotal = 0;
+
+                Object.entries(memberData).forEach(([key, value]) => {
+                    if (key === 'type') return;
+
+                    widgetsUsed.add(key);
+                    const count = getActivityCount(value);
+                    memberTotal += count;
+
+                    if (!widgetTotals[key]) widgetTotals[key] = 0;
+                    widgetTotals[key] += count;
+                });
+
+                memberTotals[name] = memberTotal;
+                totalActivities += memberTotal;
+
+                if (memberTotal > mvp.count) {
+                    mvp = { name, count: memberTotal };
+                }
+            });
+
+            // Find top widget
+            let topWidget = { key: '', label: '-', icon: '📊', count: 0 };
+            Object.entries(widgetTotals).forEach(([key, count]) => {
+                if (count > topWidget.count) {
+                    const meta = WIDGET_META[key] || { icon: '📊', label: key };
+                    topWidget = { key, label: meta.label, icon: meta.icon, count };
+                }
+            });
+
+            const memberCount = Object.keys(members).length;
+
+            return {
+                totalActivities,
+                memberTotals,
+                widgetTotals,
+                mvp,
+                topWidget,
+                activeWidgets: widgetsUsed.size,
+                avgPerMember: memberCount > 0 ? Math.round(totalActivities / memberCount) : 0,
+                dailyAvg: Math.round(totalActivities / 7)
+            };
+        }
+
+        function getActivityCount(value) {
+            if (typeof value === 'number') return value;
+            if (typeof value === 'object') {
+                return Object.values(value).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+            }
+            return 0;
+        }
+
+        function renderActivityChart(widgetTotals) {
+            const sorted = Object.entries(widgetTotals)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            if (sorted.length === 0) return '<p style="color: var(--gray-500); text-align: center;">No activity data</p>';
+
+            const max = Math.max(...sorted.map(([, v]) => v));
+
+            return sorted.map(([key, count], index) => {
+                const meta = WIDGET_META[key] || { icon: '📊', label: key };
+                const percentage = max > 0 ? (count / max) * 100 : 0;
+                const color = CHART_COLORS[index % CHART_COLORS.length];
+
+                return `
+                    <div class="activity-bar">
+                        <div class="activity-bar__label">${meta.icon} ${meta.label}</div>
+                        <div class="activity-bar__track">
+                            <div class="activity-bar__fill" style="width: 0%; background: ${color};" data-width="${percentage}%">
+                                <span class="activity-bar__value">${count}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function animateBars() {
+            document.querySelectorAll('.activity-bar__fill').forEach(bar => {
+                const targetWidth = bar.dataset.width;
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 50);
+            });
+        }
+
+        function renderMemberCard(name, memberData, total) {
+            const type = memberData.type || 'adult';
+            const avatar = MEMBER_AVATARS[type] || MEMBER_AVATARS.adult;
+
+            const activities = Object.entries(memberData)
+                .filter(([key]) => key !== 'type')
+                .map(([key, value]) => {
+                    const meta = WIDGET_META[key] || { icon: '📊', label: key, color: 'tasks' };
+                    const count = getActivityCount(value);
+                    const details = typeof value === 'object' ? formatDetails(value) : '';
+                    return { ...meta, count, details, key };
+                })
+                .filter(a => a.count > 0)
+                .sort((a, b) => b.count - a.count);
+
+            const activitiesHtml = activities.length > 0
+                ? activities.map(a => {
+                    const tooltipText = a.details ? `${a.label}: ${a.details}` : `${a.label}: ${a.count}`;
+                    return `
+                    <div class="activity-pill activity-pill--${a.color}">
+                        <span class="activity-pill__icon">${a.icon}</span>
+                        <span class="activity-pill__label">${a.label}</span>
+                        <span>${a.count}</span>
+                        <span class="tooltip">${tooltipText}</span>
+                    </div>
+                `}).join('')
+                : '<span style="color: var(--gray-400); font-size: 0.85rem;">No activity this week</span>';
+
+            return `
+                <div class="member-card">
+                    <div class="member-card__header">
+                        <div class="member-card__avatar member-card__avatar--${avatar.gradient}">
+                            ${avatar.emoji}
+                        </div>
+                        <div class="member-card__info">
+                            <div class="member-card__name">${name}</div>
+                            <div class="member-card__type">${type}</div>
+                        </div>
+                        <div class="member-card__total">
+                            <div class="member-card__total-value">${total || 0}</div>
+                            <div class="member-card__total-label">activities</div>
+                        </div>
+                    </div>
+                    <div class="member-card__body">
+                        <div class="member-card__activities">
+                            ${activitiesHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatDetails(obj) {
+            return Object.entries(obj)
+                .map(([k, v]) => `${k}: ${v}`)
+                .join(', ');
+        }
+
+        function getWeekRange(weekKey) {
+            if (!weekKey || !weekKey.includes('-W')) return weekKey || 'Unknown';
+
+            try {
+                const [year, weekPart] = weekKey.split('-W');
+                const weekNum = parseInt(weekPart);
+
+                // Calculate Monday of that ISO week
+                const jan4 = new Date(parseInt(year), 0, 4);
+                const dayOfWeek = jan4.getDay() || 7;
+                const monday = new Date(jan4);
+                monday.setDate(jan4.getDate() - dayOfWeek + 1 + (weekNum - 1) * 7);
+
+                const sunday = new Date(monday);
+                sunday.setDate(monday.getDate() + 6);
+
+                const options = { month: 'short', day: 'numeric' };
+                const startStr = monday.toLocaleDateString('en-US', options);
+                const endStr = sunday.toLocaleDateString('en-US', { ...options, year: 'numeric' });
+
+                return `${startStr} - ${endStr}`;
+            } catch (e) {
+                return weekKey;
+            }
+        }
+
+        // Auto-view on paste
+        document.getElementById('jsonInput').addEventListener('paste', () => {
+            setTimeout(viewReport, 100);
+        });
+
+        // Ctrl+Enter to view
+        document.getElementById('jsonInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                viewReport();
+            }
+        });
+    </script>
+</body>
+</html>

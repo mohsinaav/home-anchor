@@ -349,6 +349,7 @@ const KidTasks = (function() {
 
             widgetData.tasks = [...(widgetData.tasks || []), newTask];
             saveWidgetData(memberId, widgetData);
+            Storage.trackAction(memberId, 'kid-tasks', 'created');
             renderWidget(container, memberId);
             Toast.success('Task added!');
         };
@@ -379,6 +380,9 @@ const KidTasks = (function() {
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
                     saveWidgetData(memberId, widgetData);
+                    if (checkbox.checked) {
+                        Storage.trackAction(memberId, 'kid-tasks', 'completed');
+                    }
                     // Sync with Vision Board if this task came from a goal step
                     syncWithVisionBoard(memberId, task);
                     renderWidget(container, memberId);
@@ -1027,6 +1031,7 @@ const KidTasks = (function() {
 
             widgetData.tasks = [...(widgetData.tasks || []), newTask];
             saveWidgetData(memberId, widgetData);
+            Storage.trackAction(memberId, 'kid-tasks', 'created');
             renderFullPage(container, memberId, member, 'tasks');
             Toast.success('Task added!');
 
@@ -1050,6 +1055,9 @@ const KidTasks = (function() {
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? new Date().toISOString().split('T')[0] : null;
                     saveWidgetData(memberId, widgetData);
+                    if (checkbox.checked) {
+                        Storage.trackAction(memberId, 'kid-tasks', 'completed');
+                    }
                     // Sync with Vision Board if this task came from a goal step
                     syncWithVisionBoard(memberId, task);
                     renderFullPage(container, memberId, member, 'tasks');

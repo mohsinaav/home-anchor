@@ -465,6 +465,11 @@ const Habits = (function() {
 
         saveWidgetData(memberId, updatedData);
 
+        // Track habit check-in (only when completing, not uncompleting)
+        if (!wasCompleted) {
+            Storage.trackAction(memberId, 'habits', 'checkin');
+        }
+
         // Update streaks
         updateStreaks(memberId);
 
@@ -1120,7 +1125,8 @@ const Habits = (function() {
         const dayLog = widgetData.log?.[dateStr] || [];
 
         let updatedLog;
-        if (dayLog.includes(habitId)) {
+        const wasCompleted = dayLog.includes(habitId);
+        if (wasCompleted) {
             updatedLog = dayLog.filter(id => id !== habitId);
         } else {
             updatedLog = [...dayLog, habitId];
@@ -1135,6 +1141,12 @@ const Habits = (function() {
         };
 
         saveWidgetData(memberId, updatedData);
+
+        // Track habit check-in (only when completing, not uncompleting)
+        if (!wasCompleted) {
+            Storage.trackAction(memberId, 'habits', 'checkin');
+        }
+
         updateStreaks(memberId);
     }
 

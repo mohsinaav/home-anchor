@@ -2488,6 +2488,11 @@ const Meals = (function() {
 
         Storage.setWidgetData(memberId, 'meal-plan', updatedData);
 
+        // Track meal planned (only when items are added, not cleared)
+        if (items !== null && items.length > 0) {
+            Storage.trackAction(memberId, 'meal-plan', 'planned');
+        }
+
         // Clear prep completions for the day before (since prep is done day before)
         const prevDate = DateUtils.formatISO(DateUtils.addDays(new Date(date), -1));
         clearPrepCompletionForDate(memberId, prevDate);

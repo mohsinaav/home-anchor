@@ -1,0 +1,45 @@
+{
+  "app": "HomeAnchor",
+  "week": "2026-W03",
+  "generated": "2026-01-16T10:30:00Z",
+  "members": {
+    "Mom": {
+      "type": "adult",
+      "task-list": { "created": 8, "completed": 6 },
+      "habits": { "checkin": 28 },
+      "journal": { "entry": 5 },
+      "meal-plan": { "planned": 14 },
+      "grocery": { "checked": 23 }
+    },
+    "Dad": {
+      "type": "adult",
+      "task-list": { "created": 5, "completed": 4 },
+      "habits": { "checkin": 21 },
+      "journal": { "entry": 3 }
+    },
+    "Emma": {
+      "type": "kid",
+      "kid-tasks": { "created": 4, "completed": 7 },
+      "kid-journal": { "entry": 4 },
+      "kid-workout": { "logged": 5 },
+      "points": { "completed": 12 },
+      "chores": { "completed": 8 },
+      "rewards": { "redeemed": 2 },
+      "achievements": { "unlocked": 1 }
+    },
+    "Jake": {
+      "type": "teen",
+      "kid-tasks": { "created": 3, "completed": 5 },
+      "habits": { "checkin": 14 },
+      "screen-time": { "logged": 7 },
+      "chores": { "completed": 6 },
+      "points": { "completed": 8 }
+    },
+    "Lily": {
+      "type": "toddler",
+      "kid-workout": { "logged": 3 },
+      "points": { "completed": 5 }
+    }
+  },
+  "total": 198
+}

@@ -561,6 +561,7 @@ const KidJournal = (function() {
 
             widgetData.entries = [newEntry, ...(widgetData.entries || [])];
             saveWidgetData(memberId, widgetData);
+            Storage.trackAction(memberId, 'kid-journal', 'entry');
 
             // Award points for daily journal entry based on member type
             const member = Storage.getMember(memberId);
@@ -1443,6 +1444,7 @@ const KidJournal = (function() {
 
                 widgetData.entries = [newEntry, ...(widgetData.entries || [])];
                 saveWidgetData(memberId, widgetData);
+                Storage.trackAction(memberId, 'kid-journal', 'entry');
 
                 // Award points
                 const settings = Storage.getSettings();

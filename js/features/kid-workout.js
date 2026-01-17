@@ -149,6 +149,7 @@ const KidWorkout = (function() {
 
         data.log.push(logEntry);
         saveWidgetData(memberId, data);
+        Storage.trackAction(memberId, 'kid-workout', 'logged');
 
         // Award points if points system is available
         if (data.settings.showPoints && typeof Points !== 'undefined') {

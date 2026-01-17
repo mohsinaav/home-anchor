@@ -675,6 +675,8 @@ const Achievements = (function() {
             if (!earned.includes(badge.id)) {
                 Toast.success(`🏆 New Badge: ${badge.name}!`);
                 earned.push(badge.id);
+                // Track badge unlocked
+                Storage.trackAction(memberId, 'achievements', 'unlocked');
             }
         });
 

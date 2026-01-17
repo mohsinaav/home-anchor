@@ -1735,6 +1735,27 @@ const SettingsPage = (function() {
                         </div>
                     </div>
                 </div>
+
+                <!-- Share Usage Section -->
+                <div class="usage-share-section">
+                    <h4 class="usage-share-section__title">
+                        <i data-lucide="bar-chart-2"></i>
+                        Share Weekly Usage
+                    </h4>
+                    <p class="usage-share-section__description">
+                        Share your weekly activity summary with friends or family. Only includes counts (tasks completed, habits checked, etc.) - no personal content is shared.
+                    </p>
+                    <div class="usage-share-section__actions">
+                        <button class="btn btn--secondary" id="copyUsageBtn">
+                            <i data-lucide="clipboard-copy"></i>
+                            Copy Usage Report
+                        </button>
+                        <a href="viewer.html" target="_blank" class="btn btn--ghost btn--sm" id="viewFriendUsageLink">
+                            <i data-lucide="eye"></i>
+                            View Friend's Report
+                        </a>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -2054,6 +2075,29 @@ const SettingsPage = (function() {
         // Reset data
         container.querySelector('#resetDataBtn')?.addEventListener('click', async () => {
             await resetData();
+        });
+
+        // Copy usage report
+        container.querySelector('#copyUsageBtn')?.addEventListener('click', () => {
+            try {
+                const report = Storage.generateUsageReport();
+                const jsonString = JSON.stringify(report, null, 2);
+                navigator.clipboard.writeText(jsonString).then(() => {
+                    Toast.success('Usage report copied to clipboard!');
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textarea = document.createElement('textarea');
+                    textarea.value = jsonString;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    Toast.success('Usage report copied!');
+                });
+            } catch (err) {
+                Toast.error('Failed to generate usage report');
+                console.error('Usage report error:', err);
+            }
         });
 
         // Help & Tutorials

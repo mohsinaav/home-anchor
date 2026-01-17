@@ -627,6 +627,7 @@ const ScreenTime = (function() {
 
             const updatedData = { ...widgetData, log: updatedLog };
             Storage.setWidgetData(memberId, 'screen-time', updatedData);
+            Storage.trackAction(memberId, 'screen-time', 'logged');
             Toast.success(`Logged ${minutes} minutes`);
 
             // Check if over limit
@@ -695,6 +696,7 @@ const ScreenTime = (function() {
             };
 
             Storage.setWidgetData(memberId, 'screen-time', { ...widgetData, log: updatedLog });
+            Storage.trackAction(memberId, 'screen-time', 'logged');
             Toast.success(`Logged ${minutes} minutes`);
 
             // Check if over limit

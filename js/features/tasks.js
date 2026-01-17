@@ -416,6 +416,7 @@ const Tasks = (function() {
             };
 
             Storage.setWidgetData(memberId, 'task-list', updatedData);
+            Storage.trackAction(memberId, 'task-list', 'created');
             renderWidget(container, memberId);
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
@@ -471,6 +472,9 @@ const Tasks = (function() {
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? DateUtils.today() : null;
                     Storage.setWidgetData(memberId, 'task-list', widgetData);
+                    if (checkbox.checked) {
+                        Storage.trackAction(memberId, 'task-list', 'completed');
+                    }
 
                     // Sync with Vision Board if this task came from a goal step
                     syncWithVisionBoard(memberId, task);

@@ -2289,8 +2289,9 @@ const Grocery = (function() {
             item.checkedAt = item.checked ? new Date().toISOString() : null;
             saveWidgetData(memberId, data);
 
-            // Return item info for pantry prompt (only when checking off, not unchecking)
+            // Track item checked (only when checking off, not unchecking)
             if (!wasChecked && item.checked) {
+                Storage.trackAction(memberId, 'grocery', 'checked');
                 return {
                     name: item.name,
                     category: item.category,

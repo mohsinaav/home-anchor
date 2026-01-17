@@ -475,6 +475,7 @@ const Points = (function() {
         };
 
         Storage.setWidgetData(memberId, 'points', updatedData);
+        Storage.trackAction(memberId, 'points', 'completed');
 
         // Update achievements
         if (typeof Achievements !== 'undefined' && Achievements.updateStats) {

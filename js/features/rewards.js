@@ -282,6 +282,7 @@ const Rewards = (function() {
             ]
         };
         Storage.setWidgetData(memberId, 'rewards', updatedRewardsData);
+        Storage.trackAction(memberId, 'rewards', 'redeemed');
 
         Toast.success(`🎉 Redeemed: ${reward.name}!`);
 

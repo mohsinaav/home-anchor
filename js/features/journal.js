@@ -821,6 +821,7 @@ const Journal = (function() {
             ...widgetData,
             entries: trimmedEntries
         });
+        Storage.trackAction(memberId, 'journal', 'entry');
 
         Toast.success('Journal entry saved!');
     }

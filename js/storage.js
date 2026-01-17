@@ -827,6 +827,117 @@ const Storage = (function() {
     }
 
     // =========================================================================
+    // USAGE TRACKING
+    // =========================================================================
+
+    const USAGE_KEY = 'homeAnchor_usage';
+
+    /**
+     * Get the ISO week key for a date (e.g., "2026-W03")
+     */
+    function getWeekKey(date = new Date()) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+        const yearStart = new Date(d.getFullYear(), 0, 1);
+        const weekNum = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return `${d.getFullYear()}-W${weekNum.toString().padStart(2, '0')}`;
+    }
+
+    /**
+     * Get usage data from localStorage
+     */
+    function getUsageData() {
+        try {
+            return JSON.parse(localStorage.getItem(USAGE_KEY) || '{}');
+        } catch (e) {
+            return {};
+        }
+    }
+
+    /**
+     * Save usage data to localStorage
+     */
+    function saveUsageData(usage) {
+        localStorage.setItem(USAGE_KEY, JSON.stringify(usage));
+    }
+
+    /**
+     * Track an action for a member's widget
+     * @param {string} memberId - The member's ID
+     * @param {string} widgetId - The widget ID (e.g., 'task-list', 'habits')
+     * @param {string} action - The action type (e.g., 'completed', 'created', 'entry')
+     */
+    function trackAction(memberId, widgetId, action) {
+        const usage = getUsageData();
+        const weekKey = getWeekKey();
+
+        // Initialize nested structure
+        if (!usage[weekKey]) usage[weekKey] = {};
+        if (!usage[weekKey][memberId]) usage[weekKey][memberId] = {};
+        if (!usage[weekKey][memberId][widgetId]) usage[weekKey][memberId][widgetId] = {};
+
+        // Increment counter
+        const current = usage[weekKey][memberId][widgetId][action] || 0;
+        usage[weekKey][memberId][widgetId][action] = current + 1;
+
+        // Cleanup old weeks (keep last 4 weeks)
+        const allWeeks = Object.keys(usage).sort();
+        while (allWeeks.length > 4) {
+            delete usage[allWeeks.shift()];
+        }
+
+        saveUsageData(usage);
+    }
+
+    /**
+     * Generate a usage report for sharing
+     * @returns {Object} Compact JSON report
+     */
+    function generateUsageReport() {
+        const usage = getUsageData();
+        const weekKey = getWeekKey();
+        const members = getMembers();
+        const weekData = usage[weekKey] || {};
+
+        const report = {
+            app: 'HomeAnchor',
+            week: weekKey,
+            generated: new Date().toISOString(),
+            members: {},
+            total: 0
+        };
+
+        members.forEach(member => {
+            const memberUsage = weekData[member.id] || {};
+            const memberReport = { type: member.type };
+            let memberTotal = 0;
+
+            // Aggregate widget data
+            Object.entries(memberUsage).forEach(([widgetId, actions]) => {
+                const widgetTotal = Object.values(actions).reduce((sum, count) => sum + count, 0);
+                if (widgetTotal > 0) {
+                    // Simplify widget names for compact output
+                    const simpleName = widgetId.replace('-', '');
+                    if (Object.keys(actions).length === 1) {
+                        memberReport[simpleName] = widgetTotal;
+                    } else {
+                        memberReport[simpleName] = actions;
+                    }
+                    memberTotal += widgetTotal;
+                }
+            });
+
+            if (memberTotal > 0) {
+                report.members[member.name] = memberReport;
+                report.total += memberTotal;
+            }
+        });
+
+        return report;
+    }
+
+    // =========================================================================
     // EXPORT / IMPORT / RESET
     // =========================================================================
 
@@ -1165,6 +1276,11 @@ const Storage = (function() {
         // Demo Mode
         loadDemoData,
         isDemoMode,
-        exitDemoMode
+        exitDemoMode,
+
+        // Usage Tracking
+        trackAction,
+        generateUsageReport,
+        getWeekKey
     };
 })();
