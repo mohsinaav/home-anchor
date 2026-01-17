@@ -25,9 +25,19 @@ const SettingsPage = (function() {
     /**
      * Render the settings page
      */
+    // Track which categories are expanded
+    let expandedCategories = {
+        family: true,
+        appearance: false,
+        features: false,
+        security: false,
+        system: false
+    };
+
     function render(container) {
         const settings = Storage.getSettings();
         const members = Storage.getMembers();
+        const kidsAndToddlers = members.filter(m => m.type === 'kid' || m.type === 'toddler');
 
         container.innerHTML = `
             <div class="settings-page">
@@ -43,126 +53,200 @@ const SettingsPage = (function() {
                 </div>
 
                 <div class="settings-page__content">
-                    <!-- Family Members Section -->
-                    <section class="settings-section" id="memberSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
+                    <!-- ==================== FAMILY & MEMBERS ==================== -->
+                    <div class="settings-category ${expandedCategories.family ? 'settings-category--expanded' : ''}" data-category="family">
+                        <button class="settings-category__header" data-toggle-category="family">
+                            <div class="settings-category__header-left">
                                 <i data-lucide="users"></i>
-                                Family Members
-                            </h2>
-                            <button class="btn btn--primary btn--sm" id="addMemberBtn">
-                                <i data-lucide="user-plus"></i>
-                                Add Member
-                            </button>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderMembersList(members)}
-                        </div>
-                    </section>
+                                <span>Family & Members</span>
+                            </div>
+                            <div class="settings-category__header-right">
+                                <span class="settings-category__count">${members.length} members</span>
+                                <i data-lucide="chevron-down" class="settings-category__chevron"></i>
+                            </div>
+                        </button>
+                        <div class="settings-category__body">
+                            <!-- Family Members -->
+                            <section class="settings-section" id="memberSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="user"></i>
+                                        Family Members
+                                    </h3>
+                                    <button class="btn btn--primary btn--sm" id="addMemberBtn">
+                                        <i data-lucide="user-plus"></i>
+                                        Add Member
+                                    </button>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderMembersList(members)}
+                                </div>
+                            </section>
 
-                    <!-- Widget Management Section -->
-                    <section class="settings-section" id="widgetSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
-                                <i data-lucide="layout-grid"></i>
-                                Widget Management
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderWidgetManagement(members)}
-                        </div>
-                    </section>
+                            <!-- Widget Management -->
+                            <section class="settings-section" id="widgetSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="layout-grid"></i>
+                                        Widget Management
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderWidgetManagement(members)}
+                                </div>
+                            </section>
 
-                    <!-- Appearance Section -->
-                    <section class="settings-section" id="appearanceSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
+                            <!-- Kids & Toddlers Management -->
+                            ${renderKidsManagementSection(members)}
+                        </div>
+                    </div>
+
+                    <!-- ==================== APPEARANCE & PREFERENCES ==================== -->
+                    <div class="settings-category ${expandedCategories.appearance ? 'settings-category--expanded' : ''}" data-category="appearance">
+                        <button class="settings-category__header" data-toggle-category="appearance">
+                            <div class="settings-category__header-left">
                                 <i data-lucide="palette"></i>
-                                Appearance
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderAppearanceSettings(settings)}
-                        </div>
-                    </section>
+                                <span>Appearance & Preferences</span>
+                            </div>
+                            <div class="settings-category__header-right">
+                                <i data-lucide="chevron-down" class="settings-category__chevron"></i>
+                            </div>
+                        </button>
+                        <div class="settings-category__body">
+                            <!-- Appearance -->
+                            <section class="settings-section" id="appearanceSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="sun"></i>
+                                        Theme & Colors
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderAppearanceSettings(settings)}
+                                </div>
+                            </section>
 
-                    <!-- Security Section -->
-                    <section class="settings-section" id="securitySettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
+                            <!-- Notifications -->
+                            <section class="settings-section" id="notificationSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="bell"></i>
+                                        Notifications
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${typeof Notifications !== 'undefined' ? Notifications.renderSettingsPanel() : '<p class="settings-empty">Notifications not available</p>'}
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- ==================== FEATURES ==================== -->
+                    <div class="settings-category ${expandedCategories.features ? 'settings-category--expanded' : ''}" data-category="features">
+                        <button class="settings-category__header" data-toggle-category="features">
+                            <div class="settings-category__header-left">
+                                <i data-lucide="sparkles"></i>
+                                <span>Features</span>
+                            </div>
+                            <div class="settings-category__header-right">
+                                <i data-lucide="chevron-down" class="settings-category__chevron"></i>
+                            </div>
+                        </button>
+                        <div class="settings-category__body">
+                            <!-- Points Configuration -->
+                            <section class="settings-section" id="pointsConfigSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="star"></i>
+                                        Points Configuration
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderPointsConfigSettings(settings)}
+                                </div>
+                            </section>
+
+                            <!-- Meal Planning -->
+                            <section class="settings-section" id="mealSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="utensils"></i>
+                                        Meal Planning
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderMealSettings(settings)}
+                                </div>
+                            </section>
+                        </div>
+                    </div>
+
+                    <!-- ==================== SECURITY & PRIVACY ==================== -->
+                    <div class="settings-category ${expandedCategories.security ? 'settings-category--expanded' : ''}" data-category="security">
+                        <button class="settings-category__header" data-toggle-category="security">
+                            <div class="settings-category__header-left">
                                 <i data-lucide="shield"></i>
-                                Security
-                            </h2>
+                                <span>Security & Privacy</span>
+                            </div>
+                            <div class="settings-category__header-right">
+                                <i data-lucide="chevron-down" class="settings-category__chevron"></i>
+                            </div>
+                        </button>
+                        <div class="settings-category__body">
+                            <!-- Security -->
+                            <section class="settings-section" id="securitySettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="lock"></i>
+                                        PIN & Access
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderSecuritySettings()}
+                                </div>
+                            </section>
                         </div>
-                        <div class="settings-section__content">
-                            ${renderSecuritySettings()}
-                        </div>
-                    </section>
+                    </div>
 
-                    <!-- Notifications Section -->
-                    <section class="settings-section" id="notificationSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
-                                <i data-lucide="bell"></i>
-                                Notifications
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${typeof Notifications !== 'undefined' ? Notifications.renderSettingsPanel() : '<p class="settings-empty">Notifications not available</p>'}
-                        </div>
-                    </section>
-
-                    <!-- Meal Planning Section -->
-                    <section class="settings-section" id="mealSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
-                                <i data-lucide="utensils"></i>
-                                Meal Planning
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderMealSettings(settings)}
-                        </div>
-                    </section>
-
-                    <!-- Points Configuration Section -->
-                    <section class="settings-section" id="pointsConfigSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
-                                <i data-lucide="star"></i>
-                                Points Configuration
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderPointsConfigSettings(settings)}
-                        </div>
-                    </section>
-
-                    <!-- Help & Tutorials Section -->
-                    <section class="settings-section" id="helpSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
-                                <i data-lucide="help-circle"></i>
-                                Help & Tutorials
-                            </h2>
-                        </div>
-                        <div class="settings-section__content">
-                            ${renderHelpSettings(settings)}
-                        </div>
-                    </section>
-
-                    <!-- Data Management Section -->
-                    <section class="settings-section" id="dataSettings">
-                        <div class="settings-section__header">
-                            <h2 class="settings-section__title">
+                    <!-- ==================== HELP & DATA ==================== -->
+                    <div class="settings-category ${expandedCategories.system ? 'settings-category--expanded' : ''}" data-category="system">
+                        <button class="settings-category__header" data-toggle-category="system">
+                            <div class="settings-category__header-left">
                                 <i data-lucide="database"></i>
-                                Data Management
-                            </h2>
+                                <span>Help & Data</span>
+                            </div>
+                            <div class="settings-category__header-right">
+                                <i data-lucide="chevron-down" class="settings-category__chevron"></i>
+                            </div>
+                        </button>
+                        <div class="settings-category__body">
+                            <!-- Help & Tutorials -->
+                            <section class="settings-section" id="helpSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="help-circle"></i>
+                                        Help & Tutorials
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderHelpSettings(settings)}
+                                </div>
+                            </section>
+
+                            <!-- Data Management -->
+                            <section class="settings-section" id="dataSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="hard-drive"></i>
+                                        Data Management
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderDataManagement()}
+                                </div>
+                            </section>
                         </div>
-                        <div class="settings-section__content">
-                            ${renderDataManagement()}
-                        </div>
-                    </section>
+                    </div>
                 </div>
 
                 <input type="file" id="importFileInput" accept=".json" style="display: none;">
@@ -494,6 +578,954 @@ const SettingsPage = (function() {
                 </button>
             </div>
         `;
+    }
+
+    // =========================================================================
+    // KIDS & TODDLERS MANAGEMENT SECTION
+    // =========================================================================
+
+    // Track current kid management tab
+    let kidsManagementTab = 'points';
+    let selectedKidId = null;
+
+    /**
+     * Render Kids & Toddlers Management Section
+     */
+    function renderKidsManagementSection(members) {
+        const kidsAndToddlers = members.filter(m => m.type === 'kid' || m.type === 'toddler');
+
+        if (kidsAndToddlers.length === 0) {
+            return ''; // Don't show section if no kids/toddlers
+        }
+
+        // Default to first kid if none selected
+        if (!selectedKidId || !kidsAndToddlers.find(m => m.id === selectedKidId)) {
+            selectedKidId = kidsAndToddlers[0].id;
+        }
+
+        const selectedMember = Storage.getMember(selectedKidId);
+
+        return `
+            <section class="settings-section" id="kidsManagementSettings">
+                <div class="settings-section__header">
+                    <h2 class="settings-section__title">
+                        <i data-lucide="baby"></i>
+                        Kids & Toddlers Management
+                    </h2>
+                </div>
+                <div class="settings-section__content">
+                    <div class="kids-management">
+                        <!-- Child Selector -->
+                        <div class="kids-management__selector">
+                            <label class="form-label">Select Child</label>
+                            <select class="form-input form-select" id="kidsManagementSelector">
+                                ${kidsAndToddlers.map(m => `
+                                    <option value="${m.id}" ${m.id === selectedKidId ? 'selected' : ''}>
+                                        ${m.name} (${m.type === 'toddler' ? 'Toddler' : 'Kid'})
+                                    </option>
+                                `).join('')}
+                            </select>
+                        </div>
+
+                        <!-- Sub-tabs -->
+                        <div class="kids-management__tabs">
+                            <button class="kids-management__tab ${kidsManagementTab === 'points' ? 'kids-management__tab--active' : ''}" data-kids-tab="points">
+                                <i data-lucide="star"></i>
+                                Points
+                            </button>
+                            <button class="kids-management__tab ${kidsManagementTab === 'chores' ? 'kids-management__tab--active' : ''}" data-kids-tab="chores">
+                                <i data-lucide="check-square"></i>
+                                Chores
+                            </button>
+                            <button class="kids-management__tab ${kidsManagementTab === 'screen-time' ? 'kids-management__tab--active' : ''}" data-kids-tab="screen-time">
+                                <i data-lucide="monitor"></i>
+                                Screen Time
+                            </button>
+                            <button class="kids-management__tab ${kidsManagementTab === 'rewards' ? 'kids-management__tab--active' : ''}" data-kids-tab="rewards">
+                                <i data-lucide="gift"></i>
+                                Rewards
+                            </button>
+                        </div>
+
+                        <!-- Tab Content -->
+                        <div class="kids-management__content" id="kidsManagementContent">
+                            ${renderKidsTabContent(selectedKidId, kidsManagementTab)}
+                        </div>
+
+                        <!-- Danger Zone -->
+                        <div class="kids-management__danger-zone">
+                            <h4><i data-lucide="alert-triangle"></i> Danger Zone</h4>
+                            <p>Reset all progress for ${selectedMember?.name || 'this child'}. This clears points, chores history, screen time log, and achievements.</p>
+                            <button class="btn btn--danger btn--sm" id="resetKidProgressBtn" data-member-id="${selectedKidId}">
+                                <i data-lucide="trash-2"></i>
+                                Reset All Progress
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        `;
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderKidsTabContent(memberId, tab) {
+        switch (tab) {
+            case 'points':
+                return renderKidsPointsTab(memberId);
+            case 'chores':
+                return renderKidsChoresTab(memberId);
+            case 'screen-time':
+                return renderKidsScreenTimeTab(memberId);
+            case 'rewards':
+                return renderKidsRewardsTab(memberId);
+            default:
+                return renderKidsPointsTab(memberId);
+        }
+    }
+
+    /**
+     * Render Points Management Tab
+     */
+    function renderKidsPointsTab(memberId) {
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0 };
+        const balance = pointsData.balance || 0;
+
+        return `
+            <div class="kids-tab-content kids-tab-content--points">
+                <div class="kids-points-display">
+                    <div class="kids-points-display__balance">
+                        <span class="kids-points-display__value">${balance}</span>
+                        <span class="kids-points-display__label">Current Points</span>
+                    </div>
+                    <div class="kids-points-display__quick-adjust">
+                        <span class="kids-points-display__adjust-label">Quick Adjust:</span>
+                        <div class="kids-points-display__buttons">
+                            <button class="btn btn--ghost btn--sm" data-adjust-points="-10">-10</button>
+                            <button class="btn btn--ghost btn--sm" data-adjust-points="-5">-5</button>
+                            <button class="btn btn--ghost btn--sm" data-adjust-points="-1">-1</button>
+                            <button class="btn btn--primary btn--sm" data-adjust-points="1">+1</button>
+                            <button class="btn btn--primary btn--sm" data-adjust-points="5">+5</button>
+                            <button class="btn btn--primary btn--sm" data-adjust-points="10">+10</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kids-points-manual">
+                    <h4>Manual Adjustment</h4>
+                    <div class="kids-points-manual__form">
+                        <input type="number" class="form-input" id="kidsManualPointsAmount" placeholder="Amount" min="1" max="1000">
+                        <input type="text" class="form-input" id="kidsManualPointsReason" placeholder="Reason (optional)">
+                        <div class="kids-points-manual__actions">
+                            <button class="btn btn--primary btn--sm" id="kidsAddPointsBtn">
+                                <i data-lucide="plus"></i> Add
+                            </button>
+                            <button class="btn btn--ghost btn--sm" id="kidsDeductPointsBtn">
+                                <i data-lucide="minus"></i> Deduct
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Chores Management Tab
+     */
+    function renderKidsChoresTab(memberId) {
+        const choresData = Storage.getWidgetData(memberId, 'chores') || { chorePool: [], choresPerDay: 2 };
+        const pool = choresData.chorePool || [];
+        const choresPerDay = choresData.choresPerDay || 2;
+
+        return `
+            <div class="kids-tab-content kids-tab-content--chores">
+                <div class="kids-chores-config">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Chores Per Day</label>
+                            <p class="setting-description">How many random chores to assign each day</p>
+                        </div>
+                        <div class="kids-chores-config__slider">
+                            <input type="range" id="kidsChoresPerDay" min="1" max="5" value="${choresPerDay}">
+                            <span id="kidsChoresPerDayValue">${choresPerDay}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kids-chores-pool">
+                    <div class="kids-chores-pool__header">
+                        <h4>Chore Pool (${pool.length} chores)</h4>
+                        <button class="btn btn--primary btn--sm" id="kidsAddChoreBtn">
+                            <i data-lucide="plus"></i> Add Chore
+                        </button>
+                    </div>
+                    ${pool.length === 0 ? `
+                        <p class="kids-chores-pool__empty">No chores in pool yet. Add some chores to get started!</p>
+                    ` : `
+                        <div class="kids-chores-pool__list">
+                            ${pool.map(chore => `
+                                <div class="kids-chore-item" data-chore-id="${chore.id}">
+                                    <div class="kids-chore-item__icon">
+                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                    </div>
+                                    <div class="kids-chore-item__info">
+                                        <span class="kids-chore-item__name">${chore.name}</span>
+                                        <span class="kids-chore-item__points">
+                                            <i data-lucide="star"></i> ${chore.points} pts
+                                        </span>
+                                    </div>
+                                    <div class="kids-chore-item__actions">
+                                        <button class="btn btn--ghost btn--sm" data-edit-chore="${chore.id}" title="Edit">
+                                            <i data-lucide="pencil"></i>
+                                        </button>
+                                        <button class="btn btn--ghost btn--sm" data-delete-chore="${chore.id}" title="Delete">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+
+                <div class="kids-chores-actions">
+                    <button class="btn btn--ghost btn--sm" id="kidsResetTodayChoresBtn">
+                        <i data-lucide="refresh-cw"></i> Reset Today's Chores
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Screen Time Management Tab
+     */
+    function renderKidsScreenTimeTab(memberId) {
+        const screenData = Storage.getWidgetData(memberId, 'screen-time') || { weekdayLimit: 120, weekendLimit: 180 };
+        const weekdayLimit = screenData.weekdayLimit || 120;
+        const weekendLimit = screenData.weekendLimit || 180;
+
+        const formatMinutes = (mins) => {
+            if (mins >= 60) {
+                const hrs = Math.floor(mins / 60);
+                const remainMins = mins % 60;
+                return remainMins > 0 ? `${hrs}h ${remainMins}m` : `${hrs}h`;
+            }
+            return `${mins}m`;
+        };
+
+        return `
+            <div class="kids-tab-content kids-tab-content--screen-time">
+                <div class="kids-screen-time-limits">
+                    <div class="kids-screen-time-limit">
+                        <label class="setting-label">
+                            <i data-lucide="briefcase"></i> Weekday Limit (Mon-Fri)
+                        </label>
+                        <div class="kids-screen-time-limit__control">
+                            <input type="range" id="kidsWeekdayLimit" min="0" max="240" step="15" value="${weekdayLimit}">
+                            <span id="kidsWeekdayLimitValue">${formatMinutes(weekdayLimit)}</span>
+                        </div>
+                    </div>
+
+                    <div class="kids-screen-time-limit">
+                        <label class="setting-label">
+                            <i data-lucide="sun"></i> Weekend Limit (Sat-Sun)
+                        </label>
+                        <div class="kids-screen-time-limit__control">
+                            <input type="range" id="kidsWeekendLimit" min="0" max="360" step="15" value="${weekendLimit}">
+                            <span id="kidsWeekendLimitValue">${formatMinutes(weekendLimit)}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kids-screen-time-presets">
+                    <span class="kids-screen-time-presets__label">Quick Presets (both days):</span>
+                    <div class="kids-screen-time-presets__buttons">
+                        <button class="btn btn--ghost btn--sm" data-screen-preset="30">30m</button>
+                        <button class="btn btn--ghost btn--sm" data-screen-preset="60">1h</button>
+                        <button class="btn btn--ghost btn--sm" data-screen-preset="120">2h</button>
+                        <button class="btn btn--ghost btn--sm" data-screen-preset="180">3h</button>
+                    </div>
+                </div>
+
+                <div class="kids-screen-time-actions">
+                    <button class="btn btn--primary" id="kidsSaveScreenTimeLimitsBtn">
+                        <i data-lucide="save"></i> Save Limits
+                    </button>
+                    <button class="btn btn--ghost" id="kidsResetScreenTimeLogBtn">
+                        <i data-lucide="trash-2"></i> Clear Usage History
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Rewards Management Tab
+     */
+    function renderKidsRewardsTab(memberId) {
+        const rewardsData = Storage.getWidgetData(memberId, 'rewards') || { rewards: [] };
+        const rewards = rewardsData.rewards || [];
+
+        return `
+            <div class="kids-tab-content kids-tab-content--rewards">
+                <div class="kids-rewards-list">
+                    <div class="kids-rewards-list__header">
+                        <h4>Available Rewards (${rewards.length})</h4>
+                        <button class="btn btn--primary btn--sm" id="kidsAddRewardBtn">
+                            <i data-lucide="plus"></i> Add Reward
+                        </button>
+                    </div>
+                    ${rewards.length === 0 ? `
+                        <p class="kids-rewards-list__empty">No rewards yet. Add some rewards for the child to redeem!</p>
+                    ` : `
+                        <div class="kids-rewards-grid">
+                            ${rewards.map(reward => `
+                                <div class="kids-reward-item" data-reward-id="${reward.id}" style="--reward-color: ${reward.color || '#3B82F6'}">
+                                    <div class="kids-reward-item__icon" style="background-color: ${reward.color || '#3B82F6'}">
+                                        <i data-lucide="${reward.icon || 'gift'}"></i>
+                                    </div>
+                                    <div class="kids-reward-item__info">
+                                        <span class="kids-reward-item__name">${reward.name}</span>
+                                        <span class="kids-reward-item__cost">
+                                            <i data-lucide="star"></i> ${reward.cost} pts
+                                        </span>
+                                    </div>
+                                    <div class="kids-reward-item__actions">
+                                        <button class="btn btn--ghost btn--sm" data-edit-reward="${reward.id}" title="Edit">
+                                            <i data-lucide="pencil"></i>
+                                        </button>
+                                        <button class="btn btn--ghost btn--sm" data-delete-reward="${reward.id}" title="Delete">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind Kids Management Events
+     */
+    function bindKidsManagementEvents(container) {
+        // Child selector change
+        container.querySelector('#kidsManagementSelector')?.addEventListener('change', (e) => {
+            selectedKidId = e.target.value;
+            refreshKidsManagementSection(container);
+        });
+
+        // Tab switching
+        container.querySelectorAll('.kids-management__tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                kidsManagementTab = tab.dataset.kidsTab;
+                refreshKidsManagementSection(container);
+            });
+        });
+
+        // Points quick adjust
+        container.querySelectorAll('[data-adjust-points]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const amount = parseInt(btn.dataset.adjustPoints);
+                adjustKidPoints(selectedKidId, amount);
+                refreshKidsManagementSection(container);
+            });
+        });
+
+        // Points manual add
+        container.querySelector('#kidsAddPointsBtn')?.addEventListener('click', () => {
+            const amount = parseInt(container.querySelector('#kidsManualPointsAmount')?.value) || 0;
+            const reason = container.querySelector('#kidsManualPointsReason')?.value || 'Manual adjustment';
+            if (amount > 0) {
+                adjustKidPoints(selectedKidId, amount, reason);
+                container.querySelector('#kidsManualPointsAmount').value = '';
+                container.querySelector('#kidsManualPointsReason').value = '';
+                refreshKidsManagementSection(container);
+            } else {
+                Toast.error('Please enter a valid amount');
+            }
+        });
+
+        // Points manual deduct
+        container.querySelector('#kidsDeductPointsBtn')?.addEventListener('click', () => {
+            const amount = parseInt(container.querySelector('#kidsManualPointsAmount')?.value) || 0;
+            const reason = container.querySelector('#kidsManualPointsReason')?.value || 'Manual deduction';
+            if (amount > 0) {
+                adjustKidPoints(selectedKidId, -amount, reason);
+                container.querySelector('#kidsManualPointsAmount').value = '';
+                container.querySelector('#kidsManualPointsReason').value = '';
+                refreshKidsManagementSection(container);
+            } else {
+                Toast.error('Please enter a valid amount');
+            }
+        });
+
+        // Chores per day slider
+        container.querySelector('#kidsChoresPerDay')?.addEventListener('input', (e) => {
+            container.querySelector('#kidsChoresPerDayValue').textContent = e.target.value;
+        });
+
+        container.querySelector('#kidsChoresPerDay')?.addEventListener('change', (e) => {
+            const choresData = Storage.getWidgetData(selectedKidId, 'chores') || {};
+            choresData.choresPerDay = parseInt(e.target.value);
+            Storage.setWidgetData(selectedKidId, 'chores', choresData);
+            Toast.success('Chores per day updated');
+        });
+
+        // Add chore button
+        container.querySelector('#kidsAddChoreBtn')?.addEventListener('click', () => {
+            showAddChoreModal(selectedKidId, container);
+        });
+
+        // Edit/delete chore buttons
+        container.querySelectorAll('[data-edit-chore]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditChoreModal(selectedKidId, btn.dataset.editChore, container);
+            });
+        });
+
+        container.querySelectorAll('[data-delete-chore]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this chore?', 'Delete Chore');
+                if (confirmed) {
+                    deleteChore(selectedKidId, btn.dataset.deleteChore);
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Reset today's chores
+        container.querySelector('#kidsResetTodayChoresBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.confirm('Reset today\'s assigned chores? New random chores will be picked.', 'Reset Chores');
+            if (confirmed) {
+                const choresData = Storage.getWidgetData(selectedKidId, 'chores') || {};
+                const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+                if (choresData.dailyChores) {
+                    delete choresData.dailyChores[today];
+                }
+                Storage.setWidgetData(selectedKidId, 'chores', choresData);
+                Toast.success('Today\'s chores reset');
+            }
+        });
+
+        // Screen time sliders
+        const formatMinutes = (mins) => {
+            if (mins >= 60) {
+                const hrs = Math.floor(mins / 60);
+                const remainMins = mins % 60;
+                return remainMins > 0 ? `${hrs}h ${remainMins}m` : `${hrs}h`;
+            }
+            return `${mins}m`;
+        };
+
+        container.querySelector('#kidsWeekdayLimit')?.addEventListener('input', (e) => {
+            container.querySelector('#kidsWeekdayLimitValue').textContent = formatMinutes(parseInt(e.target.value));
+        });
+
+        container.querySelector('#kidsWeekendLimit')?.addEventListener('input', (e) => {
+            container.querySelector('#kidsWeekendLimitValue').textContent = formatMinutes(parseInt(e.target.value));
+        });
+
+        // Screen time presets
+        container.querySelectorAll('[data-screen-preset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const preset = parseInt(btn.dataset.screenPreset);
+                container.querySelector('#kidsWeekdayLimit').value = preset;
+                container.querySelector('#kidsWeekendLimit').value = preset;
+                container.querySelector('#kidsWeekdayLimitValue').textContent = formatMinutes(preset);
+                container.querySelector('#kidsWeekendLimitValue').textContent = formatMinutes(preset);
+            });
+        });
+
+        // Save screen time limits
+        container.querySelector('#kidsSaveScreenTimeLimitsBtn')?.addEventListener('click', () => {
+            const weekdayLimit = parseInt(container.querySelector('#kidsWeekdayLimit')?.value) || 120;
+            const weekendLimit = parseInt(container.querySelector('#kidsWeekendLimit')?.value) || 180;
+            const screenData = Storage.getWidgetData(selectedKidId, 'screen-time') || {};
+            screenData.weekdayLimit = weekdayLimit;
+            screenData.weekendLimit = weekendLimit;
+            Storage.setWidgetData(selectedKidId, 'screen-time', screenData);
+            Toast.success('Screen time limits saved');
+        });
+
+        // Clear screen time history
+        container.querySelector('#kidsResetScreenTimeLogBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.dangerConfirm('Clear all screen time usage history?', 'Clear History');
+            if (confirmed) {
+                const screenData = Storage.getWidgetData(selectedKidId, 'screen-time') || {};
+                screenData.log = {};
+                Storage.setWidgetData(selectedKidId, 'screen-time', screenData);
+                Toast.success('Screen time history cleared');
+            }
+        });
+
+        // Add reward button
+        container.querySelector('#kidsAddRewardBtn')?.addEventListener('click', () => {
+            showAddRewardModal(selectedKidId, container);
+        });
+
+        // Edit/delete reward buttons
+        container.querySelectorAll('[data-edit-reward]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditRewardModal(selectedKidId, btn.dataset.editReward, container);
+            });
+        });
+
+        container.querySelectorAll('[data-delete-reward]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this reward?', 'Delete Reward');
+                if (confirmed) {
+                    deleteReward(selectedKidId, btn.dataset.deleteReward);
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Reset all progress
+        container.querySelector('#resetKidProgressBtn')?.addEventListener('click', async () => {
+            const member = Storage.getMember(selectedKidId);
+            const confirmed = await Modal.dangerConfirm(
+                `This will reset ALL progress for ${member?.name || 'this child'}: points, chores history, screen time log, and achievements. This cannot be undone!`,
+                'Reset All Progress'
+            );
+            if (confirmed) {
+                resetKidProgress(selectedKidId);
+                refreshKidsManagementSection(container);
+            }
+        });
+    }
+
+    /**
+     * Refresh the kids management section
+     */
+    function refreshKidsManagementSection(container) {
+        const members = Storage.getMembers();
+        const section = container.querySelector('#kidsManagementSettings');
+        if (section) {
+            section.outerHTML = renderKidsManagementSection(members);
+            bindKidsManagementEvents(container);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
+    /**
+     * Adjust kid's points
+     */
+    function adjustKidPoints(memberId, amount, reason = 'Manual adjustment') {
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0, history: [] };
+        const newBalance = Math.max(0, (pointsData.balance || 0) + amount);
+        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+
+        pointsData.balance = newBalance;
+        pointsData.history = [
+            {
+                activityId: `manual-${Date.now()}`,
+                activityName: reason,
+                date: today,
+                points: Math.abs(amount),
+                type: amount > 0 ? 'earned' : 'deducted'
+            },
+            ...(pointsData.history || []).slice(0, 99)
+        ];
+
+        Storage.setWidgetData(memberId, 'points', pointsData);
+        Toast.success(`${amount > 0 ? '+' : ''}${amount} points`);
+    }
+
+    /**
+     * Delete a chore
+     */
+    function deleteChore(memberId, choreId) {
+        const choresData = Storage.getWidgetData(memberId, 'chores') || { chorePool: [] };
+        choresData.chorePool = (choresData.chorePool || []).filter(c => c.id !== choreId);
+        Storage.setWidgetData(memberId, 'chores', choresData);
+        Toast.success('Chore deleted');
+    }
+
+    /**
+     * Delete a reward
+     */
+    function deleteReward(memberId, rewardId) {
+        const rewardsData = Storage.getWidgetData(memberId, 'rewards') || { rewards: [] };
+        rewardsData.rewards = (rewardsData.rewards || []).filter(r => r.id !== rewardId);
+        // Also remove from wishlist if present
+        if (rewardsData.wishlist) {
+            rewardsData.wishlist = rewardsData.wishlist.filter(id => id !== rewardId);
+        }
+        Storage.setWidgetData(memberId, 'rewards', rewardsData);
+        Toast.success('Reward deleted');
+    }
+
+    /**
+     * Reset all progress for a kid
+     */
+    function resetKidProgress(memberId) {
+        // Reset points
+        Storage.setWidgetData(memberId, 'points', { balance: 0, history: [] });
+
+        // Reset chores (keep pool, clear history)
+        const choresData = Storage.getWidgetData(memberId, 'chores') || {};
+        choresData.dailyChores = {};
+        choresData.completedToday = [];
+        Storage.setWidgetData(memberId, 'chores', choresData);
+
+        // Reset screen time (keep limits, clear log)
+        const screenData = Storage.getWidgetData(memberId, 'screen-time') || {};
+        screenData.log = {};
+        Storage.setWidgetData(memberId, 'screen-time', screenData);
+
+        // Reset achievements
+        Storage.setWidgetData(memberId, 'achievements', {
+            earned: [],
+            totalPointsEarned: 0,
+            currentStreak: 0,
+            activitiesCompleted: 0,
+            rewardsRedeemed: 0
+        });
+
+        // Keep rewards, clear redeemed history
+        const rewardsData = Storage.getWidgetData(memberId, 'rewards') || {};
+        rewardsData.redeemed = [];
+        Storage.setWidgetData(memberId, 'rewards', rewardsData);
+
+        Toast.success('All progress has been reset');
+    }
+
+    /**
+     * Show Add Chore Modal
+     */
+    function showAddChoreModal(memberId, container) {
+        const choreIcons = ['bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower-2', 'box', 'shirt', 'droplets', 'broom', 'dog', 'cat', 'leaf', 'sun'];
+
+        const content = `
+            <form id="addChoreForm">
+                <div class="form-group">
+                    <label class="form-label">Chore Name</label>
+                    <input type="text" class="form-input" id="choreNameInput" placeholder="e.g., Make bed" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Points</label>
+                    <input type="number" class="form-input" id="chorePointsInput" value="5" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${choreIcons.map((icon, i) => `
+                            <button type="button" class="icon-selector__btn ${i === 0 ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
+                                <i data-lucide="${icon}"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="choreIconInput" value="${choreIcons[0]}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Chore',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add Chore')
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // Icon selection
+        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
+                btn.classList.add('icon-selector__btn--active');
+                document.getElementById('choreIconInput').value = btn.dataset.icon;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('choreNameInput')?.value.trim();
+            const points = parseInt(document.getElementById('chorePointsInput')?.value) || 5;
+            const icon = document.getElementById('choreIconInput')?.value || 'check-square';
+
+            if (!name) {
+                Toast.error('Please enter a chore name');
+                return false;
+            }
+
+            const choresData = Storage.getWidgetData(memberId, 'chores') || { chorePool: [] };
+            choresData.chorePool = choresData.chorePool || [];
+            choresData.chorePool.push({
+                id: `chore-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                name,
+                points,
+                icon
+            });
+            Storage.setWidgetData(memberId, 'chores', choresData);
+            Toast.success('Chore added');
+            refreshKidsManagementSection(container);
+            return true;
+        });
+    }
+
+    /**
+     * Show Edit Chore Modal
+     */
+    function showEditChoreModal(memberId, choreId, container) {
+        const choresData = Storage.getWidgetData(memberId, 'chores') || { chorePool: [] };
+        const chore = (choresData.chorePool || []).find(c => c.id === choreId);
+        if (!chore) return;
+
+        const choreIcons = ['bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower-2', 'box', 'shirt', 'droplets', 'broom', 'dog', 'cat', 'leaf', 'sun'];
+
+        const content = `
+            <form id="editChoreForm">
+                <div class="form-group">
+                    <label class="form-label">Chore Name</label>
+                    <input type="text" class="form-input" id="choreNameInput" value="${chore.name}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Points</label>
+                    <input type="number" class="form-input" id="chorePointsInput" value="${chore.points}" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${choreIcons.map(icon => `
+                            <button type="button" class="icon-selector__btn ${icon === chore.icon ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
+                                <i data-lucide="${icon}"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="choreIconInput" value="${chore.icon || 'check-square'}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Chore',
+            content,
+            footer: Modal.createFooter('Cancel', 'Save Changes')
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
+                btn.classList.add('icon-selector__btn--active');
+                document.getElementById('choreIconInput').value = btn.dataset.icon;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('choreNameInput')?.value.trim();
+            const points = parseInt(document.getElementById('chorePointsInput')?.value) || 5;
+            const icon = document.getElementById('choreIconInput')?.value || 'check-square';
+
+            if (!name) {
+                Toast.error('Please enter a chore name');
+                return false;
+            }
+
+            const index = choresData.chorePool.findIndex(c => c.id === choreId);
+            if (index !== -1) {
+                choresData.chorePool[index] = { ...choresData.chorePool[index], name, points, icon };
+                Storage.setWidgetData(memberId, 'chores', choresData);
+                Toast.success('Chore updated');
+                refreshKidsManagementSection(container);
+            }
+            return true;
+        });
+    }
+
+    /**
+     * Show Add Reward Modal
+     */
+    function showAddRewardModal(memberId, container) {
+        const rewardIcons = ['monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2', 'gift', 'pizza', 'candy', 'music', 'party-popper', 'cake', 'shopping-bag', 'bike', 'star'];
+        const rewardColors = ['#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B'];
+
+        const content = `
+            <form id="addRewardForm">
+                <div class="form-group">
+                    <label class="form-label">Reward Name</label>
+                    <input type="text" class="form-input" id="rewardNameInput" placeholder="e.g., 30 min screen time" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cost (Points)</label>
+                    <input type="number" class="form-input" id="rewardCostInput" value="20" min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${rewardIcons.map((icon, i) => `
+                            <button type="button" class="icon-selector__btn ${i === 0 ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
+                                <i data-lucide="${icon}"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="rewardIconInput" value="${rewardIcons[0]}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${rewardColors.map((color, i) => `
+                            <button type="button" class="color-selector__btn ${i === 0 ? 'color-selector__btn--active' : ''}"
+                                    data-color="${color}" style="background-color: ${color}">
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="rewardColorInput" value="${rewardColors[0]}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Reward',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add Reward')
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        // Icon selection
+        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
+                btn.classList.add('icon-selector__btn--active');
+                document.getElementById('rewardIconInput').value = btn.dataset.icon;
+            });
+        });
+
+        // Color selection
+        document.querySelectorAll('.color-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-selector__btn').forEach(b => b.classList.remove('color-selector__btn--active'));
+                btn.classList.add('color-selector__btn--active');
+                document.getElementById('rewardColorInput').value = btn.dataset.color;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('rewardNameInput')?.value.trim();
+            const cost = parseInt(document.getElementById('rewardCostInput')?.value) || 20;
+            const icon = document.getElementById('rewardIconInput')?.value || 'gift';
+            const color = document.getElementById('rewardColorInput')?.value || '#3B82F6';
+
+            if (!name) {
+                Toast.error('Please enter a reward name');
+                return false;
+            }
+
+            const rewardsData = Storage.getWidgetData(memberId, 'rewards') || { rewards: [] };
+            rewardsData.rewards = rewardsData.rewards || [];
+            rewardsData.rewards.push({
+                id: `reward-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                name,
+                cost,
+                icon,
+                color
+            });
+            Storage.setWidgetData(memberId, 'rewards', rewardsData);
+            Toast.success('Reward added');
+            refreshKidsManagementSection(container);
+            return true;
+        });
+    }
+
+    /**
+     * Show Edit Reward Modal
+     */
+    function showEditRewardModal(memberId, rewardId, container) {
+        const rewardsData = Storage.getWidgetData(memberId, 'rewards') || { rewards: [] };
+        const reward = (rewardsData.rewards || []).find(r => r.id === rewardId);
+        if (!reward) return;
+
+        const rewardIcons = ['monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2', 'gift', 'pizza', 'candy', 'music', 'party-popper', 'cake', 'shopping-bag', 'bike', 'star'];
+        const rewardColors = ['#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B'];
+
+        const content = `
+            <form id="editRewardForm">
+                <div class="form-group">
+                    <label class="form-label">Reward Name</label>
+                    <input type="text" class="form-input" id="rewardNameInput" value="${reward.name}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Cost (Points)</label>
+                    <input type="number" class="form-input" id="rewardCostInput" value="${reward.cost}" min="1" max="1000">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${rewardIcons.map(icon => `
+                            <button type="button" class="icon-selector__btn ${icon === reward.icon ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
+                                <i data-lucide="${icon}"></i>
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="rewardIconInput" value="${reward.icon || 'gift'}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${rewardColors.map(color => `
+                            <button type="button" class="color-selector__btn ${color === reward.color ? 'color-selector__btn--active' : ''}"
+                                    data-color="${color}" style="background-color: ${color}">
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="rewardColorInput" value="${reward.color || '#3B82F6'}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Reward',
+            content,
+            footer: Modal.createFooter('Cancel', 'Save Changes')
+        });
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+
+        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
+                btn.classList.add('icon-selector__btn--active');
+                document.getElementById('rewardIconInput').value = btn.dataset.icon;
+            });
+        });
+
+        document.querySelectorAll('.color-selector__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.color-selector__btn').forEach(b => b.classList.remove('color-selector__btn--active'));
+                btn.classList.add('color-selector__btn--active');
+                document.getElementById('rewardColorInput').value = btn.dataset.color;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('rewardNameInput')?.value.trim();
+            const cost = parseInt(document.getElementById('rewardCostInput')?.value) || 20;
+            const icon = document.getElementById('rewardIconInput')?.value || 'gift';
+            const color = document.getElementById('rewardColorInput')?.value || '#3B82F6';
+
+            if (!name) {
+                Toast.error('Please enter a reward name');
+                return false;
+            }
+
+            const index = rewardsData.rewards.findIndex(r => r.id === rewardId);
+            if (index !== -1) {
+                rewardsData.rewards[index] = { ...rewardsData.rewards[index], name, cost, icon, color };
+                Storage.setWidgetData(memberId, 'rewards', rewardsData);
+                Toast.success('Reward updated');
+                refreshKidsManagementSection(container);
+            }
+            return true;
+        });
     }
 
     function renderHelpSettings(settings) {
@@ -835,6 +1867,25 @@ const SettingsPage = (function() {
             }
         });
 
+        // Category toggle buttons
+        container.querySelectorAll('[data-toggle-category]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const categoryName = btn.dataset.toggleCategory;
+                const categoryEl = container.querySelector(`[data-category="${categoryName}"]`);
+
+                if (categoryEl) {
+                    const isExpanded = categoryEl.classList.contains('settings-category--expanded');
+                    categoryEl.classList.toggle('settings-category--expanded');
+                    expandedCategories[categoryName] = !isExpanded;
+
+                    // Re-initialize lucide icons for chevron rotation
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            });
+        });
+
         // Add member button
         container.querySelector('#addMemberBtn')?.addEventListener('click', () => {
             showAddMemberModal();
@@ -1095,6 +2146,9 @@ const SettingsPage = (function() {
                 Toast.success('All tours have been reset');
             }
         });
+
+        // Kids & Toddlers Management events
+        bindKidsManagementEvents(container);
     }
 
     /**

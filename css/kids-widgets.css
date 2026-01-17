@@ -331,25 +331,39 @@
     padding: 0 var(--space-4);
 }
 
+/* Kids grid uses CSS columns for masonry-like layout (same as adult widgets) */
 .kids-grid.widget-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-4);
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-4);
+    column-fill: balance;
     max-width: 900px;
     margin: 0 auto;
 }
 
+.kids-grid.widget-grid .widget-card {
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-column-break-inside: avoid;
+    margin-bottom: var(--space-4);
+    display: block;
+    /* Prevent transform/animation from breaking column layout */
+    transform: translateZ(0);
+    backface-visibility: hidden;
+}
+
 .kids-grid.widget-grid--single {
-    display: grid;
-    grid-template-columns: 1fr;
+    display: block;
+    column-count: 1;
     max-width: 600px;
     margin: 0 auto;
 }
 
 .kids-grid.widget-grid--double {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-4);
+    display: block;
+    column-count: 2;
+    column-gap: var(--space-4);
+    column-fill: balance;
 }
 
 /* Kid grid widget cards */
@@ -371,8 +385,7 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--space-3) var(--space-4);
-    background: var(--gray-50);
-    border-bottom: 1px solid var(--gray-200);
+    /* Background and colors handled by widget-specific rules in widgets.css */
 }
 
 .widget-card--kid-grid .widget-card__title {
@@ -380,13 +393,13 @@
     align-items: center;
     gap: var(--space-2);
     font-weight: var(--font-semibold);
-    color: var(--gray-800);
+    /* Color handled by widget-grid rules in widgets.css */
 }
 
 .widget-card--kid-grid .widget-card__title i {
     width: 20px;
     height: 20px;
-    color: var(--primary);
+    /* Color handled by widget-grid rules in widgets.css */
 }
 
 .widget-card--kid-grid .widget-card__controls {
@@ -398,11 +411,43 @@
     padding: var(--space-4);
 }
 
+/* Vision Board in kids grid - constrain zones to prevent overflow */
+.widget-card--kid-grid[data-widget="vision-board"] .vb-template {
+    padding: var(--space-2);
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-template__grid {
+    max-width: 100%;
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-template__row {
+    gap: var(--space-2);
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-zone {
+    padding: var(--space-2);
+    min-height: auto;
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-zone--circle {
+    aspect-ratio: unset;
+    min-height: 80px;
+    border-radius: var(--radius-xl);
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-zone__title {
+    font-size: var(--text-sm);
+}
+
+.widget-card--kid-grid[data-widget="vision-board"] .vb-zone__goal-title {
+    font-size: var(--text-xs);
+}
+
 /* Responsive adjustments for kids grid */
 @media (max-width: 768px) {
     .kids-grid.widget-grid,
     .kids-grid.widget-grid--double {
-        grid-template-columns: 1fr;
+        column-count: 1;
         max-width: 100%;
         width: 100%;
     }
@@ -518,33 +563,657 @@
     color: #92400E;
 }
 
-/* Tablet: Side-by-side layout for adult focus mode */
-@media (min-width: 600px) and (max-width: 1024px) {
-    .adult-focus-layout {
-        display: grid;
-        grid-template-columns: 1fr auto;
-        grid-template-rows: auto auto;
-        gap: var(--space-4);
-        align-items: start;
-    }
+/* ==========================================================================
+   Focus Layout with Sticky-Tab Navigation Sidebar
+   ========================================================================== */
 
-    .adult-focus-layout > .widget--focused-adult {
-        grid-column: 1;
-        grid-row: 1 / 3;
-    }
+.focus-layout {
+    display: flex;
+    align-items: flex-start; /* Both children align to top */
+    gap: var(--space-4);
+    width: 100%;
+    padding: 0 var(--space-4) var(--space-4);
+    position: relative;
+    min-height: 400px;
+}
 
-    .adult-focus-layout > .widgets-collapsed-row--adult {
-        grid-column: 2;
-        grid-row: 1;
-        display: flex;
+/* Ensure consistent vertical alignment of all direct children */
+.focus-layout > * {
+    margin-top: 0 !important;
+    margin-bottom: auto; /* Push to top */
+    align-self: flex-start;
+}
+
+/* Ensure nav and widget card header align visually */
+.focus-layout > .focus-nav {
+    padding-top: 0;
+}
+
+.focus-layout > .focus-layout__main {
+    padding-top: 0;
+}
+
+.focus-layout > .focus-layout__main > .widget-card {
+    margin-top: 0;
+}
+
+.focus-layout__main {
+    flex: 1;
+    min-width: 0;
+    margin-top: 0; /* Ensure no margin offset */
+}
+
+/* Ensure widget card in focus layout has no margin-top */
+.focus-layout__main > .widget-card {
+    margin-top: 0;
+}
+
+/* Focus Navigation Sidebar - Sticky Tab Style */
+.focus-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: 0; /* Remove top/bottom padding to align with widget top */
+    margin: 0; /* Ensure no margins affect position */
+    position: relative; /* Temporarily remove sticky to debug alignment */
+    height: fit-content;
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    z-index: 10;
+    align-self: flex-start;
+    flex-shrink: 0;
+}
+
+/* Individual Tab - Like sticky note flags with labels */
+.focus-nav__tab {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 120px;
+    height: 44px;
+    border: none;
+    background: var(--gray-200);
+    cursor: pointer;
+    transition: width 0.15s ease, filter 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    border-radius: 0 var(--radius-md) var(--radius-md) 0;
+    margin-left: -4px;
+    padding: 0 var(--space-3) 0 var(--space-2);
+    flex-shrink: 0; /* Prevent tabs from shrinking */
+}
+
+.focus-nav__tab:hover:not(.focus-nav__tab--active):not(.focus-nav__tab--add) {
+    width: 130px;
+    filter: brightness(0.92);
+}
+
+.focus-nav__tab--add:hover {
+    width: 130px;
+    background: var(--primary-50);
+}
+
+/* Active tab - Extends further with arrow point */
+.focus-nav__tab--active {
+    width: 140px;
+    background: var(--primary);
+    z-index: 2;
+    box-shadow: 2px 2px 8px rgba(99, 102, 241, 0.3);
+}
+
+/* Arrow point for active tab using clip-path */
+.focus-nav__tab--active::after {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 0;
+    width: 12px;
+    height: 100%;
+    background: var(--primary);
+    clip-path: polygon(0 0, 0 100%, 100% 50%);
+}
+
+/* Tab label text */
+.focus-nav__tab-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 80px;
+}
+
+.focus-nav__tab--active .focus-nav__tab-label {
+    color: white;
+}
+
+.focus-nav__tab-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: var(--gray-600);
+    transition: color 0.2s ease;
+}
+
+.focus-nav__tab-icon svg,
+.focus-nav__tab-icon i {
+    width: 20px;
+    height: 20px;
+}
+
+.focus-nav__tab--active .focus-nav__tab-icon {
+    color: white;
+}
+
+/* Add widget tab - Dashed border style */
+.focus-nav__tab--add {
+    background: transparent;
+    border: 2px dashed var(--gray-300);
+    margin-top: var(--space-2);
+}
+
+.focus-nav__tab--add:hover {
+    border-color: var(--primary);
+    background: var(--primary-50);
+}
+
+.focus-nav__tab--add .focus-nav__tab-icon {
+    color: var(--gray-400);
+}
+
+.focus-nav__tab--add:hover .focus-nav__tab-icon {
+    color: var(--primary);
+}
+
+/* Widget-specific tab colors when active */
+.focus-nav__tab--active.focus-nav__tab--task-list {
+    background: #3B82F6;
+}
+.focus-nav__tab--active.focus-nav__tab--task-list::after {
+    background: #3B82F6;
+}
+
+.focus-nav__tab--active.focus-nav__tab--meal-plan {
+    background: #10B981;
+}
+.focus-nav__tab--active.focus-nav__tab--meal-plan::after {
+    background: #10B981;
+}
+
+.focus-nav__tab--active.focus-nav__tab--habits {
+    background: #8B5CF6;
+}
+.focus-nav__tab--active.focus-nav__tab--habits::after {
+    background: #8B5CF6;
+}
+
+.focus-nav__tab--active.focus-nav__tab--workout {
+    background: #3B82F6;
+}
+.focus-nav__tab--active.focus-nav__tab--workout::after {
+    background: #3B82F6;
+}
+
+.focus-nav__tab--active.focus-nav__tab--gratitude {
+    background: #EC4899;
+}
+.focus-nav__tab--active.focus-nav__tab--gratitude::after {
+    background: #EC4899;
+}
+
+.focus-nav__tab--active.focus-nav__tab--recipes {
+    background: #F97316;
+}
+.focus-nav__tab--active.focus-nav__tab--recipes::after {
+    background: #F97316;
+}
+
+.focus-nav__tab--active.focus-nav__tab--grocery {
+    background: #22C55E;
+}
+.focus-nav__tab--active.focus-nav__tab--grocery::after {
+    background: #22C55E;
+}
+
+.focus-nav__tab--active.focus-nav__tab--routine {
+    background: #6366F1;
+}
+.focus-nav__tab--active.focus-nav__tab--routine::after {
+    background: #6366F1;
+}
+
+.focus-nav__tab--active.focus-nav__tab--journal {
+    background: #EF4444;
+}
+.focus-nav__tab--active.focus-nav__tab--journal::after {
+    background: #EF4444;
+}
+
+.focus-nav__tab--active.focus-nav__tab--vision-board {
+    background: #EF4444;
+}
+.focus-nav__tab--active.focus-nav__tab--vision-board::after {
+    background: #EF4444;
+}
+
+.focus-nav__tab--active.focus-nav__tab--circuit-timer {
+    background: #F59E0B;
+}
+.focus-nav__tab--active.focus-nav__tab--circuit-timer::after {
+    background: #F59E0B;
+}
+
+/* Kid/Teen widget tab colors */
+.focus-nav__tab--active.focus-nav__tab--points {
+    background: #F59E0B;
+}
+.focus-nav__tab--active.focus-nav__tab--points::after {
+    background: #F59E0B;
+}
+
+.focus-nav__tab--active.focus-nav__tab--rewards {
+    background: #3B82F6;
+}
+.focus-nav__tab--active.focus-nav__tab--rewards::after {
+    background: #3B82F6;
+}
+
+.focus-nav__tab--active.focus-nav__tab--achievements {
+    background: #8B5CF6;
+}
+.focus-nav__tab--active.focus-nav__tab--achievements::after {
+    background: #8B5CF6;
+}
+
+.focus-nav__tab--active.focus-nav__tab--kid-tasks {
+    background: #EAB308;
+}
+.focus-nav__tab--active.focus-nav__tab--kid-tasks::after {
+    background: #EAB308;
+}
+
+.focus-nav__tab--active.focus-nav__tab--kid-journal {
+    background: #6366F1;
+}
+.focus-nav__tab--active.focus-nav__tab--kid-journal::after {
+    background: #6366F1;
+}
+
+.focus-nav__tab--active.focus-nav__tab--kid-workout {
+    background: #22C55E;
+}
+.focus-nav__tab--active.focus-nav__tab--kid-workout::after {
+    background: #22C55E;
+}
+
+.focus-nav__tab--active.focus-nav__tab--chores {
+    background: #22C55E;
+}
+.focus-nav__tab--active.focus-nav__tab--chores::after {
+    background: #22C55E;
+}
+
+.focus-nav__tab--active.focus-nav__tab--screen-time {
+    background: #06B6D4;
+}
+.focus-nav__tab--active.focus-nav__tab--screen-time::after {
+    background: #06B6D4;
+}
+
+/* Toddler widget tab colors */
+.focus-nav__tab--active.focus-nav__tab--activities {
+    background: #F97316;
+}
+.focus-nav__tab--active.focus-nav__tab--activities::after {
+    background: #F97316;
+}
+
+.focus-nav__tab--active.focus-nav__tab--daily-log {
+    background: #22C55E;
+}
+.focus-nav__tab--active.focus-nav__tab--daily-log::after {
+    background: #22C55E;
+}
+
+.focus-nav__tab--active.focus-nav__tab--toddler-tasks {
+    background: #EAB308;
+}
+.focus-nav__tab--active.focus-nav__tab--toddler-tasks::after {
+    background: #EAB308;
+}
+
+.focus-nav__tab--active.focus-nav__tab--toddler-routine {
+    background: #D946EF;
+}
+.focus-nav__tab--active.focus-nav__tab--toddler-routine::after {
+    background: #D946EF;
+}
+
+.focus-nav__tab--active.focus-nav__tab--milestones {
+    background: #EC4899;
+}
+.focus-nav__tab--active.focus-nav__tab--milestones::after {
+    background: #EC4899;
+}
+
+/* Kids focus layout - keep rounded corners */
+.focus-layout--kids .focus-nav__tab {
+    border-radius: 0 var(--radius-lg) var(--radius-lg) 0;
+}
+
+/* ==========================================================================
+   Inactive Widget Tab Colors - Pastel Backgrounds
+   Each widget has its own color identity like colorful sticky note tabs
+   ========================================================================== */
+
+/* Adult widget inactive colors */
+.focus-nav__tab--task-list:not(.focus-nav__tab--active) {
+    background: #DBEAFE;  /* blue-100 */
+}
+.focus-nav__tab--task-list:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #2563EB;  /* blue-600 */
+}
+
+.focus-nav__tab--meal-plan:not(.focus-nav__tab--active) {
+    background: #D1FAE5;  /* emerald-100 */
+}
+.focus-nav__tab--meal-plan:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #059669;  /* emerald-600 */
+}
+
+.focus-nav__tab--habits:not(.focus-nav__tab--active) {
+    background: #EDE9FE;  /* violet-100 */
+}
+.focus-nav__tab--habits:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #7C3AED;  /* violet-600 */
+}
+
+.focus-nav__tab--workout:not(.focus-nav__tab--active) {
+    background: #DBEAFE;  /* blue-100 */
+}
+.focus-nav__tab--workout:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #2563EB;  /* blue-600 */
+}
+
+.focus-nav__tab--gratitude:not(.focus-nav__tab--active) {
+    background: #FCE7F3;  /* pink-100 */
+}
+.focus-nav__tab--gratitude:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #DB2777;  /* pink-600 */
+}
+
+.focus-nav__tab--recipes:not(.focus-nav__tab--active) {
+    background: #FFEDD5;  /* orange-100 */
+}
+.focus-nav__tab--recipes:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #EA580C;  /* orange-600 */
+}
+
+.focus-nav__tab--grocery:not(.focus-nav__tab--active) {
+    background: #DCFCE7;  /* green-100 */
+}
+.focus-nav__tab--grocery:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #16A34A;  /* green-600 */
+}
+
+.focus-nav__tab--routine:not(.focus-nav__tab--active) {
+    background: #E0E7FF;  /* indigo-100 */
+}
+.focus-nav__tab--routine:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #4F46E5;  /* indigo-600 */
+}
+
+.focus-nav__tab--journal:not(.focus-nav__tab--active) {
+    background: #FEE2E2;  /* red-100 */
+}
+.focus-nav__tab--journal:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #DC2626;  /* red-600 */
+}
+
+.focus-nav__tab--vision-board:not(.focus-nav__tab--active) {
+    background: #FEE2E2;  /* red-100 */
+}
+.focus-nav__tab--vision-board:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #DC2626;  /* red-600 */
+}
+
+.focus-nav__tab--circuit-timer:not(.focus-nav__tab--active) {
+    background: #FEF3C7;  /* amber-100 */
+}
+.focus-nav__tab--circuit-timer:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #D97706;  /* amber-600 */
+}
+
+/* Kid widget inactive colors */
+.focus-nav__tab--points:not(.focus-nav__tab--active) {
+    background: #FEF3C7;  /* amber-100 */
+}
+.focus-nav__tab--points:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #D97706;  /* amber-600 */
+}
+
+.focus-nav__tab--rewards:not(.focus-nav__tab--active) {
+    background: #DBEAFE;  /* blue-100 */
+}
+.focus-nav__tab--rewards:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #2563EB;  /* blue-600 */
+}
+
+.focus-nav__tab--achievements:not(.focus-nav__tab--active) {
+    background: #EDE9FE;  /* violet-100 */
+}
+.focus-nav__tab--achievements:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #7C3AED;  /* violet-600 */
+}
+
+.focus-nav__tab--kid-tasks:not(.focus-nav__tab--active) {
+    background: #FEF9C3;  /* yellow-100 */
+}
+.focus-nav__tab--kid-tasks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #CA8A04;  /* yellow-600 */
+}
+
+.focus-nav__tab--kid-journal:not(.focus-nav__tab--active) {
+    background: #E0E7FF;  /* indigo-100 */
+}
+.focus-nav__tab--kid-journal:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #4F46E5;  /* indigo-600 */
+}
+
+.focus-nav__tab--kid-workout:not(.focus-nav__tab--active) {
+    background: #DCFCE7;  /* green-100 */
+}
+.focus-nav__tab--kid-workout:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #16A34A;  /* green-600 */
+}
+
+.focus-nav__tab--chores:not(.focus-nav__tab--active) {
+    background: #DCFCE7;  /* green-100 */
+}
+.focus-nav__tab--chores:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #16A34A;  /* green-600 */
+}
+
+.focus-nav__tab--screen-time:not(.focus-nav__tab--active) {
+    background: #CFFAFE;  /* cyan-100 */
+}
+.focus-nav__tab--screen-time:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #0891B2;  /* cyan-600 */
+}
+
+/* Toddler widget inactive colors */
+.focus-nav__tab--activities:not(.focus-nav__tab--active) {
+    background: #FFEDD5;  /* orange-100 */
+}
+.focus-nav__tab--activities:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #EA580C;  /* orange-600 */
+}
+
+.focus-nav__tab--daily-log:not(.focus-nav__tab--active) {
+    background: #DCFCE7;  /* green-100 */
+}
+.focus-nav__tab--daily-log:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #16A34A;  /* green-600 */
+}
+
+.focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) {
+    background: #FEF9C3;  /* yellow-100 */
+}
+.focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #CA8A04;  /* yellow-600 */
+}
+
+.focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) {
+    background: #FAE8FF;  /* fuchsia-100 */
+}
+.focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #C026D3;  /* fuchsia-600 */
+}
+
+.focus-nav__tab--milestones:not(.focus-nav__tab--active) {
+    background: #FCE7F3;  /* pink-100 */
+}
+.focus-nav__tab--milestones:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #DB2777;  /* pink-600 */
+}
+
+/* Mobile: Horizontal scrollable tabs at top */
+@media (max-width: 599px) {
+    .focus-layout {
         flex-direction: column;
-        gap: var(--space-3);
-        width: 140px;
+        gap: 0;
+        padding: 0;
     }
 
-    .adult-focus-layout > .add-widget-section {
-        grid-column: 2;
-        grid-row: 2;
+    /* Horizontal scrollable nav bar at top */
+    .focus-nav {
+        flex-direction: row;
+        align-items: center;
+        gap: var(--space-2);
+        padding: var(--space-3) var(--space-4);
+        margin: 0;
+        position: sticky;
+        top: 0;
+        background: var(--white);
+        border-bottom: 1px solid var(--gray-200);
+        overflow-x: auto;
+        overflow-y: hidden;
+        max-height: none;
+        width: 100%;
+        z-index: 20;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none; /* Firefox */
+    }
+
+    .focus-nav::-webkit-scrollbar {
+        display: none; /* Chrome, Safari */
+    }
+
+    /* Horizontal pill-shaped tabs */
+    .focus-nav__tab {
+        flex-direction: column;
+        width: auto;
+        min-width: 56px;
+        height: auto;
+        padding: var(--space-2) var(--space-3);
+        margin-left: 0;
+        border-radius: var(--radius-xl);
+        flex-shrink: 0;
+        gap: var(--space-1);
+    }
+
+    .focus-nav__tab:hover:not(.focus-nav__tab--active) {
+        width: auto;
+        transform: scale(1.05);
+    }
+
+    .focus-nav__tab--active {
+        width: auto;
+        transform: scale(1.05);
+    }
+
+    /* Remove arrow point on mobile */
+    .focus-nav__tab--active::after {
+        display: none;
+    }
+
+    .focus-nav__tab-icon {
+        margin: 0;
+    }
+
+    .focus-nav__tab-icon svg,
+    .focus-nav__tab-icon i {
+        width: 22px;
+        height: 22px;
+    }
+
+    /* Show short labels on mobile */
+    .focus-nav__tab-label {
+        display: block;
+        font-size: 10px;
+        font-weight: var(--font-semibold);
+        white-space: nowrap;
+        max-width: 60px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    .focus-nav__tab--add {
+        margin-top: 0;
+        border-style: dashed;
+    }
+
+    /* Main content takes full width */
+    .focus-layout__main {
+        padding: var(--space-3);
+        width: 100%;
+    }
+
+    .focus-layout__main > .widget-card {
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+    }
+
+    .focus-layout__main .points-widget__balance-card {
+        border-radius: var(--radius-lg);
+        margin: var(--space-3);
+        margin-bottom: var(--space-4);
+    }
+
+}
+
+/* Desktop: Larger tabs with more space */
+@media (min-width: 1024px) {
+    .focus-nav__tab {
+        width: 140px;
+        /* height stays 44px - no change to prevent vertical shift */
+    }
+
+    .focus-nav__tab:hover:not(.focus-nav__tab--active) {
+        width: 150px;
+    }
+
+    .focus-nav__tab--active {
+        width: 160px;
+    }
+
+    .focus-nav__tab--active::after {
+        right: -14px;
+        width: 14px;
+    }
+
+    .focus-nav__tab-icon svg,
+    .focus-nav__tab-icon i {
+        width: 22px;
+        height: 22px;
+    }
+
+    .focus-nav__tab-label {
+        font-size: var(--text-base);
+        max-width: 100px;
     }
 }
 
@@ -3943,6 +4612,394 @@
 }
 
 /* ==========================================================================
+   Standard Kid Page Components (Age-Adaptive)
+   ========================================================================== */
+
+/* Base kid page container */
+.kid-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+    min-height: 100vh;
+}
+
+/* Hero section with gradient */
+.kid-page__hero {
+    padding: var(--space-6);
+    position: relative;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+}
+
+.kid-page__hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.kid-page__back {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    color: var(--kid-hero-text, #1f2937);
+    z-index: 2;
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.kid-page__back:hover {
+    background: rgba(0, 0, 0, 0.12);
+}
+
+.kid-page__hero-content {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    padding-top: var(--space-8);
+}
+
+.kid-page__hero-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--kid-hero-text, #1f2937);
+    margin: 0 0 var(--space-2) 0;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.5);
+}
+
+/* Playful title for young kids */
+.kid-page__hero-title--playful {
+    font-size: var(--text-3xl);
+    animation: gentle-bounce 2s ease-in-out infinite;
+}
+
+@keyframes gentle-bounce {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+}
+
+.kid-page__hero-title svg,
+.kid-page__hero-title .emoji-icon {
+    font-size: 1.2em;
+}
+
+.kid-page__hero-subtitle {
+    font-size: var(--text-base);
+    color: var(--kid-hero-text, #374151);
+    opacity: 0.85;
+    margin: 0;
+}
+
+/* Hero stats */
+.kid-page__hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-top: var(--space-6);
+    flex-wrap: wrap;
+}
+
+.kid-hero-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(10px);
+    padding: var(--space-3) var(--space-5);
+    border-radius: var(--radius-xl);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    min-width: 80px;
+}
+
+.kid-hero-stat__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--kid-hero-text, #1f2937);
+}
+
+.kid-hero-stat__label {
+    font-size: var(--text-xs);
+    color: var(--kid-hero-text, #374151);
+    opacity: 0.85;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Tab navigation */
+.kid-page__tabs {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-4);
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.kid-page__tab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    border: none;
+    border-radius: var(--radius-xl);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.kid-page__tab:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+.kid-page__tab--active {
+    background: var(--primary-100);
+    color: var(--primary);
+}
+
+.kid-page__tab svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kid-page__tab .emoji-icon {
+    font-size: 18px;
+}
+
+/* Page content */
+.kid-page__content {
+    padding: var(--space-4);
+}
+
+/* Section styling */
+.kid-page__section {
+    margin-bottom: var(--space-6);
+}
+
+.kid-page__section-title {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin: 0 0 var(--space-4) 0;
+}
+
+/* Empty state */
+.kid-page__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-12);
+    text-align: center;
+    color: var(--gray-500);
+}
+
+.kid-page__empty-icon {
+    font-size: 64px;
+    margin-bottom: var(--space-4);
+    opacity: 0.5;
+}
+
+.kid-page__empty--playful .kid-page__empty-icon {
+    animation: wiggle 1s ease-in-out infinite;
+}
+
+@keyframes wiggle {
+    0%, 100% { transform: rotate(-5deg); }
+    50% { transform: rotate(5deg); }
+}
+
+.kid-page__empty p {
+    margin: 0;
+    font-size: var(--text-base);
+    max-width: 300px;
+}
+
+.kid-page__empty-hint {
+    font-size: var(--text-sm);
+    color: var(--gray-400);
+    margin-top: var(--space-2);
+}
+
+/* Hero action button */
+.kid-page__hero-action {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 2;
+    background: rgba(255, 255, 255, 0.9);
+    color: var(--gray-700);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+}
+
+.kid-page__hero-action:hover {
+    background: white;
+}
+
+/* Primary hero stat styling */
+.kid-hero-stat--primary {
+    background: rgba(255, 255, 255, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    min-width: 100px;
+}
+
+.kid-hero-stat--primary .kid-hero-stat__value {
+    font-size: var(--text-3xl);
+}
+
+/* Points Full Page Tab Content */
+.points-history-tab,
+.points-calendar-tab,
+.points-stats-tab {
+    animation: fadeIn 0.2s ease;
+}
+
+/* Points Stats Section */
+.points-stats-section {
+    margin-bottom: var(--space-6);
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.points-stats-section__title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin: 0 0 var(--space-3) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Level section within stats */
+.points-stats-section--level .level-section,
+.points-stats-section--streak .streak-section {
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+}
+
+/* Add form styling */
+.kid-page__add {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-6);
+    padding: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-page__add input {
+    flex: 1;
+}
+
+/* List styling */
+.kid-page__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+/* Card styling for items */
+.kid-page__card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--gray-200);
+    transition: all var(--transition-fast);
+}
+
+.kid-page__card:hover {
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-page__card--completed {
+    opacity: 0.6;
+    background: var(--gray-50);
+}
+
+/* Age-specific styling */
+.age-kid .kid-page__card,
+.age-toddler .kid-page__card {
+    border-radius: var(--radius-2xl);
+    border-width: 3px;
+}
+
+.age-teen .kid-page__hero-title--playful {
+    animation: none;
+    font-size: var(--text-2xl);
+}
+
+/* Mobile responsive */
+@media (max-width: 599px) {
+    .kid-page__hero {
+        padding: var(--space-4);
+        padding-top: var(--space-6);
+    }
+
+    .kid-page__hero-content {
+        padding-top: var(--space-6);
+    }
+
+    .kid-page__hero-title {
+        font-size: var(--text-xl);
+    }
+
+    .kid-page__hero-stats {
+        gap: var(--space-2);
+    }
+
+    .kid-hero-stat {
+        padding: var(--space-2) var(--space-3);
+        min-width: 60px;
+    }
+
+    .kid-hero-stat__value {
+        font-size: var(--text-lg);
+    }
+
+    .kid-page__tabs {
+        gap: 0;
+        padding: var(--space-2);
+    }
+
+    .kid-page__tab {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-xs);
+    }
+
+    .kid-page__content {
+        padding: var(--space-3);
+    }
+}
+
+/* ==========================================================================
    Kid Tasks Full Page
    ========================================================================== */
 
@@ -5431,24 +6488,24 @@
 
 /* Day Group */
 .kid-journal-day-group {
-    margin-bottom: var(--space-6);
+    margin-bottom: var(--space-3);
 }
 
 .kid-journal-day-group__title {
-    font-size: var(--text-lg);
-    font-weight: var(--font-bold);
-    color: var(--gray-700);
-    margin: 0 0 var(--space-3) 0;
-    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-600);
+    margin: 0 0 var(--space-2) 0;
+    padding: var(--space-1) var(--space-2);
     background: white;
-    border-radius: var(--radius-lg);
+    border-radius: var(--radius-md);
     display: inline-block;
 }
 
 .kid-journal-day-group__entries {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-2);
 }
 
 /* Full Entry Card */
@@ -5540,6 +6597,134 @@
     justify-content: flex-end;
     padding-top: var(--space-3);
     border-top: 1px dashed #E9D5FF;
+}
+
+/* Entry Preview (compact card in list view) */
+.kid-journal-entry--preview {
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    padding: var(--space-2) var(--space-3);
+    padding-left: calc(var(--space-3) + 16px);
+    background-image: none;
+    background-color: #FFFEF5;
+    border-width: 2px;
+}
+
+.kid-journal-entry--preview::before {
+    left: 24px;
+}
+
+.kid-journal-entry--preview:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(147, 51, 234, 0.12);
+}
+
+.kid-journal-entry--preview .kid-journal-entry__header {
+    margin-bottom: var(--space-1);
+    gap: var(--space-2);
+}
+
+.kid-journal-entry--preview .kid-journal-entry__mood {
+    width: 28px;
+    height: 28px;
+    font-size: 1rem;
+}
+
+.kid-journal-entry--preview .kid-journal-entry__time {
+    font-size: var(--text-xs);
+}
+
+.kid-journal-entry--preview .kid-journal-entry__stickers {
+    font-size: 0.9rem;
+}
+
+.kid-journal-entry--preview .kid-journal-entry__actions {
+    padding-top: var(--space-1);
+    border-top: none;
+    gap: var(--space-1);
+}
+
+.kid-journal-entry--preview .kid-journal-entry__actions .btn {
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--text-xs);
+}
+
+.kid-journal-entry__preview {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-xs);
+    color: var(--gray-600);
+    line-height: 1.4;
+    margin-bottom: var(--space-1);
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* View Entry Modal */
+.kid-journal-view-modal {
+    padding: var(--space-2);
+}
+
+.kid-journal-view-modal__header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.kid-journal-view-modal__mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: linear-gradient(135deg, var(--mood-color, #9333EA) 0%, color-mix(in srgb, var(--mood-color, #9333EA) 70%, white) 100%);
+    color: white;
+    border-radius: var(--radius-full);
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+}
+
+.kid-journal-view-modal__date {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.kid-journal-view-modal__stickers {
+    font-size: 1.5rem;
+    margin-bottom: var(--space-3);
+}
+
+.kid-journal-view-modal__prompt {
+    font-size: var(--text-sm);
+    color: #6B5B4D;
+    font-style: italic;
+    background: #FEF3C7;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-4);
+}
+
+.kid-journal-view-modal__content {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+    line-height: 1.8;
+    background: #FFFEF5;
+    padding: var(--space-4);
+    border-radius: var(--radius-lg);
+    border: 2px solid #9333EA;
+    min-height: 150px;
+    background-image: repeating-linear-gradient(
+        transparent,
+        transparent 31px,
+        #B8D4E3 31px,
+        #B8D4E3 32px
+    );
+    background-position: 0 0;
 }
 
 /* Empty State */
@@ -5889,6 +7074,1073 @@
 
     .kid-journal-calendar__day-mood {
         font-size: 0.75rem;
+    }
+}
+
+/* ==========================================================================
+   TEEN JOURNAL STYLING OVERRIDES
+   Adult-style layout for teenagers (matching adult journal design)
+   ========================================================================== */
+
+/* Teen Journal Widget - Diary Cover */
+.tab-content--teen .kid-journal-widget__cover {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A78BFA 100%);
+    box-shadow:
+        0 8px 20px rgba(99, 102, 241, 0.3),
+        inset 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+.tab-content--teen .kid-journal-widget__cover-title {
+    font-family: var(--font-sans);
+    font-size: var(--text-lg);
+    letter-spacing: 0.05em;
+}
+
+/* Hide playful decorations for teens */
+.tab-content--teen .kid-journal-widget__cover-deco {
+    display: none;
+}
+
+/* More subtle icon for teens */
+.tab-content--teen .kid-journal-widget__cover-icon {
+    font-size: 2.5rem;
+    opacity: 0.9;
+}
+
+/* Teen Journal Widget - Button styling */
+.tab-content--teen .kid-journal-widget__open-btn {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    border-radius: var(--radius-lg);
+}
+
+.tab-content--teen .kid-journal-widget__open-btn:hover {
+    background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%);
+}
+
+/* Teen Journal Widget - Points hint */
+.tab-content--teen .kid-journal-widget__points-hint {
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--indigo-700);
+}
+
+/* Teen Journal Footer */
+.tab-content--teen .kid-journal-widget__footer {
+    border-top-color: var(--indigo-100);
+}
+
+/* Teen Journal Modal */
+.kid-journal-modal--teen .kid-journal-prompt {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-color: var(--indigo-200);
+}
+
+.kid-journal-modal--teen .kid-journal-mood-btn--selected,
+.kid-journal-modal--teen .kid-journal-mood-btn.selected {
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+}
+
+.kid-journal-modal--teen .kid-journal-sticker-btn.selected {
+    background: var(--indigo-100);
+    border-color: var(--indigo-400);
+}
+
+/* Teen Journal Modal Textarea - Handwriting font */
+.kid-journal-modal--teen .form-input,
+.kid-journal-modal--teen textarea {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    color: #3D2B1F;
+    line-height: 1.8;
+}
+
+.kid-journal-modal--teen textarea::placeholder {
+    color: #B0A090;
+    font-style: italic;
+}
+
+/* ==========================================================================
+   KID JOURNAL WRITE TAB - Matches entries notebook styling
+   ========================================================================== */
+
+.kid-journal-write-tab {
+    padding: 0;
+}
+
+/* Write form inside notebook entry style */
+.kid-journal-entry--write,
+.kid-journal-entry--today {
+    margin-bottom: var(--space-4);
+}
+
+.kid-journal-write-form__mood-section {
+    margin-bottom: var(--space-4);
+}
+
+.kid-journal-write-form__label {
+    display: block;
+    font-weight: var(--font-semibold);
+    color: #6B5B4D;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+.kid-journal-write-form__moods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.kid-journal-mood-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: var(--space-2);
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 60px;
+}
+
+.kid-journal-mood-btn:hover {
+    border-color: var(--mood-color, var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.kid-journal-mood-btn--selected {
+    border-color: var(--mood-color, var(--primary));
+    background: var(--mood-color, var(--primary-light));
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.kid-journal-mood-btn__emoji {
+    font-size: var(--text-xl);
+}
+
+.kid-journal-mood-btn__label {
+    font-size: 10px;
+    color: var(--gray-600);
+    font-weight: var(--font-medium);
+}
+
+.kid-journal-write-form__text-section {
+    margin-bottom: var(--space-4);
+}
+
+.kid-journal-entry__textarea {
+    width: 100%;
+    min-height: 160px;
+    padding: var(--space-2);
+    border: none;
+    background: transparent;
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-base);
+    line-height: 32px;
+    color: var(--gray-800);
+    resize: vertical;
+}
+
+.kid-journal-entry__textarea:focus {
+    outline: 2px solid #A855F7;
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+    background: rgba(255, 255, 255, 0.5);
+}
+
+.kid-journal-entry__textarea::placeholder {
+    color: #B0A090;
+    font-style: italic;
+}
+
+.kid-journal-write-form__stickers-section {
+    margin-bottom: var(--space-4);
+}
+
+.kid-journal-write-form__stickers-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.kid-journal-sticker-btn {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-lg);
+    background: white;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.kid-journal-sticker-btn:hover {
+    transform: scale(1.15);
+    border-color: #A855F7;
+}
+
+.kid-journal-sticker-btn.selected {
+    background: #F3E8FF;
+    border-color: #A855F7;
+    transform: scale(1.1);
+}
+
+.kid-journal-write-form__selected-stickers {
+    min-height: 24px;
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.kid-journal-write-form__selected-stickers span {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: white;
+    border-radius: var(--radius-full);
+    font-size: var(--text-base);
+}
+
+.kid-journal-write-tab__hint {
+    text-align: center;
+    color: #92400E;
+    font-size: var(--text-sm);
+    font-style: italic;
+    opacity: 0.8;
+    margin-top: var(--space-4);
+}
+
+/* Mobile adjustments */
+@media (max-width: 599px) {
+    .kid-journal-mood-btn {
+        min-width: 55px;
+        padding: var(--space-1);
+    }
+
+    .kid-journal-mood-btn__emoji {
+        font-size: var(--text-lg);
+    }
+
+    .kid-journal-sticker-btn {
+        width: 36px;
+        height: 36px;
+        font-size: var(--text-base);
+    }
+
+    .kid-journal-entry__textarea {
+        min-height: 128px;
+        font-size: var(--text-base);
+    }
+}
+
+/* ==========================================================================
+   TEEN JOURNAL FULL PAGE - Adult-style tabbed layout
+   ========================================================================== */
+
+.teen-journal-page {
+    padding: 0;
+    max-width: 100%;
+}
+
+/* Teen Journal Hero Header */
+.teen-journal-page__hero {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A78BFA 100%);
+    padding: var(--space-6);
+    position: relative;
+    overflow: hidden;
+}
+
+.teen-journal-page__hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.2) 0%, transparent 70%);
+    pointer-events: none;
+}
+
+.teen-journal-page__back {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    color: white;
+    z-index: 2;
+}
+
+.teen-journal-page__back:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.teen-journal-page__password-btn {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    color: white;
+    z-index: 2;
+}
+
+.teen-journal-page__password-btn:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.teen-journal-page__hero-content {
+    text-align: center;
+    position: relative;
+    z-index: 1;
+}
+
+.teen-journal-page__hero-title {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: white;
+    margin: 0 0 var(--space-2) 0;
+}
+
+.teen-journal-page__hero-title svg {
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+.teen-journal-page__hero-subtitle {
+    font-size: var(--text-base);
+    color: white;
+    opacity: 0.9;
+    margin: 0;
+}
+
+.teen-journal-page__hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+    margin-top: var(--space-6);
+}
+
+.teen-journal-hero-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.teen-journal-hero-stat__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: white;
+}
+
+.teen-journal-hero-stat__label {
+    font-size: var(--text-sm);
+    color: white;
+    opacity: 0.9;
+}
+
+/* Teen Journal Tab Navigation */
+.teen-journal-page__tabs {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-3) var(--space-6);
+    background: var(--white);
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.teen-journal-tab {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.teen-journal-tab svg {
+    width: 16px;
+    height: 16px;
+}
+
+.teen-journal-tab:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+.teen-journal-tab--active {
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%);
+    color: white;
+}
+
+/* Teen Journal Page Content */
+.teen-journal-page__content {
+    padding: var(--space-6);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Teen Write Section */
+.teen-journal-write-section {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.teen-journal-notebook {
+    background: #FFFEF5;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+}
+
+.teen-journal-notebook__paper {
+    padding: var(--space-6);
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            #E8DFC8 31px,
+            #E8DFC8 32px
+        );
+    background-color: #FFFEF5;
+    min-height: 300px;
+}
+
+.teen-journal-notebook__date {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.teen-journal-notebook__prompt {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-4);
+    font-size: var(--text-sm);
+    color: var(--indigo-700);
+}
+
+.teen-journal-notebook__prompt svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+    color: var(--indigo-500);
+}
+
+.teen-journal-notebook__entry {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.teen-journal-notebook__entry-mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    width: fit-content;
+}
+
+.teen-journal-mood__emoji {
+    font-size: var(--text-lg);
+}
+
+.teen-journal-notebook__entry-content {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    line-height: 1.8;
+    color: #3D2B1F;
+}
+
+.teen-journal-notebook__stickers {
+    font-size: var(--text-xl);
+    letter-spacing: 0.2em;
+}
+
+.teen-journal-notebook__entry-time {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    margin-top: var(--space-2);
+}
+
+.teen-journal-empty-state {
+    text-align: center;
+    padding: var(--space-8) var(--space-4);
+}
+
+.teen-journal-empty-state p {
+    color: var(--gray-500);
+    margin-bottom: var(--space-4);
+}
+
+/* Teen Journal Inline Write Form */
+.teen-journal-notebook__mood-section {
+    margin-bottom: var(--space-4);
+}
+
+.teen-journal-notebook__mood-label,
+.teen-journal-notebook__stickers-label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-600);
+    margin-bottom: var(--space-2);
+}
+
+.teen-journal-notebook__moods {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.teen-journal-mood {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-3);
+    border: 2px solid transparent;
+    background: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    opacity: 0.7;
+}
+
+.teen-journal-mood:hover {
+    opacity: 1;
+    transform: scale(1.05);
+}
+
+.teen-journal-mood--selected {
+    opacity: 1;
+    border-color: var(--indigo-500);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+}
+
+.teen-journal-mood__emoji {
+    font-size: var(--text-xl);
+}
+
+.teen-journal-mood__label {
+    font-size: var(--text-xs);
+    color: var(--gray-700);
+}
+
+.teen-journal-notebook__write {
+    margin-bottom: var(--space-4);
+}
+
+.teen-journal-notebook__textarea {
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-lg);
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    color: #3D2B1F;
+    line-height: 1.8;
+    resize: vertical;
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.teen-journal-notebook__textarea:focus {
+    outline: none;
+    border-color: var(--indigo-400);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.teen-journal-notebook__textarea::placeholder {
+    color: #B0A090;
+    font-style: italic;
+}
+
+.teen-journal-notebook__stickers-section {
+    margin-bottom: var(--space-4);
+}
+
+.teen-journal-notebook__stickers-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-2);
+}
+
+.teen-journal-sticker-btn {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: var(--text-lg);
+    border: 1px solid var(--gray-200);
+    background: var(--white);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.teen-journal-sticker-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--gray-300);
+}
+
+.teen-journal-sticker-btn.selected {
+    background: var(--indigo-100);
+    border-color: var(--indigo-400);
+}
+
+.teen-journal-selected-stickers {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    min-height: 24px;
+}
+
+.teen-journal-notebook__save {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-200);
+}
+
+/* Teen History Section */
+.teen-journal-history-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.teen-journal-history-empty {
+    text-align: center;
+    padding: var(--space-8);
+    background: var(--gray-50);
+    border-radius: var(--radius-xl);
+    color: var(--gray-500);
+}
+
+.teen-journal-history-empty svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: var(--space-3);
+    opacity: 0.5;
+}
+
+.teen-journal-history-empty p {
+    font-size: var(--text-lg);
+    font-weight: var(--font-medium);
+    margin: 0 0 var(--space-2) 0;
+    color: var(--gray-600);
+}
+
+.teen-journal-history-empty span {
+    font-size: var(--text-sm);
+}
+
+.teen-journal-month-group__title {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    margin: 0 0 var(--space-3) 0;
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--indigo-200);
+}
+
+.teen-journal-history__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.teen-journal-history__entry {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    border: 1px solid var(--gray-100);
+}
+
+.teen-journal-history__entry:hover {
+    box-shadow: var(--shadow-md);
+    border-color: var(--indigo-200);
+}
+
+.teen-journal-history__entry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.teen-journal-history__entry-date {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-600);
+}
+
+.teen-journal-history__entry-mood {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    background-color: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-full);
+    font-size: var(--text-base);
+}
+
+.teen-journal-history__entry-preview {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    line-height: 1.5;
+}
+
+/* Teen Stats Section */
+.teen-journal-stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+}
+
+.teen-journal-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--space-4);
+}
+
+.teen-journal-stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+}
+
+.teen-journal-stat-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+}
+
+.teen-journal-stat-card__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.teen-journal-stat-card--primary .teen-journal-stat-card__icon {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
+    color: var(--indigo-600);
+}
+
+.teen-journal-stat-card--success .teen-journal-stat-card__icon {
+    background: rgba(34, 197, 94, 0.15);
+    color: var(--green-600);
+}
+
+.teen-journal-stat-card--info .teen-journal-stat-card__icon {
+    background: rgba(59, 130, 246, 0.15);
+    color: var(--blue-600);
+}
+
+.teen-journal-stat-card--warning .teen-journal-stat-card__icon {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--amber-600);
+}
+
+.teen-journal-stat-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.teen-journal-stat-card__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.teen-journal-stat-card__label {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+/* Teen Month Progress Card */
+.teen-journal-month-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.teen-journal-month-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    color: var(--indigo-700);
+    font-weight: var(--font-medium);
+}
+
+.teen-journal-month-card__header svg {
+    width: 18px;
+    height: 18px;
+}
+
+.teen-journal-month-card__content {
+    padding: var(--space-4);
+}
+
+.teen-journal-month-card__progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.teen-journal-month-card__bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.teen-journal-month-card__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #6366F1 0%, #8B5CF6 100%);
+    border-radius: var(--radius-full);
+    transition: width 0.3s ease;
+}
+
+.teen-journal-month-card__text {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+/* Teen Mood Distribution Card */
+.teen-journal-mood-card {
+    background: var(--white);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.teen-journal-mood-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+    color: var(--indigo-700);
+    font-weight: var(--font-medium);
+}
+
+.teen-journal-mood-card__header svg {
+    width: 18px;
+    height: 18px;
+}
+
+.teen-journal-mood-card__content {
+    padding: var(--space-4);
+}
+
+.teen-journal-mood-card__grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.teen-journal-mood-card__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-3);
+    background-color: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-lg);
+    min-width: 70px;
+}
+
+.teen-journal-mood-card__emoji {
+    font-size: var(--text-xl);
+}
+
+.teen-journal-mood-card__count {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.teen-journal-mood-card__label {
+    font-size: var(--text-xs);
+    color: var(--gray-600);
+}
+
+.teen-journal-mood-card__most-common {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-200);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.teen-journal-mood-card__most-common-mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background-color: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-full);
+    font-weight: var(--font-medium);
+}
+
+/* Teen Entry Modal */
+.teen-journal-entry-modal {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.teen-journal-entry-modal__date {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    text-align: center;
+}
+
+.teen-journal-entry-modal__mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background-color: var(--mood-color, var(--gray-100));
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    margin: 0 auto;
+}
+
+.teen-journal-entry-modal__content {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    line-height: 1.8;
+    color: #3D2B1F;
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.teen-journal-entry-modal__stickers {
+    font-size: var(--text-xl);
+    text-align: center;
+    letter-spacing: 0.3em;
+}
+
+.teen-journal-entry-modal__meta {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    text-align: center;
+}
+
+/* Mobile Responsiveness for Teen Journal */
+@media (max-width: 768px) {
+    .teen-journal-page__hero {
+        padding: var(--space-4);
+    }
+
+    .teen-journal-page__back {
+        position: relative;
+        top: auto;
+        left: auto;
+        margin-bottom: var(--space-3);
+    }
+
+    .teen-journal-page__password-btn {
+        position: absolute;
+        top: var(--space-3);
+        right: var(--space-3);
+    }
+
+    .teen-journal-page__hero-content {
+        margin-top: var(--space-2);
+    }
+
+    .teen-journal-page__hero-title {
+        font-size: var(--text-xl);
+    }
+
+    .teen-journal-page__hero-title svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .teen-journal-page__hero-subtitle {
+        font-size: var(--text-sm);
+    }
+
+    .teen-journal-page__hero-stats {
+        gap: var(--space-4);
+    }
+
+    .teen-journal-hero-stat__value {
+        font-size: var(--text-xl);
+    }
+
+    .teen-journal-page__tabs {
+        padding: var(--space-2) var(--space-3);
+        gap: var(--space-1);
+    }
+
+    .teen-journal-tab {
+        padding: var(--space-2) var(--space-3);
+        font-size: var(--text-xs);
+    }
+
+    .teen-journal-page__content {
+        padding: var(--space-4);
+    }
+
+    .teen-journal-notebook__paper {
+        padding: var(--space-4);
+    }
+
+    .teen-journal-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
     }
 }
 
@@ -7280,14 +9532,86 @@
 }
 
 /* ==========================================================================
-   Card Grid Layout (like adult workout)
+   Compact Chip Layout for Widget (shows ALL activities in one click)
+   ========================================================================== */
+
+.kid-workout-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+}
+
+.kid-workout-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
+    background: var(--white);
+    border: 1.5px solid var(--gray-200);
+    border-radius: var(--radius-full);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: var(--text-xs);
+}
+
+.kid-workout-chip:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: scale(1.02);
+}
+
+.kid-workout-chip:active {
+    transform: scale(0.98);
+}
+
+.kid-workout-chip--completed {
+    background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%);
+    border-color: var(--success);
+}
+
+.kid-workout-chip--completed:hover {
+    border-color: var(--success-dark, #059669);
+    background: linear-gradient(135deg, #A7F3D0 0%, #D1FAE5 100%);
+}
+
+.kid-workout-chip__emoji {
+    font-size: 14px;
+    line-height: 1;
+}
+
+.kid-workout-chip__name {
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+    white-space: nowrap;
+}
+
+.kid-workout-chip--completed .kid-workout-chip__name {
+    color: var(--success-dark, #059669);
+}
+
+.kid-workout-chip__check {
+    width: 14px;
+    height: 14px;
+    background: var(--success);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: bold;
+}
+
+/* ==========================================================================
+   Card Grid Layout (for full page Today tab)
    ========================================================================== */
 
 .kid-workout-grid {
     display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-4);
-    padding: var(--space-4) 0;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
     max-height: none;
 }
 
@@ -7296,15 +9620,15 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-5) var(--space-4);
+    gap: 2px;
+    padding: var(--space-2);
     background: var(--white);
     border: 2px solid var(--gray-200);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     cursor: pointer;
     transition: all 0.2s ease;
     position: relative;
-    min-height: 110px;
+    min-height: 70px;
 }
 
 .kid-workout-card:hover {
@@ -7323,16 +9647,20 @@
 }
 
 .kid-workout-card__emoji {
-    font-size: 36px;
+    font-size: 24px;
     line-height: 1;
 }
 
 .kid-workout-card__name {
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     font-weight: var(--font-medium);
     color: var(--gray-800);
     text-align: center;
-    line-height: 1.3;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
 }
 
 .kid-workout-card--completed .kid-workout-card__name {
@@ -7340,27 +9668,27 @@
 }
 
 .kid-workout-card__points {
-    font-size: var(--text-xs);
+    font-size: 10px;
     font-weight: var(--font-semibold);
     color: var(--success);
     background: rgba(16, 185, 129, 0.1);
-    padding: 3px 10px;
+    padding: 2px 8px;
     border-radius: var(--radius-full);
 }
 
 .kid-workout-card__check {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    width: 24px;
-    height: 24px;
+    top: 4px;
+    right: 4px;
+    width: 18px;
+    height: 18px;
     background: var(--success);
     color: white;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 10px;
     font-weight: bold;
 }
 
@@ -7368,14 +9696,14 @@
 .kid-workout-footer {
     display: flex;
     justify-content: space-between;
-    margin-top: var(--space-4);
-    padding-top: var(--space-4);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
     border-top: 1px solid var(--gray-100);
 }
 
-/* Responsive: 3 columns on wider screens */
+/* Responsive: 3 columns on wider screens for full page */
 @media (min-width: 600px) {
-    .kid-workout-grid {
+    .kid-workout-grid:not(.kid-workout-grid--widget) {
         grid-template-columns: repeat(3, 1fr);
     }
 }
@@ -8073,6 +10401,790 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--space-3);
+}
+
+/* ==========================================================================
+   Kid Workout Full Page View - Tab Content Styles
+   ========================================================================== */
+
+/* Today Tab */
+.kid-workout-today-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+.kid-workout-today-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-today-section h3 {
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-4);
+}
+
+/* Activity Grid in Full Page */
+.kid-workout-today-page .kid-workout-activity-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    max-height: none;
+    overflow: visible;
+    margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+    .kid-workout-today-page .kid-workout-activity-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Activity Card - Completed State */
+.kid-workout-activity-card--completed {
+    background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%);
+    border-color: var(--success);
+    position: relative;
+}
+
+.kid-workout-activity-card--completed:hover {
+    border-color: var(--success-dark, #059669);
+    background: linear-gradient(135deg, #A7F3D0 0%, #D1FAE5 100%);
+}
+
+.kid-workout-activity-card__check {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 22px;
+    height: 22px;
+    background: var(--success);
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.kid-workout-activity-card__points {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--success);
+    background: rgba(16, 185, 129, 0.1);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    margin-top: var(--space-1);
+}
+
+/* Completed List */
+.kid-workout-completed-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kid-workout-completed-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, #D1FAE5 0%, #ECFDF5 100%);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--success);
+}
+
+.kid-workout-completed-item__emoji {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.kid-workout-completed-item__name {
+    flex: 1;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.kid-workout-completed-item__duration {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    background: rgba(255, 255, 255, 0.6);
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.kid-workout-completed-item__points {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--success);
+}
+
+.kid-workout-completed-item .btn--ghost {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: var(--gray-400);
+}
+
+.kid-workout-completed-item .btn--ghost:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.kid-workout-completed-item .btn--ghost svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* ==========================================================================
+   Kid Workout History Tab
+   ========================================================================== */
+
+.kid-workout-history-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Weekly Progress Card */
+.kid-workout-week-progress {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.kid-workout-week-progress__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.kid-workout-week-progress__bar {
+    height: 12px;
+    background: rgba(255, 255, 255, 0.5);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.kid-workout-week-progress__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+/* History List */
+.kid-workout-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.kid-workout-history-day {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-history-day__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.kid-workout-history-day__date {
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    font-size: var(--text-base);
+}
+
+.kid-workout-history-day__stats {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    background: var(--gray-50);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
+}
+
+.kid-workout-history-day__activities {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.kid-workout-history-day__activity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-100);
+}
+
+.kid-workout-history-day__emoji {
+    font-size: 20px;
+}
+
+.kid-workout-history-day__name {
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+    font-size: var(--text-sm);
+}
+
+.kid-workout-history-day__duration {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    background: var(--white);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+/* ==========================================================================
+   Kid Workout Activities Tab (Manage)
+   ========================================================================== */
+
+.kid-workout-activities-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.kid-workout-activities-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-activities-section h3 {
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-3);
+}
+
+.kid-workout-activities-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kid-workout-activities-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--gray-100);
+    transition: all 0.2s;
+}
+
+.kid-workout-activities-item:hover {
+    background: var(--gray-100);
+}
+
+.kid-workout-activities-item__emoji {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.kid-workout-activities-item__name {
+    flex: 1;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.kid-workout-activities-item__meta {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.kid-workout-activities-item .btn--danger {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    color: var(--gray-400);
+    background: transparent;
+}
+
+.kid-workout-activities-item .btn--danger:hover {
+    color: var(--danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.kid-workout-activities-item .btn--danger svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Add Custom Button in Activities Tab */
+.kid-workout-activities-section .btn--primary.btn--lg.btn--block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    font-size: var(--text-base);
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    border: none;
+    border-radius: var(--radius-xl);
+    color: white;
+    font-weight: var(--font-bold);
+    transition: all 0.2s;
+}
+
+.kid-workout-activities-section .btn--primary.btn--lg.btn--block:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+}
+
+/* ==========================================================================
+   Kid Workout Stats Tab
+   ========================================================================== */
+
+/* ==========================================================================
+   Move & Play - Calendar Tab
+   ========================================================================== */
+
+.kid-workout-calendar-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Streak Banner */
+.kid-workout-streak-banner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-streak-banner__icon {
+    font-size: 36px;
+    animation: flame-pulse 1.5s ease-in-out infinite;
+}
+
+.kid-workout-streak-banner__value {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: #92400E;
+    line-height: 1;
+}
+
+.kid-workout-streak-banner__label {
+    font-size: var(--text-base);
+    color: #B45309;
+    font-weight: var(--font-medium);
+}
+
+/* Calendar Container */
+.kid-workout-calendar {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-calendar__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-4);
+}
+
+.kid-workout-calendar__header h3 {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.kid-workout-calendar__summary {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    font-weight: var(--font-medium);
+}
+
+/* Weekday Headers */
+.kid-workout-calendar__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+    margin-bottom: var(--space-2);
+}
+
+.kid-workout-calendar__weekday {
+    text-align: center;
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--gray-500);
+    padding: var(--space-2) 0;
+    text-transform: uppercase;
+}
+
+/* Calendar Grid */
+.kid-workout-calendar__grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+}
+
+.kid-workout-calendar__day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    border-radius: var(--radius-lg);
+    background: var(--gray-50);
+    cursor: default;
+    transition: all 0.2s ease;
+    position: relative;
+}
+
+.kid-workout-calendar__day-num {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+}
+
+.kid-workout-calendar__day--other {
+    opacity: 0.3;
+}
+
+.kid-workout-calendar__day--other .kid-workout-calendar__day-num {
+    color: var(--gray-400);
+}
+
+/* Active Day (has activity logged) */
+.kid-workout-calendar__day--active {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+}
+
+.kid-workout-calendar__day--active .kid-workout-calendar__day-num {
+    color: #92400E;
+    font-weight: var(--font-bold);
+}
+
+.kid-workout-calendar__day-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #F59E0B;
+    position: absolute;
+    bottom: 4px;
+}
+
+/* Today */
+.kid-workout-calendar__day--today {
+    border: 2px solid var(--primary);
+}
+
+.kid-workout-calendar__day--today .kid-workout-calendar__day-num {
+    color: var(--primary);
+    font-weight: var(--font-bold);
+}
+
+/* Today + Active */
+.kid-workout-calendar__day--today.kid-workout-calendar__day--active {
+    border-color: #D97706;
+}
+
+/* Legend */
+.kid-workout-calendar__legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-6);
+    padding-top: var(--space-3);
+}
+
+.kid-workout-calendar__legend-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--gray-600);
+}
+
+.kid-workout-calendar__legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-md);
+}
+
+.kid-workout-calendar__legend-dot--active {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border: 1px solid #F59E0B;
+}
+
+.kid-workout-calendar__legend-dot--today {
+    background: var(--gray-50);
+    border: 2px solid var(--primary);
+}
+
+/* Mobile adjustments */
+@media (max-width: 599px) {
+    .kid-workout-calendar__day {
+        border-radius: var(--radius-md);
+    }
+
+    .kid-workout-calendar__day-num {
+        font-size: var(--text-xs);
+    }
+
+    .kid-workout-calendar__day-dot {
+        width: 4px;
+        height: 4px;
+        bottom: 2px;
+    }
+
+    .kid-workout-streak-banner {
+        padding: var(--space-3);
+    }
+
+    .kid-workout-streak-banner__icon {
+        font-size: 28px;
+    }
+
+    .kid-workout-streak-banner__value {
+        font-size: var(--text-2xl);
+    }
+}
+
+/* ==========================================================================
+   Move & Play - Day Activities Modal
+   ========================================================================== */
+
+.day-modal-summary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-3);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: #92400E;
+}
+
+.day-modal-activities {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.day-modal-activity {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.day-modal-activity__emoji {
+    font-size: 24px;
+}
+
+.day-modal-activity__name {
+    flex: 1;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.day-modal-activity__meta {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    font-weight: var(--font-medium);
+}
+
+/* ==========================================================================
+   Move & Play - Stats Tab
+   ========================================================================== */
+
+.kid-workout-stats-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Streak Card */
+.kid-workout-stats-card--streak {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-stats-card__icon {
+    font-size: 48px;
+    animation: flame-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes flame-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+.kid-workout-stats-card__content {
+    display: flex;
+    flex-direction: column;
+}
+
+.kid-workout-stats-card__value {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: #92400E;
+    line-height: 1;
+}
+
+.kid-workout-stats-card__label {
+    font-size: var(--text-sm);
+    color: #B45309;
+    font-weight: var(--font-medium);
+}
+
+/* Stats Section */
+.kid-workout-stats-section {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-workout-stats-section h3 {
+    font-size: var(--text-base);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-3);
+}
+
+/* Stats Grid */
+.kid-workout-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.kid-workout-stats-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kid-workout-stats-item__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--primary);
+    line-height: 1;
+}
+
+.kid-workout-stats-item__label {
+    font-size: var(--text-xs);
+    color: var(--gray-600);
+    margin-top: var(--space-1);
+    text-align: center;
+}
+
+/* Stats Progress Bar */
+.kid-workout-stats-progress {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+}
+
+.kid-workout-stats-progress__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.kid-workout-stats-progress__bar {
+    height: 10px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.kid-workout-stats-progress__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #F59E0B 0%, #D97706 100%);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+/* Favorites List */
+.kid-workout-favorites-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kid-workout-favorite-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kid-workout-favorite-item__rank {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--primary);
+    min-width: 28px;
+}
+
+.kid-workout-favorite-item__emoji {
+    font-size: 24px;
+}
+
+.kid-workout-favorite-item__name {
+    flex: 1;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.kid-workout-favorite-item__count {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-500);
+    background: var(--white);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-md);
 }
 
 /* ==========================================================================
@@ -9325,6 +12437,13 @@
     background: #10B981;
 }
 
+.points-calendar__hint {
+    text-align: center;
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    margin-top: var(--space-3);
+}
+
 /* Calendar Day Details */
 .points-calendar__details {
     margin-top: var(--space-3);
@@ -9367,22 +12486,66 @@
     gap: var(--space-1);
 }
 
+.points-calendar__day--selected {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+    background: var(--primary-100) !important;
+}
+
+.points-calendar__day-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--gray-200);
+}
+
 .points-calendar__day-item {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    padding: var(--space-2);
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     background: white;
     border-radius: var(--radius-md);
     font-size: var(--text-sm);
 }
 
-.points-calendar__day-item .text-success {
+.points-calendar__day-item-icon {
+    font-size: var(--text-base);
+}
+
+.points-calendar__day-item-name {
+    flex: 1;
+    color: var(--gray-700);
+}
+
+.points-calendar__day-item-reason {
+    color: var(--gray-400);
+    font-size: var(--text-xs);
+    margin-left: var(--space-1);
+}
+
+.points-calendar__day-item-points {
+    font-weight: var(--font-semibold);
+    min-width: 50px;
+    text-align: right;
+}
+
+.points-calendar__day-item .text-success,
+.points-calendar__day-item-points.text-success {
     color: var(--success);
 }
 
-.points-calendar__day-item .text-danger {
+.points-calendar__day-item .text-danger,
+.points-calendar__day-item-points.text-danger {
     color: var(--danger);
+}
+
+.points-calendar__day-item .text-warning {
+    color: var(--warning);
 }
 
 /* Stats Grid */
@@ -9438,6 +12601,29 @@
 
 .stats-card--primary .stats-card__label {
     color: rgba(255, 255, 255, 0.8);
+}
+
+/* Compact stats grid variant */
+.stats-grid--compact {
+    gap: var(--space-2);
+}
+
+.stats-grid--compact .stats-card {
+    padding: var(--space-2) var(--space-3);
+}
+
+.stats-grid--compact .stats-card__icon {
+    margin-bottom: var(--space-1);
+    font-size: var(--text-base);
+}
+
+.stats-grid--compact .stats-card__value {
+    font-size: var(--text-lg);
+    margin-bottom: 0;
+}
+
+.stats-grid--compact .stats-card__label {
+    font-size: 10px;
 }
 
 /* Stats Section */
@@ -9525,43 +12711,117 @@
     color: var(--primary);
 }
 
-/* Week Comparison */
-.week-comparison {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--space-3);
+/* Points Progress Chart */
+.points-chart {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
 }
 
-.week-comparison__item {
+.points-chart__bars {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    height: 120px;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 2px solid var(--gray-200);
+}
+
+.points-chart__bar-container {
     display: flex;
     flex-direction: column;
     align-items: center;
-    padding: var(--space-3);
-    background: linear-gradient(135deg, #D1FAE5 0%, #6EE7B7 100%);
-    border-radius: var(--radius-lg);
-    text-align: center;
+    flex: 1;
+    height: 100%;
+    justify-content: flex-end;
 }
 
-.week-comparison__item--last {
-    background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-200) 100%);
+.points-chart__bar {
+    width: 100%;
+    max-width: 32px;
+    min-height: 4px;
+    background: var(--gray-200);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    transition: height 0.3s ease;
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
 }
 
-.week-comparison__label {
+.points-chart__bar--active {
+    background: linear-gradient(180deg, #FCD34D 0%, #F59E0B 100%);
+}
+
+.points-chart__bar--today {
+    background: linear-gradient(180deg, #818CF8 0%, #6366F1 100%);
+}
+
+.points-chart__bar--today.points-chart__bar--active {
+    background: linear-gradient(180deg, #818CF8 0%, #6366F1 100%);
+}
+
+.points-chart__bar-value {
+    position: absolute;
+    top: -20px;
     font-size: var(--text-xs);
     font-weight: var(--font-semibold);
-    color: var(--gray-600);
-    margin-bottom: var(--space-1);
+    color: var(--gray-700);
 }
 
-.week-comparison__value {
-    font-size: var(--text-lg);
-    font-weight: var(--font-bold);
+.points-chart__bar-label {
+    margin-top: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+.points-chart__bar-label--today {
+    color: var(--primary);
+    font-weight: var(--font-semibold);
+}
+
+.points-chart__summary {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.points-chart__total {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
     color: var(--gray-800);
 }
 
-.week-comparison__activities {
+.points-chart__avg {
     font-size: var(--text-xs);
     color: var(--gray-500);
+}
+
+/* Weekly chart variant (8 weeks) */
+.points-chart--weekly .points-chart__bars {
+    gap: var(--space-1);
+}
+
+.points-chart--weekly .points-chart__bar {
+    max-width: 28px;
+}
+
+.points-chart--weekly .points-chart__bar-label {
+    font-size: 9px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    .points-chart--weekly .points-chart__bar-label {
+        font-size: 8px;
+    }
+
+    .points-chart--weekly .points-chart__bar-value {
+        font-size: 9px;
+        top: -16px;
+    }
 }
 
 /* Responsive adjustments */
@@ -9609,6 +12869,1928 @@
 
     .level-section__badge {
         flex-wrap: wrap;
+    }
+}
+
+/* ==========================================================================
+   Kid Tasks History Tab
+   ========================================================================== */
+
+.kid-tasks-history {
+    padding: var(--space-2);
+}
+
+.kid-tasks-history__nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    background: white;
+    padding: var(--space-3);
+    border-radius: var(--radius-xl);
+}
+
+.kid-tasks-history__month {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    min-width: 180px;
+    text-align: center;
+}
+
+.kid-tasks-history__summary {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.kid-tasks-history__summary-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    color: var(--gray-700);
+    font-weight: var(--font-medium);
+    flex: 1;
+    min-width: 140px;
+}
+
+.kid-tasks-history__summary-stat svg {
+    width: 20px;
+    height: 20px;
+    color: #EAB308;
+}
+
+.kid-tasks-history__days {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.kid-tasks-history__day {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 2px solid #E5E7EB;
+    transition: all 0.2s ease;
+}
+
+.kid-tasks-history__day:hover {
+    border-color: #EAB308;
+}
+
+.kid-tasks-history__day--today {
+    border-color: #EAB308;
+    background: linear-gradient(135deg, white 0%, #FEF9C3 100%);
+}
+
+.kid-tasks-history__day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.kid-tasks-history__day-date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.kid-tasks-history__day-num {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: #EAB308;
+    min-width: 40px;
+    text-align: center;
+}
+
+.kid-tasks-history__day-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.kid-tasks-history__day-name {
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.kid-tasks-history__day-month {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.kid-tasks-history__day-count {
+    background: #FEF9C3;
+    color: #CA8A04;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+}
+
+.kid-tasks-history__day-tasks {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kid-tasks-history__task {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    color: var(--gray-700);
+}
+
+.kid-tasks-history__task svg {
+    width: 16px;
+    height: 16px;
+    color: #22C55E;
+}
+
+/* ==========================================================================
+   Kid Tasks Stats Tab
+   ========================================================================== */
+
+.kid-tasks-stats {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Streak Cards */
+.kid-tasks-stats__streaks {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.kid-tasks-stats__streak-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 3px solid transparent;
+}
+
+.kid-tasks-stats__streak-card--current {
+    border-color: #F97316;
+    background: linear-gradient(135deg, white 0%, #FFEDD5 100%);
+}
+
+.kid-tasks-stats__streak-card--best {
+    border-color: #8B5CF6;
+    background: linear-gradient(135deg, white 0%, #EDE9FE 100%);
+}
+
+.kid-tasks-stats__streak-icon {
+    font-size: 32px;
+}
+
+.kid-tasks-stats__streak-icon svg {
+    width: 32px;
+    height: 32px;
+}
+
+.kid-tasks-stats__streak-card--current .kid-tasks-stats__streak-icon svg {
+    color: #F97316;
+}
+
+.kid-tasks-stats__streak-card--best .kid-tasks-stats__streak-icon svg {
+    color: #8B5CF6;
+}
+
+.kid-tasks-stats__streak-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.kid-tasks-stats__streak-value {
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    line-height: 1;
+}
+
+.kid-tasks-stats__streak-label {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    margin-top: var(--space-1);
+}
+
+/* Month Progress Card */
+.kid-tasks-stats__month-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 3px solid #EAB308;
+}
+
+.kid-tasks-stats__month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.kid-tasks-stats__month-header h3 {
+    margin: 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.kid-tasks-stats__month-count {
+    background: #FEF9C3;
+    color: #CA8A04;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-weight: var(--font-semibold);
+    font-size: var(--text-sm);
+}
+
+.kid-tasks-stats__progress-bar {
+    height: 12px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+}
+
+.kid-tasks-stats__progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #EAB308 0%, #F59E0B 100%);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.kid-tasks-stats__month-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.kid-tasks-stats__comparison {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: var(--font-medium);
+}
+
+.kid-tasks-stats__comparison svg {
+    width: 16px;
+    height: 16px;
+}
+
+.kid-tasks-stats__comparison--up {
+    color: #22C55E;
+}
+
+.kid-tasks-stats__comparison--down {
+    color: #EF4444;
+}
+
+/* Weekly Chart */
+.kid-tasks-stats__weekly-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.kid-tasks-stats__weekly-card h3 {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.kid-tasks-stats__weekly-chart {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    height: 120px;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+}
+
+.kid-tasks-stats__weekly-bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.kid-tasks-stats__weekly-fill {
+    width: 100%;
+    max-width: 40px;
+    background: linear-gradient(180deg, #EAB308 0%, #FDE047 100%);
+    border-radius: var(--radius-md) var(--radius-md) 0 0;
+    min-height: 4px;
+    margin-top: auto;
+    transition: height 0.3s ease;
+}
+
+.kid-tasks-stats__weekly-label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--gray-500);
+    margin-top: var(--space-2);
+}
+
+.kid-tasks-stats__weekly-count {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    margin-top: var(--space-1);
+}
+
+/* Stats Grid */
+.kid-tasks-stats__grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+}
+
+.kid-tasks-stats__grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    text-align: center;
+}
+
+.kid-tasks-stats__grid-item svg {
+    width: 24px;
+    height: 24px;
+    color: #EAB308;
+    margin-bottom: var(--space-2);
+}
+
+.kid-tasks-stats__grid-item .emoji-stat {
+    font-size: 24px;
+    margin-bottom: var(--space-2);
+}
+
+.kid-tasks-stats__grid-value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.kid-tasks-stats__grid-label {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin-top: var(--space-1);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .kid-tasks-stats__streaks {
+        grid-template-columns: 1fr;
+    }
+
+    .kid-tasks-stats__grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .kid-tasks-history__summary {
+        flex-direction: column;
+    }
+
+    .kid-tasks-history__day-header {
+        flex-direction: column;
+        gap: var(--space-2);
+        align-items: flex-start;
+    }
+}
+
+/* ==========================================================================
+   Rewards Full Page
+   ========================================================================== */
+
+/* Tab badge for wishlist count */
+.kid-page__tab-badge {
+    background: var(--primary);
+    color: white;
+    font-size: var(--text-xs);
+    font-weight: var(--font-bold);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    margin-left: var(--space-1);
+}
+
+/* Rewards Grid */
+.rewards-full-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: var(--space-4);
+    padding: var(--space-2);
+}
+
+.rewards-full-card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 3px solid var(--gray-200);
+    transition: all 0.2s ease;
+    text-align: center;
+}
+
+.rewards-full-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+.rewards-full-card--available {
+    border-color: var(--reward-color, #3B82F6);
+}
+
+.rewards-full-card--available:hover {
+    box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+}
+
+.rewards-full-card--locked {
+    opacity: 0.7;
+}
+
+.rewards-full-card__wishlist {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 32px;
+    height: 32px;
+    border: none;
+    background: var(--gray-100);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.rewards-full-card__wishlist:hover {
+    background: #FCE7F3;
+    color: #EC4899;
+}
+
+.rewards-full-card__wishlist svg {
+    width: 16px;
+    height: 16px;
+}
+
+.rewards-full-card__icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: var(--space-3);
+}
+
+.rewards-full-card__icon svg {
+    width: 32px;
+    height: 32px;
+    color: white;
+}
+
+.rewards-full-card__name {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-2);
+}
+
+.rewards-full-card__cost {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: #F59E0B;
+    margin-bottom: var(--space-3);
+}
+
+.rewards-full-card__cost svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Wishlist Full List */
+.rewards-wishlist-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-2);
+}
+
+.rewards-wishlist-full-card {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 3px solid var(--reward-color, #3B82F6);
+    transition: all 0.2s ease;
+}
+
+.rewards-wishlist-full-card:hover {
+    transform: translateX(4px);
+}
+
+.rewards-wishlist-full-card__remove {
+    position: absolute;
+    top: var(--space-2);
+    right: var(--space-2);
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: var(--gray-100);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.rewards-wishlist-full-card__remove:hover {
+    background: #FEE2E2;
+    color: #EF4444;
+}
+
+.rewards-wishlist-full-card__remove svg {
+    width: 14px;
+    height: 14px;
+}
+
+.rewards-wishlist-full-card__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rewards-wishlist-full-card__icon svg {
+    width: 28px;
+    height: 28px;
+    color: white;
+}
+
+.rewards-wishlist-full-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.rewards-wishlist-full-card__name {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-2);
+}
+
+.rewards-wishlist-full-card__progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.rewards-wishlist-full-card__progress-bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.rewards-wishlist-full-card__progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.rewards-wishlist-full-card__progress-text {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.rewards-wishlist-full-card__cost {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: #F59E0B;
+    padding: 0 var(--space-3);
+}
+
+.rewards-wishlist-full-card__cost svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* History Full */
+.rewards-history-full {
+    padding: var(--space-2);
+}
+
+.rewards-history-full__summary {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.rewards-history-full__stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    color: var(--gray-700);
+    font-weight: var(--font-medium);
+    flex: 1;
+    min-width: 140px;
+}
+
+.rewards-history-full__stat svg {
+    width: 20px;
+    height: 20px;
+    color: #3B82F6;
+}
+
+.rewards-history-full__timeline {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.rewards-history-full__day {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.rewards-history-full__day-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-bold);
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.rewards-history-full__day-entries {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.rewards-history-full__entry {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.rewards-history-full__entry-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.rewards-history-full__entry-icon svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+}
+
+.rewards-history-full__entry-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.rewards-history-full__entry-name {
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.rewards-history-full__entry-cost {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-weight: var(--font-bold);
+    color: #EF4444;
+}
+
+.rewards-history-full__entry-cost svg {
+    width: 16px;
+    height: 16px;
+    color: #F59E0B;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .rewards-full-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: var(--space-3);
+    }
+
+    .rewards-full-card {
+        padding: var(--space-3);
+    }
+
+    .rewards-full-card__icon {
+        width: 48px;
+        height: 48px;
+    }
+
+    .rewards-full-card__icon svg {
+        width: 24px;
+        height: 24px;
+    }
+
+    .rewards-wishlist-full-card {
+        flex-wrap: wrap;
+        gap: var(--space-3);
+    }
+
+    .rewards-wishlist-full-card__cost {
+        width: 100%;
+        justify-content: center;
+        padding: var(--space-2) 0 0 0;
+    }
+
+    .rewards-history-full__summary {
+        flex-direction: column;
+    }
+}
+
+/* ==========================================================================
+   Achievements Full Page
+   ========================================================================== */
+
+/* Categories List */
+.achievements-full-categories {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-2);
+}
+
+.achievements-full-category {
+    background: white;
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+}
+
+.achievements-full-category__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(135deg, var(--category-color) 0%, color-mix(in srgb, var(--category-color), white 30%) 100%);
+    color: white;
+    font-weight: var(--font-bold);
+}
+
+.achievements-full-category__header svg {
+    width: 20px;
+    height: 20px;
+}
+
+.achievements-full-category__count {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.3);
+    padding: 2px 10px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+}
+
+.achievements-full-category__badges {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    padding: var(--space-3);
+}
+
+/* Badge Card */
+.achievements-full-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    border: 2px solid transparent;
+    transition: all 0.2s ease;
+}
+
+.achievements-full-badge:hover {
+    border-color: var(--badge-color);
+}
+
+.achievements-full-badge--earned {
+    background: linear-gradient(135deg, white 0%, color-mix(in srgb, var(--badge-color), white 85%) 100%);
+    border-color: var(--badge-color);
+}
+
+.achievements-full-badge__icon {
+    position: relative;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--gray-200);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.achievements-full-badge--earned .achievements-full-badge__icon {
+    background: var(--badge-color);
+}
+
+.achievements-full-badge__icon svg {
+    width: 24px;
+    height: 24px;
+    color: var(--gray-400);
+}
+
+.achievements-full-badge--earned .achievements-full-badge__icon svg {
+    color: white;
+}
+
+.achievements-full-badge__check {
+    position: absolute;
+    bottom: -4px;
+    right: -4px;
+    width: 20px;
+    height: 20px;
+    background: #22C55E;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 12px;
+    font-weight: bold;
+    border: 2px solid white;
+}
+
+.achievements-full-badge__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.achievements-full-badge__name {
+    display: block;
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.achievements-full-badge__desc {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.achievements-full-badge__progress {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    min-width: 100px;
+}
+
+.achievements-full-badge__progress-bar {
+    flex: 1;
+    height: 6px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.achievements-full-badge__progress-fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.achievements-full-badge__progress span {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-500);
+    min-width: 35px;
+    text-align: right;
+}
+
+.achievements-full-badge__earned {
+    background: #DCFCE7;
+    color: #16A34A;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+}
+
+/* Progress Tab */
+.achievements-progress-list {
+    padding: var(--space-2);
+}
+
+.achievements-progress-title {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.achievements-progress-card {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-3);
+    border: 2px solid var(--gray-200);
+    transition: all 0.2s ease;
+}
+
+.achievements-progress-card:hover {
+    border-color: var(--badge-color);
+    transform: translateX(4px);
+}
+
+.achievements-progress-card__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.achievements-progress-card__icon svg {
+    width: 28px;
+    height: 28px;
+    color: white;
+}
+
+.achievements-progress-card__content {
+    flex: 1;
+    min-width: 0;
+}
+
+.achievements-progress-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-1);
+}
+
+.achievements-progress-card__name {
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.achievements-progress-card__percent {
+    font-weight: var(--font-bold);
+    color: var(--badge-color);
+}
+
+.achievements-progress-card__desc {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin-bottom: var(--space-2);
+}
+
+.achievements-progress-card__bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.achievements-progress-card__fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+/* Stats Tab */
+.achievements-stats-page {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.achievements-stats-overview {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+}
+
+.achievements-stats-ring {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+}
+
+.achievements-stats-ring svg {
+    width: 100%;
+    height: 100%;
+}
+
+.achievements-stats-ring__value {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: #8B5CF6;
+}
+
+.achievements-stats-overview__info h3 {
+    margin: 0 0 var(--space-1) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.achievements-stats-overview__info p {
+    margin: 0;
+    color: var(--gray-500);
+}
+
+.achievements-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-3);
+}
+
+.achievements-stats-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    text-align: center;
+}
+
+.achievements-stats-card svg {
+    width: 24px;
+    height: 24px;
+    color: #8B5CF6;
+    margin-bottom: var(--space-2);
+}
+
+.achievements-stats-card .emoji-stat {
+    font-size: 24px;
+    margin-bottom: var(--space-2);
+}
+
+.achievements-stats-card__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.achievements-stats-card__label {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin-top: var(--space-1);
+}
+
+.achievements-stats-categories {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.achievements-stats-categories h3 {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.achievements-stats-category-bars {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.achievements-stats-category-bar__label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.achievements-stats-category-bar__track {
+    height: 10px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.achievements-stats-category-bar__fill {
+    height: 100%;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .achievements-full-badge {
+        flex-wrap: wrap;
+    }
+
+    .achievements-full-badge__progress {
+        width: 100%;
+        margin-top: var(--space-2);
+    }
+
+    .achievements-stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .achievements-stats-overview {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .achievements-progress-card {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .achievements-progress-card__icon {
+        width: 48px;
+        height: 48px;
+        align-self: center;
+    }
+}
+
+/* ==========================================================================
+   Screen Time Full Page
+   ========================================================================== */
+
+/* Today Tab */
+.screen-time-today {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.screen-time-today__gauge-section {
+    display: flex;
+    align-items: center;
+    gap: var(--space-6);
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+}
+
+.screen-time-today__gauge {
+    position: relative;
+    width: 140px;
+    height: 140px;
+    flex-shrink: 0;
+}
+
+.screen-time-today__gauge svg {
+    width: 100%;
+    height: 100%;
+}
+
+.screen-time-today__gauge-center {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.screen-time-today__gauge-value {
+    display: block;
+    font-size: var(--text-3xl);
+    font-weight: var(--font-bold);
+    color: #06B6D4;
+}
+
+.screen-time-today__gauge--over .screen-time-today__gauge-value {
+    color: #EF4444;
+}
+
+.screen-time-today__gauge-label {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.screen-time-today__gauge-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.screen-time-today__remaining {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: #06B6D4;
+}
+
+.screen-time-today__remaining--over {
+    color: #EF4444;
+}
+
+.screen-time-today__sessions {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.screen-time-today__sessions h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.screen-time-sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.screen-time-session-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.screen-time-session-card__icon {
+    width: 40px;
+    height: 40px;
+    background: #06B6D4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.screen-time-session-card__icon svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+}
+
+.screen-time-session-card__icon span {
+    font-size: 20px;
+}
+
+.screen-time-session-card__info {
+    flex: 1;
+}
+
+.screen-time-session-card__name {
+    display: block;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.screen-time-session-card__time {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.screen-time-session-card__duration {
+    font-weight: var(--font-bold);
+    color: #06B6D4;
+    font-size: var(--text-lg);
+}
+
+/* History Tab */
+.screen-time-history-list {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.screen-time-history-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 2px solid var(--gray-200);
+}
+
+.screen-time-history-card--over {
+    border-color: #FCA5A5;
+    background: linear-gradient(135deg, white 0%, #FEE2E2 100%);
+}
+
+.screen-time-history-card__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+}
+
+.screen-time-history-card__date {
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.screen-time-history-card__time {
+    font-weight: var(--font-bold);
+    color: #06B6D4;
+}
+
+.screen-time-history-card__time--over {
+    color: #EF4444;
+}
+
+.screen-time-history-card__bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+    margin-bottom: var(--space-2);
+}
+
+.screen-time-history-card__fill {
+    height: 100%;
+    background: #06B6D4;
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.screen-time-history-card__fill--over {
+    background: #EF4444;
+}
+
+.screen-time-history-card__footer {
+    display: flex;
+    justify-content: space-between;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+/* Stats Tab */
+.screen-time-stats {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.screen-time-stats__overview {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+}
+
+.screen-time-stats__card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    text-align: center;
+}
+
+.screen-time-stats__card svg {
+    width: 24px;
+    height: 24px;
+    color: #06B6D4;
+    margin-bottom: var(--space-2);
+}
+
+.screen-time-stats__card .emoji-stat {
+    font-size: 24px;
+    margin-bottom: var(--space-2);
+}
+
+.screen-time-stats__card-value {
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.screen-time-stats__card-label {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin-top: var(--space-1);
+}
+
+.screen-time-stats__breakdown {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.screen-time-stats__breakdown h3 {
+    margin: 0 0 var(--space-4) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.screen-time-breakdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.screen-time-breakdown-item__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-1);
+}
+
+.screen-time-breakdown-item__header svg {
+    width: 18px;
+    height: 18px;
+    color: var(--activity-color);
+}
+
+.screen-time-breakdown-item__header .emoji-icon {
+    font-size: 18px;
+}
+
+.screen-time-breakdown-item__time {
+    margin-left: auto;
+    font-weight: var(--font-semibold);
+    color: var(--activity-color);
+}
+
+.screen-time-breakdown-item__bar {
+    height: 8px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.screen-time-breakdown-item__fill {
+    height: 100%;
+    background: var(--activity-color);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.screen-time-stats__limits {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.screen-time-stats__limits h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.screen-time-limits-display {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.screen-time-limit-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.screen-time-limit-item svg {
+    width: 18px;
+    height: 18px;
+    color: #06B6D4;
+}
+
+.screen-time-limit-item__value {
+    margin-left: auto;
+    font-weight: var(--font-bold);
+    color: #06B6D4;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .screen-time-today__gauge-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .screen-time-today__gauge {
+        width: 120px;
+        height: 120px;
+    }
+
+    .screen-time-stats__overview {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   Chores Full Page
+   ========================================================================== */
+
+/* Today Tab */
+.chores-today-page {
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.chores-today-celebration {
+    text-align: center;
+    padding: var(--space-6);
+    background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-2);
+}
+
+.chores-today-celebration__icon {
+    font-size: 48px;
+    margin-bottom: var(--space-2);
+}
+
+.chores-today-celebration h2 {
+    margin: 0 0 var(--space-1) 0;
+    color: #047857;
+}
+
+.chores-today-celebration p {
+    margin: 0;
+    color: #059669;
+}
+
+.chores-today-section {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.chores-today-section h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.chores-today-section--completed {
+    background: linear-gradient(135deg, white 0%, #D1FAE5 100%);
+}
+
+.chores-today-section--completed h3 {
+    color: #047857;
+}
+
+.chores-today-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.chores-today-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--gray-200);
+    transition: all 0.2s ease;
+}
+
+.chores-today-card:hover {
+    border-color: #10B981;
+    transform: translateX(4px);
+}
+
+.chores-today-card--completed {
+    background: #ECFDF5;
+    border-color: #86EFAC;
+}
+
+.chores-today-card--completed .chores-today-card__name {
+    text-decoration: line-through;
+    color: var(--gray-400);
+}
+
+.chores-today-card__icon {
+    width: 48px;
+    height: 48px;
+    background: #10B981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chores-today-card__icon svg {
+    width: 24px;
+    height: 24px;
+    color: white;
+}
+
+.chores-today-card--completed .chores-today-card__icon {
+    background: #86EFAC;
+}
+
+.chores-today-card__info {
+    flex: 1;
+    min-width: 0;
+}
+
+.chores-today-card__name {
+    display: block;
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    font-size: var(--text-lg);
+}
+
+.chores-today-card__points {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: #F59E0B;
+    font-weight: var(--font-medium);
+    margin-top: var(--space-1);
+}
+
+.chores-today-card__points svg {
+    width: 16px;
+    height: 16px;
+}
+
+.chores-today-card__points--earned {
+    color: #16A34A;
+}
+
+/* History Tab */
+.chores-history-page {
+    padding: var(--space-2);
+}
+
+.chores-history-summary {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.chores-history-summary__stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    color: var(--gray-700);
+    font-weight: var(--font-medium);
+    flex: 1;
+    min-width: 140px;
+}
+
+.chores-history-summary__stat svg {
+    width: 20px;
+    height: 20px;
+    color: #10B981;
+}
+
+.chores-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.chores-history-day {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+.chores-history-day__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-2);
+    padding-bottom: var(--space-2);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.chores-history-day__date {
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.chores-history-day__points {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: #F59E0B;
+    font-weight: var(--font-bold);
+}
+
+.chores-history-day__points svg {
+    width: 16px;
+    height: 16px;
+}
+
+.chores-history-day__chores {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.chores-history-chore {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    color: var(--gray-700);
+}
+
+.chores-history-chore svg {
+    width: 16px;
+    height: 16px;
+    color: #10B981;
+}
+
+/* Pool Tab */
+.chores-pool-page {
+    padding: var(--space-2);
+}
+
+.chores-pool-info {
+    display: flex;
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.chores-pool-info__card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3) var(--space-4);
+    background: white;
+    border-radius: var(--radius-xl);
+    flex: 1;
+    min-width: 160px;
+}
+
+.chores-pool-info__card svg {
+    width: 24px;
+    height: 24px;
+    color: #10B981;
+}
+
+.chores-pool-info__card strong {
+    display: block;
+    color: var(--gray-800);
+}
+
+.chores-pool-info__card span {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.chores-pool-title {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-lg);
+    color: var(--gray-800);
+}
+
+.chores-pool-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: var(--space-3);
+}
+
+.chores-pool-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 2px solid var(--gray-200);
+}
+
+.chores-pool-card__icon {
+    width: 40px;
+    height: 40px;
+    background: #10B981;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.chores-pool-card__icon svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+}
+
+.chores-pool-card__name {
+    flex: 1;
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+}
+
+.chores-pool-card__points {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    color: #F59E0B;
+    font-weight: var(--font-bold);
+}
+
+.chores-pool-card__points svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .chores-history-summary {
+        flex-direction: column;
+    }
+
+    .chores-pool-info {
+        flex-direction: column;
+    }
+
+    .chores-pool-list {
+        grid-template-columns: 1fr;
+    }
+
+    .chores-today-card {
+        flex-wrap: wrap;
+    }
+
+    .chores-today-card .btn {
+        width: 100%;
+        margin-top: var(--space-2);
     }
 }
 

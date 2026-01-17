@@ -1,9 +1,13 @@
 /**
  * Rewards System Feature
  * Kid-friendly reward redemption with icons and animations
+ * Full page with tabs: Rewards, Wishlist, History
  */
 
 const Rewards = (function() {
+    // Track current tab in full page view
+    let currentTab = 'rewards';
+
     // Reward icons
     const REWARD_ICONS = [
         'monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2',
@@ -151,9 +155,9 @@ const Rewards = (function() {
                 </div>
 
                 <div class="rewards-widget__footer">
-                    <button class="btn btn--sm btn--ghost" data-action="view-redeemed" data-member-id="${memberId}">
-                        <i data-lucide="history"></i>
-                        History
+                    <button class="btn btn--sm btn--ghost" data-action="view-all" data-member-id="${memberId}">
+                        <i data-lucide="maximize-2"></i>
+                        View All
                     </button>
                     <button class="btn btn--sm btn--ghost" data-action="manage-rewards" data-member-id="${memberId}">
                         <i data-lucide="settings"></i>
@@ -194,9 +198,9 @@ const Rewards = (function() {
             });
         });
 
-        // History button
-        container.querySelector('[data-action="view-redeemed"]')?.addEventListener('click', () => {
-            showRedeemedHistoryModal(memberId);
+        // View All button - opens full page
+        container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+            showFullPage(memberId);
         });
 
         // Manage button
@@ -304,6 +308,430 @@ const Rewards = (function() {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+    }
+
+    // =========================================================================
+    // FULL PAGE VIEW
+    // =========================================================================
+
+    /**
+     * Show full page view
+     */
+    function showFullPage(memberId) {
+        const main = document.getElementById('mainContent');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        currentTab = 'rewards';
+        renderFullPage(main, memberId, member, currentTab);
+    }
+
+    /**
+     * Render full page with tabs
+     */
+    function renderFullPage(container, memberId, member, tab = 'rewards') {
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0 };
+        const rewardsData = getWidgetData(memberId);
+        const balance = pointsData.balance || 0;
+        const wishlist = rewardsData.wishlist || [];
+        const history = rewardsData.redeemed || [];
+
+        // Get age-adaptive content
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const colors = useKidTheme ? KidTheme.getColors('rewards') : { gradient: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 50%, #93C5FD 100%)' };
+
+        // Calculate stats
+        const totalRedeemed = history.length;
+        const totalSpent = history.reduce((sum, h) => sum + h.cost, 0);
+
+        // Get tab content
+        const tabContent = renderTabContent(tab, memberId, member, rewardsData, pointsData);
+
+        // Define tabs
+        const tabs = [
+            { id: 'rewards', label: 'Rewards', icon: 'gift', emoji: '🎁' },
+            { id: 'wishlist', label: 'Wishlist', icon: 'heart', emoji: '💖', count: wishlist.length },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📜' }
+        ];
+
+        container.innerHTML = `
+            <div class="kid-page kid-page--rewards ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
+                            ${isYoungKid ? '🎁 My Rewards!' : 'My Rewards'}
+                        </h1>
+                    </div>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${balance}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '⭐ Points' : 'Points Available'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${totalRedeemed}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '🎉 Redeemed' : 'Total Redeemed'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${totalSpent}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '💫 Spent' : 'Points Spent'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
+                            ${t.label}
+                            ${t.count ? `<span class="kid-page__tab-badge">${t.count}</span>` : ''}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindFullPageEvents(container, memberId, member, rewardsData, pointsData, tab);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderTabContent(tab, memberId, member, rewardsData, pointsData) {
+        switch (tab) {
+            case 'rewards':
+                return renderRewardsTab(memberId, member, rewardsData, pointsData);
+            case 'wishlist':
+                return renderWishlistTab(memberId, member, rewardsData, pointsData);
+            case 'history':
+                return renderHistoryTab(memberId, member, rewardsData);
+            default:
+                return renderRewardsTab(memberId, member, rewardsData, pointsData);
+        }
+    }
+
+    /**
+     * Render Rewards tab content
+     */
+    function renderRewardsTab(memberId, member, rewardsData, pointsData) {
+        const balance = pointsData.balance || 0;
+        const wishlist = rewardsData.wishlist || [];
+        const rewards = rewardsData.rewards.filter(r => !wishlist.includes(r.id));
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        if (rewards.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">🎁</div>
+                    <p>${isYoungKid ? 'No rewards yet! Ask a parent to add some!' : 'No rewards available.'}</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="rewards-full-grid">
+                ${rewards.map(reward => {
+                    const canAfford = balance >= reward.cost;
+                    return `
+                        <div class="rewards-full-card ${canAfford ? 'rewards-full-card--available' : 'rewards-full-card--locked'}"
+                             style="--reward-color: ${reward.color || '#3B82F6'}">
+                            <button class="rewards-full-card__wishlist" data-wishlist-toggle="${reward.id}" title="Add to wishlist">
+                                <i data-lucide="heart"></i>
+                            </button>
+                            <div class="rewards-full-card__icon" style="background-color: ${reward.color || '#3B82F6'}">
+                                <i data-lucide="${reward.icon || 'gift'}"></i>
+                            </div>
+                            <div class="rewards-full-card__name">${reward.name}</div>
+                            <div class="rewards-full-card__cost">
+                                ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                ${reward.cost} ${isYoungKid ? '' : 'pts'}
+                            </div>
+                            <button class="btn ${canAfford ? 'btn--primary' : 'btn--ghost'} btn--sm"
+                                    data-redeem="${reward.id}" ${canAfford ? '' : 'disabled'}>
+                                ${canAfford
+                                    ? (isYoungKid ? 'Get it! 🎉' : 'Redeem')
+                                    : `Need ${reward.cost - balance}`}
+                            </button>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Wishlist tab content
+     */
+    function renderWishlistTab(memberId, member, rewardsData, pointsData) {
+        const balance = pointsData.balance || 0;
+        const wishlist = rewardsData.wishlist || [];
+        const wishlistRewards = rewardsData.rewards.filter(r => wishlist.includes(r.id));
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        if (wishlistRewards.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">💖</div>
+                    <p>${isYoungKid ? 'No wishlist items yet! Add some from the Rewards tab!' : 'Your wishlist is empty. Add rewards you\'re saving for!'}</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="rewards-wishlist-list">
+                ${wishlistRewards.map(reward => {
+                    const canAfford = balance >= reward.cost;
+                    const progress = Math.min(100, Math.round((balance / reward.cost) * 100));
+                    const pointsNeeded = Math.max(0, reward.cost - balance);
+
+                    return `
+                        <div class="rewards-wishlist-full-card" style="--reward-color: ${reward.color || '#3B82F6'}">
+                            <button class="rewards-wishlist-full-card__remove" data-wishlist-toggle="${reward.id}" title="Remove from wishlist">
+                                <i data-lucide="x"></i>
+                            </button>
+                            <div class="rewards-wishlist-full-card__icon" style="background-color: ${reward.color || '#3B82F6'}">
+                                <i data-lucide="${reward.icon || 'gift'}"></i>
+                            </div>
+                            <div class="rewards-wishlist-full-card__content">
+                                <div class="rewards-wishlist-full-card__name">${reward.name}</div>
+                                <div class="rewards-wishlist-full-card__progress">
+                                    <div class="rewards-wishlist-full-card__progress-bar">
+                                        <div class="rewards-wishlist-full-card__progress-fill" style="width: ${progress}%; background-color: ${reward.color || '#3B82F6'}"></div>
+                                    </div>
+                                    <div class="rewards-wishlist-full-card__progress-text">
+                                        ${canAfford
+                                            ? (isYoungKid ? 'Ready! 🎉' : 'Ready to redeem!')
+                                            : (isYoungKid ? `${pointsNeeded} more ⭐` : `${pointsNeeded} more points needed`)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="rewards-wishlist-full-card__cost">
+                                ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                ${reward.cost}
+                            </div>
+                            ${canAfford ? `
+                                <button class="btn btn--primary" data-redeem="${reward.id}">
+                                    ${isYoungKid ? 'Get it!' : 'Redeem'}
+                                </button>
+                            ` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render History tab content
+     */
+    function renderHistoryTab(memberId, member, rewardsData) {
+        const history = rewardsData.redeemed || [];
+        const rewards = rewardsData.rewards || [];
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        if (history.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">📜</div>
+                    <p>${isYoungKid ? 'No rewards redeemed yet! Keep earning points!' : 'No redemption history yet.'}</p>
+                </div>
+            `;
+        }
+
+        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+        const yesterday = typeof DateUtils !== 'undefined'
+            ? DateUtils.formatISO(DateUtils.addDays(new Date(), -1))
+            : new Date(Date.now() - 86400000).toISOString().split('T')[0];
+
+        const getDateLabel = (date) => {
+            if (date === today) return isYoungKid ? 'Today! 🌟' : 'TODAY';
+            if (date === yesterday) return isYoungKid ? 'Yesterday' : 'YESTERDAY';
+            return typeof DateUtils !== 'undefined' ? DateUtils.formatShort(date).toUpperCase() : date;
+        };
+
+        // Group by date
+        const groupedHistory = {};
+        history.forEach(entry => {
+            if (!groupedHistory[entry.date]) {
+                groupedHistory[entry.date] = [];
+            }
+            const reward = rewards.find(r => r.id === entry.rewardId);
+            groupedHistory[entry.date].push({
+                ...entry,
+                icon: reward?.icon || 'gift',
+                color: reward?.color || '#3B82F6'
+            });
+        });
+
+        const totalSpent = history.reduce((sum, h) => sum + h.cost, 0);
+
+        return `
+            <div class="rewards-history-full">
+                <div class="rewards-history-full__summary">
+                    <div class="rewards-history-full__stat">
+                        ${isYoungKid ? '🎁' : '<i data-lucide="gift"></i>'}
+                        <span>${history.length} ${isYoungKid ? 'redeemed!' : 'rewards redeemed'}</span>
+                    </div>
+                    <div class="rewards-history-full__stat">
+                        ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                        <span>${totalSpent} ${isYoungKid ? 'spent!' : 'points spent'}</span>
+                    </div>
+                </div>
+
+                <div class="rewards-history-full__timeline">
+                    ${Object.entries(groupedHistory).map(([date, entries]) => `
+                        <div class="rewards-history-full__day">
+                            <div class="rewards-history-full__day-label">${getDateLabel(date)}</div>
+                            <div class="rewards-history-full__day-entries">
+                                ${entries.map(entry => `
+                                    <div class="rewards-history-full__entry" style="--reward-color: ${entry.color}">
+                                        <div class="rewards-history-full__entry-icon" style="background-color: ${entry.color}">
+                                            <i data-lucide="${entry.icon}"></i>
+                                        </div>
+                                        <div class="rewards-history-full__entry-info">
+                                            <span class="rewards-history-full__entry-name">${entry.rewardName}</span>
+                                        </div>
+                                        <div class="rewards-history-full__entry-cost">
+                                            ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                            -${entry.cost}
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, rewardsData, pointsData, tab) {
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+
+        // Tab switching
+        container.querySelectorAll('.kid-page__tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                const tabName = tabBtn.dataset.tab;
+                if (tabName !== currentTab) {
+                    currentTab = tabName;
+                    renderFullPage(container, memberId, member, tabName);
+                }
+            });
+        });
+
+        // Wishlist toggle
+        container.querySelectorAll('[data-wishlist-toggle]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const rewardId = btn.dataset.wishlistToggle;
+                toggleWishlistFullPage(memberId, rewardId, container, member);
+            });
+        });
+
+        // Redeem buttons
+        container.querySelectorAll('[data-redeem]').forEach(btn => {
+            if (!btn.disabled) {
+                btn.addEventListener('click', async () => {
+                    const rewardId = btn.dataset.redeem;
+                    await redeemRewardFullPage(memberId, rewardId, container, member);
+                });
+            }
+        });
+    }
+
+    /**
+     * Toggle wishlist from full page
+     */
+    function toggleWishlistFullPage(memberId, rewardId, container, member) {
+        const rewardsData = getWidgetData(memberId);
+        if (!rewardsData.wishlist) rewardsData.wishlist = [];
+
+        const index = rewardsData.wishlist.indexOf(rewardId);
+        if (index === -1) {
+            rewardsData.wishlist.push(rewardId);
+            Toast.success('Added to wishlist!');
+        } else {
+            rewardsData.wishlist.splice(index, 1);
+            Toast.success('Removed from wishlist');
+        }
+
+        Storage.setWidgetData(memberId, 'rewards', rewardsData);
+        renderFullPage(container, memberId, member, currentTab);
+    }
+
+    /**
+     * Redeem reward from full page
+     */
+    async function redeemRewardFullPage(memberId, rewardId, container, member) {
+        const rewardsData = getWidgetData(memberId);
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0 };
+        const reward = rewardsData.rewards.find(r => r.id === rewardId);
+        if (!reward) return;
+
+        const balance = pointsData.balance || 0;
+        if (balance < reward.cost) {
+            Toast.error(`Need ${reward.cost - balance} more points!`);
+            return;
+        }
+
+        const confirmed = await Modal.confirm(
+            `Redeem "${reward.name}" for ${reward.cost} points?`,
+            'Redeem Reward'
+        );
+
+        if (!confirmed) return;
+
+        // Deduct points
+        const updatedPointsData = {
+            ...pointsData,
+            balance: balance - reward.cost,
+            history: [
+                { activityId: rewardId, activityName: reward.name, date: DateUtils.today(), points: reward.cost, type: 'spent' },
+                ...(pointsData.history || []).slice(0, 99)
+            ]
+        };
+        Storage.setWidgetData(memberId, 'points', updatedPointsData);
+
+        // Record redemption
+        const updatedRewardsData = {
+            ...rewardsData,
+            redeemed: [
+                { rewardId, rewardName: reward.name, date: DateUtils.today(), cost: reward.cost },
+                ...(rewardsData.redeemed || []).slice(0, 49)
+            ]
+        };
+        Storage.setWidgetData(memberId, 'rewards', updatedRewardsData);
+
+        Toast.success(`🎉 Redeemed: ${reward.name}!`);
+        renderFullPage(container, memberId, member, currentTab);
     }
 
     /**
@@ -766,6 +1194,7 @@ const Rewards = (function() {
 
     return {
         init,
-        renderWidget
+        renderWidget,
+        showFullPage
     };
 })();

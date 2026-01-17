@@ -25,7 +25,9 @@ const WidgetRenderer = (function() {
     const EXPANDABLE_WIDGETS = [
         'points', 'kid-journal', 'kid-tasks', 'kid-workout', 'toddler-tasks', 'vision-board',
         'workout', 'task-list', 'meal-plan', 'habits', 'gratitude', 'recipes',
-        'grocery', 'routine', 'daily-log', 'toddler-routine', 'activities', 'journal'
+        'grocery', 'routine', 'daily-log', 'toddler-routine', 'activities', 'journal',
+        // Kid widgets with full page views
+        'chores', 'screen-time', 'achievements', 'rewards'
     ];
 
     // Widget component registry - maps widget IDs to their render functions
@@ -332,8 +334,21 @@ const WidgetRenderer = (function() {
      * Render all widgets for a member
      */
     function renderMemberWidgets(container, member) {
-        const widgets = member.widgets || [];
         const availableWidgets = Storage.getAvailableWidgets(member.type) || [];
+        const availableWidgetIds = availableWidgets.map(w => w.id);
+
+        // Filter out any widgets that aren't valid for this member type
+        // (handles legacy data where a widget might have been added from a different type)
+        const widgets = (member.widgets || []).filter(widgetId =>
+            availableWidgetIds.includes(widgetId)
+        );
+
+        // Clean up member's widget list if invalid widgets were found
+        if (widgets.length !== (member.widgets || []).length) {
+            Storage.updateMember(member.id, { widgets });
+            member.widgets = widgets;
+        }
+
         const hasMoreWidgets = availableWidgets.some(w => !widgets.includes(w.id));
 
         if (widgets.length === 0) {
@@ -484,7 +499,8 @@ const WidgetRenderer = (function() {
     }
 
     /**
-     * Render adult widgets with focus-based layout (like kids/toddlers)
+     * Render adult widgets with focus-based layout
+     * Uses sticky-tab navigation sidebar on left side
      */
     function renderAdultFocusLayout(container, member, hasMoreWidgets) {
         const widgets = member.widgets || [];
@@ -494,7 +510,6 @@ const WidgetRenderer = (function() {
             focusedWidgets[member.id] = widgets[0];
         }
         const focusedWidgetId = focusedWidgets[member.id];
-        const collapsedWidgets = widgets.filter(w => w !== focusedWidgetId);
 
         const focusedConfig = widgetComponents[focusedWidgetId];
         const isFocusedExpandable = EXPANDABLE_WIDGETS.includes(focusedWidgetId);
@@ -512,58 +527,59 @@ const WidgetRenderer = (function() {
                     </button>
                 </div>
             </div>
-            <div class="adult-focus-layout">
-                <!-- Focused Widget -->
-                <div class="widget-card widget--focused widget--focused-adult" data-widget="${focusedWidgetId}">
-                    <div class="widget-card__header widget__header">
-                        <div class="widget-card__title">
-                            <i data-lucide="${focusedConfig?.icon || 'star'}"></i>
-                            <h3>${focusedConfig?.title || 'Widget'}</h3>
-                        </div>
-                        <div class="widget-card__controls">
-                            <button class="widget-card__control-btn" data-action="refresh" data-widget-id="${focusedWidgetId}" title="Refresh">
-                                <i data-lucide="refresh-cw"></i>
+            <div class="focus-layout">
+                <!-- Left sidebar: Sticky-tab navigation -->
+                <nav class="focus-nav" aria-label="Widget navigation">
+                    ${widgets.map(widgetId => {
+                        const config = widgetComponents[widgetId];
+                        const isActive = widgetId === focusedWidgetId;
+                        return `
+                            <button class="focus-nav__tab ${isActive ? 'focus-nav__tab--active' : ''} focus-nav__tab--${widgetId}"
+                                    data-focus-widget="${widgetId}"
+                                    title="${config?.title || 'Widget'}">
+                                <span class="focus-nav__tab-icon">
+                                    <i data-lucide="${config?.icon || 'star'}"></i>
+                                </span>
+                                <span class="focus-nav__tab-label">${config?.title || 'Widget'}</span>
                             </button>
-                            ${isFocusedExpandable ? `
-                                <button class="widget-card__control-btn" data-action="expand" data-widget-id="${focusedWidgetId}" title="Expand">
-                                    <i data-lucide="maximize-2"></i>
-                                </button>
-                            ` : ''}
-                            <button class="widget-card__control-btn widget-card__control-btn--danger" data-action="hide" data-widget-id="${focusedWidgetId}" title="Hide widget">
-                                <i data-lucide="eye-off"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="widget-card__body widget__body" id="widget-${focusedWidgetId}"></div>
-                </div>
-
-                <!-- Collapsed Widgets -->
-                ${collapsedWidgets.length > 0 ? `
-                    <div class="widgets-collapsed-row widgets-collapsed-row--adult">
-                        ${collapsedWidgets.map(widgetId => {
-                            const config = widgetComponents[widgetId];
-                            const summary = getWidgetSummaryForAdult(member.id, widgetId);
-                            return `
-                                <div class="widget--collapsed widget--collapsed-adult hover-bounce" data-widget="${widgetId}" data-focus-widget="${widgetId}">
-                                    <div class="widget--collapsed__icon widget--collapsed__icon--${widgetId}">
-                                        <i data-lucide="${config?.icon || 'star'}"></i>
-                                    </div>
-                                    <span class="widget--collapsed__title">${config?.title || 'Widget'}</span>
-                                    <span class="widget--collapsed__subtitle">${summary}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : ''}
-
-                ${hasMoreWidgets ? `
-                    <div class="add-widget-section">
-                        <button class="add-widget-btn" id="addWidgetBtn">
-                            <i data-lucide="plus-circle"></i>
-                            <span>Add Widget</span>
+                        `;
+                    }).join('')}
+                    ${hasMoreWidgets ? `
+                        <button class="focus-nav__tab focus-nav__tab--add" id="addWidgetNavBtn" title="Add Widget">
+                            <span class="focus-nav__tab-icon">
+                                <i data-lucide="plus"></i>
+                            </span>
+                            <span class="focus-nav__tab-label">Add</span>
                         </button>
+                    ` : ''}
+                </nav>
+
+                <!-- Main content area -->
+                <div class="focus-layout__main">
+                    <!-- Focused Widget -->
+                    <div class="widget-card widget--focused widget--focused-adult" data-widget="${focusedWidgetId}">
+                        <div class="widget-card__header widget__header">
+                            <div class="widget-card__title">
+                                <i data-lucide="${focusedConfig?.icon || 'star'}"></i>
+                                <h3>${focusedConfig?.title || 'Widget'}</h3>
+                            </div>
+                            <div class="widget-card__controls">
+                                <button class="widget-card__control-btn" data-action="refresh" data-widget-id="${focusedWidgetId}" title="Refresh">
+                                    <i data-lucide="refresh-cw"></i>
+                                </button>
+                                ${isFocusedExpandable ? `
+                                    <button class="widget-card__control-btn" data-action="expand" data-widget-id="${focusedWidgetId}" title="Expand">
+                                        <i data-lucide="maximize-2"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="widget-card__control-btn widget-card__control-btn--danger" data-action="hide" data-widget-id="${focusedWidgetId}" title="Hide widget">
+                                    <i data-lucide="eye-off"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-card__body widget__body" id="widget-${focusedWidgetId}"></div>
                     </div>
-                ` : ''}
+                </div>
             </div>
         `;
 
@@ -582,40 +598,32 @@ const WidgetRenderer = (function() {
             lucide.createIcons();
         }
 
-        // Bind collapsed widget clicks
-        container.querySelectorAll('[data-focus-widget]').forEach(card => {
-            card.addEventListener('click', () => {
-                const widgetId = card.dataset.focusWidget;
+        // Bind sidebar tab clicks
+        container.querySelectorAll('.focus-nav__tab[data-focus-widget]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const widgetId = tab.dataset.focusWidget;
+                // Save scroll position before re-render (for mobile horizontal nav)
+                const nav = container.querySelector('.focus-nav');
+                const scrollLeft = nav?.scrollLeft || 0;
+
                 setFocusedWidget(member.id, widgetId);
                 renderAdultFocusLayout(container, member, hasMoreWidgets);
 
-                // Scroll to expanded widget on mobile
-                setTimeout(() => {
-                    const expandedWidget = container.querySelector('.widget-card:not([data-focus-widget])');
-                    if (expandedWidget && window.innerWidth <= 1024) {
-                        // Get header and tabs heights
-                        const header = document.querySelector('.header');
-                        const tabs = document.querySelector('.tabs');
-                        const headerHeight = (header?.offsetHeight || 0) + (tabs?.offsetHeight || 0);
-
-                        // Scroll to widget accounting for fixed header
-                        const widgetTop = expandedWidget.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({
-                            top: widgetTop - headerHeight - 16, // 16px for small margin
-                            behavior: 'smooth'
-                        });
-                    }
-                }, 100);
+                // Restore scroll position after re-render
+                const newNav = container.querySelector('.focus-nav');
+                if (newNav && scrollLeft > 0) {
+                    newNav.scrollLeft = scrollLeft;
+                }
             });
+        });
+
+        // Bind add widget button in sidebar
+        container.querySelector('#addWidgetNavBtn')?.addEventListener('click', () => {
+            showAddWidgetModal(member);
         });
 
         // Bind widget menu events
         bindWidgetMenuEvents(container, member);
-
-        // Bind add widget button
-        container.querySelector('#addWidgetBtn')?.addEventListener('click', () => {
-            showAddWidgetModal(member);
-        });
 
         // Bind layout toggle buttons
         container.querySelector('#gridViewBtn')?.addEventListener('click', () => {
@@ -756,7 +764,7 @@ const WidgetRenderer = (function() {
 
     /**
      * Render kid widgets with focus-based layout
-     * One widget expanded at top, others collapsed at bottom
+     * Uses sticky-tab navigation sidebar on left side
      */
     function renderKidFocusLayout(container, member, hasMoreWidgets) {
         // Get widgets and sort to ensure preferred order for toddlers
@@ -772,7 +780,6 @@ const WidgetRenderer = (function() {
             focusedWidgets[member.id] = widgets[0];
         }
         const focusedWidgetId = focusedWidgets[member.id];
-        const collapsedWidgets = widgets.filter(w => w !== focusedWidgetId);
 
         const focusedConfig = widgetComponents[focusedWidgetId];
         const isFocusedExpandable = EXPANDABLE_WIDGETS.includes(focusedWidgetId);
@@ -790,58 +797,59 @@ const WidgetRenderer = (function() {
                     </button>
                 </div>
             </div>
-            <div class="kids-layout">
-                <!-- Focused Widget -->
-                <div class="widget-card widget--focused" data-widget="${focusedWidgetId}">
-                    <div class="widget-card__header widget__header">
-                        <div class="widget-card__title">
-                            <i data-lucide="${focusedConfig?.icon || 'star'}"></i>
-                            <h3>${focusedConfig?.title || 'Widget'}</h3>
-                        </div>
-                        <div class="widget-card__controls">
-                            <button class="widget-card__control-btn" data-action="refresh" data-widget-id="${focusedWidgetId}" title="Refresh">
-                                <i data-lucide="refresh-cw"></i>
+            <div class="focus-layout focus-layout--kids">
+                <!-- Left sidebar: Sticky-tab navigation -->
+                <nav class="focus-nav focus-nav--kids" aria-label="Widget navigation">
+                    ${widgets.map(widgetId => {
+                        const config = widgetComponents[widgetId];
+                        const isActive = widgetId === focusedWidgetId;
+                        return `
+                            <button class="focus-nav__tab ${isActive ? 'focus-nav__tab--active' : ''} focus-nav__tab--${widgetId}"
+                                    data-focus-widget="${widgetId}"
+                                    title="${config?.title || 'Widget'}">
+                                <span class="focus-nav__tab-icon">
+                                    <i data-lucide="${config?.icon || 'star'}"></i>
+                                </span>
+                                <span class="focus-nav__tab-label">${config?.title || 'Widget'}</span>
                             </button>
-                            ${isFocusedExpandable ? `
-                                <button class="widget-card__control-btn" data-action="expand" data-widget-id="${focusedWidgetId}" title="Expand">
-                                    <i data-lucide="maximize-2"></i>
-                                </button>
-                            ` : ''}
-                            <button class="widget-card__control-btn widget-card__control-btn--danger" data-action="hide" data-widget-id="${focusedWidgetId}" title="Hide widget">
-                                <i data-lucide="eye-off"></i>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="widget-card__body widget__body" id="widget-${focusedWidgetId}"></div>
-                </div>
-
-                <!-- Collapsed Widgets -->
-                ${collapsedWidgets.length > 0 ? `
-                    <div class="widgets-collapsed-row">
-                        ${collapsedWidgets.map(widgetId => {
-                            const config = widgetComponents[widgetId];
-                            const summary = getWidgetSummary(member.id, widgetId);
-                            return `
-                                <div class="widget--collapsed hover-bounce" data-widget="${widgetId}" data-focus-widget="${widgetId}">
-                                    <div class="widget--collapsed__icon widget--collapsed__icon--${widgetId}">
-                                        <i data-lucide="${config?.icon || 'star'}"></i>
-                                    </div>
-                                    <span class="widget--collapsed__title">${config?.title || 'Widget'}</span>
-                                    <span class="widget--collapsed__subtitle">${summary}</span>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                ` : ''}
-
-                ${hasMoreWidgets ? `
-                    <div class="add-widget-section">
-                        <button class="add-widget-btn" id="addWidgetBtn">
-                            <i data-lucide="plus-circle"></i>
-                            <span>Add Widget</span>
+                        `;
+                    }).join('')}
+                    ${hasMoreWidgets ? `
+                        <button class="focus-nav__tab focus-nav__tab--add" id="addWidgetNavBtn" title="Add Widget">
+                            <span class="focus-nav__tab-icon">
+                                <i data-lucide="plus"></i>
+                            </span>
+                            <span class="focus-nav__tab-label">Add</span>
                         </button>
+                    ` : ''}
+                </nav>
+
+                <!-- Main content area -->
+                <div class="focus-layout__main">
+                    <!-- Focused Widget -->
+                    <div class="widget-card widget--focused" data-widget="${focusedWidgetId}">
+                        <div class="widget-card__header widget__header">
+                            <div class="widget-card__title">
+                                <i data-lucide="${focusedConfig?.icon || 'star'}"></i>
+                                <h3>${focusedConfig?.title || 'Widget'}</h3>
+                            </div>
+                            <div class="widget-card__controls">
+                                <button class="widget-card__control-btn" data-action="refresh" data-widget-id="${focusedWidgetId}" title="Refresh">
+                                    <i data-lucide="refresh-cw"></i>
+                                </button>
+                                ${isFocusedExpandable ? `
+                                    <button class="widget-card__control-btn" data-action="expand" data-widget-id="${focusedWidgetId}" title="Expand">
+                                        <i data-lucide="maximize-2"></i>
+                                    </button>
+                                ` : ''}
+                                <button class="widget-card__control-btn widget-card__control-btn--danger" data-action="hide" data-widget-id="${focusedWidgetId}" title="Hide widget">
+                                    <i data-lucide="eye-off"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="widget-card__body widget__body" id="widget-${focusedWidgetId}"></div>
                     </div>
-                ` : ''}
+                </div>
             </div>
         `;
 
@@ -860,40 +868,32 @@ const WidgetRenderer = (function() {
             lucide.createIcons();
         }
 
-        // Bind collapsed widget clicks
-        container.querySelectorAll('[data-focus-widget]').forEach(card => {
-            card.addEventListener('click', () => {
-                const widgetId = card.dataset.focusWidget;
+        // Bind sidebar tab clicks
+        container.querySelectorAll('.focus-nav__tab[data-focus-widget]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const widgetId = tab.dataset.focusWidget;
+                // Save scroll position before re-render (for mobile horizontal nav)
+                const nav = container.querySelector('.focus-nav');
+                const scrollLeft = nav?.scrollLeft || 0;
+
                 setFocusedWidget(member.id, widgetId);
                 renderKidWidgets(container, member, hasMoreWidgets);
 
-                // Scroll to expanded widget on mobile
-                setTimeout(() => {
-                    const expandedWidget = container.querySelector('.widget-card:not([data-focus-widget])');
-                    if (expandedWidget && window.innerWidth <= 1024) {
-                        // Get header and tabs heights
-                        const header = document.querySelector('.header');
-                        const tabs = document.querySelector('.tabs');
-                        const headerHeight = (header?.offsetHeight || 0) + (tabs?.offsetHeight || 0);
-
-                        // Scroll to widget accounting for fixed header
-                        const widgetTop = expandedWidget.getBoundingClientRect().top + window.scrollY;
-                        window.scrollTo({
-                            top: widgetTop - headerHeight - 16, // 16px for small margin
-                            behavior: 'smooth'
-                        });
-                    }
-                }, 100);
+                // Restore scroll position after re-render
+                const newNav = container.querySelector('.focus-nav');
+                if (newNav && scrollLeft > 0) {
+                    newNav.scrollLeft = scrollLeft;
+                }
             });
+        });
+
+        // Bind add widget button in sidebar
+        container.querySelector('#addWidgetNavBtn')?.addEventListener('click', () => {
+            showAddWidgetModal(member);
         });
 
         // Bind widget menu events
         bindWidgetMenuEvents(container, member);
-
-        // Bind add widget button
-        container.querySelector('#addWidgetBtn')?.addEventListener('click', () => {
-            showAddWidgetModal(member);
-        });
 
         // Bind layout toggle buttons
         container.querySelector('#gridViewBtn')?.addEventListener('click', () => {
@@ -1411,7 +1411,7 @@ const WidgetRenderer = (function() {
     function expandWidget(widgetId, member) {
         // Map widget IDs to their full page functions (using correct exported function names)
         const expandHandlers = {
-            'points': () => typeof Points !== 'undefined' && Points.showHistoryPage ? Points.showHistoryPage(member.id) : null,
+            'points': () => typeof Points !== 'undefined' && Points.showFullPage ? Points.showFullPage(member.id) : null,
             'task-list': () => typeof Tasks !== 'undefined' && Tasks.showTasksFullPage ? Tasks.showTasksFullPage(member.id) : null,
             'kid-tasks': () => typeof KidTasks !== 'undefined' && KidTasks.showFullPage ? KidTasks.showFullPage(member.id) : null,
             'toddler-tasks': () => typeof ToddlerTasks !== 'undefined' && ToddlerTasks.showFullPage ? ToddlerTasks.showFullPage(member.id) : null,
@@ -1428,7 +1428,12 @@ const WidgetRenderer = (function() {
             'daily-log': () => typeof DailyLog !== 'undefined' && DailyLog.showFullPage ? DailyLog.showFullPage(member.id) : null,
             'toddler-routine': () => typeof ToddlerRoutine !== 'undefined' && ToddlerRoutine.showFullPage ? ToddlerRoutine.showFullPage(member.id) : null,
             'activities': () => typeof Activities !== 'undefined' && Activities.showFullPage ? Activities.showFullPage(member.id) : null,
-            'journal': () => typeof Journal !== 'undefined' && Journal.showJournalPage ? Journal.showJournalPage(member.id) : null
+            'journal': () => typeof Journal !== 'undefined' && Journal.showJournalPage ? Journal.showJournalPage(member.id) : null,
+            // Kid widgets with full page views
+            'chores': () => typeof Chores !== 'undefined' && Chores.showFullPage ? Chores.showFullPage(member.id) : null,
+            'screen-time': () => typeof ScreenTime !== 'undefined' && ScreenTime.showFullPage ? ScreenTime.showFullPage(member.id) : null,
+            'achievements': () => typeof Achievements !== 'undefined' && Achievements.showFullPage ? Achievements.showFullPage(member.id) : null,
+            'rewards': () => typeof Rewards !== 'undefined' && Rewards.showFullPage ? Rewards.showFullPage(member.id) : null
         };
 
         const handler = expandHandlers[widgetId];

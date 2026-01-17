@@ -334,8 +334,8 @@ const KidWorkout = (function() {
                     </div>
                 </div>
 
-                <!-- Activities Grid - Card style like adult workout -->
-                <div class="kid-workout-grid">
+                <!-- Activities Grid - 3 column layout showing ALL activities -->
+                <div class="kid-workout-grid kid-workout-grid--widget">
                     ${data.activities.map(activity => {
                         const isCompleted = completedIds.includes(activity.id);
                         const emoji = activity.emoji || ACTIVITY_EMOJIS[activity.id] || '🏃';
@@ -343,7 +343,6 @@ const KidWorkout = (function() {
                             <button class="kid-workout-card ${isCompleted ? 'kid-workout-card--completed' : ''}" data-activity-id="${activity.id}">
                                 <span class="kid-workout-card__emoji">${emoji}</span>
                                 <span class="kid-workout-card__name">${activity.name}</span>
-                                <span class="kid-workout-card__points">+${activity.points} pts</span>
                                 ${isCompleted ? '<span class="kid-workout-card__check">✓</span>' : ''}
                             </button>
                         `;
@@ -381,13 +380,13 @@ const KidWorkout = (function() {
      * Bind widget events
      */
     function bindWidgetEvents(container, memberId) {
-        // Activity card clicks - toggle completion
-        container.querySelectorAll('.kid-workout-card').forEach(card => {
-            card.addEventListener('click', () => {
-                const activityId = card.dataset.activityId;
+        // Activity chip clicks - toggle completion
+        container.querySelectorAll('.kid-workout-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                const activityId = chip.dataset.activityId;
                 const data = getWidgetData(memberId);
                 const activity = data.activities.find(a => a.id === activityId);
-                const isCompleted = card.classList.contains('kid-workout-card--completed');
+                const isCompleted = chip.classList.contains('kid-workout-chip--completed');
 
                 if (!isCompleted) {
                     // Log the activity
@@ -650,7 +649,14 @@ const KidWorkout = (function() {
 
             addCustomActivity(memberId, { name, duration, points });
             closeModal();
-            refreshWidget(memberId);
+            // Refresh full page if we're on it, otherwise refresh widget
+            const main = document.getElementById('mainContent');
+            const member = Storage.getMember(memberId);
+            if (main && main.querySelector('.kid-page--workout')) {
+                renderFullPage(main, memberId, member, 'activities');
+            } else {
+                refreshWidget(memberId);
+            }
             if (typeof Toast !== 'undefined') {
                 Toast.success(`"${name}" added to activities!`);
             }
@@ -671,7 +677,14 @@ const KidWorkout = (function() {
             if (newActivity) {
                 logActivity(memberId, newActivity.id);
                 closeModal();
-                refreshWidget(memberId);
+                // Refresh full page if we're on it, otherwise refresh widget
+                const main = document.getElementById('mainContent');
+                const member = Storage.getMember(memberId);
+                if (main && main.querySelector('.kid-page--workout')) {
+                    renderFullPage(main, memberId, member, 'today');
+                } else {
+                    refreshWidget(memberId);
+                }
                 showLoggedToast(name);
             }
         });
@@ -1092,15 +1105,238 @@ const KidWorkout = (function() {
         });
     }
 
+    // Track current tab in full page view
+    let currentTab = 'calendar';
+
     /**
      * Show full page view
      */
     function showFullPage(memberId) {
-        const data = getWidgetData(memberId);
-        const member = Storage.getMember(memberId);
+        const main = document.getElementById('mainContent');
+        if (!main) return;
 
-        const mainEl = document.querySelector('.main');
-        if (!mainEl) return;
+        const member = Storage.getMember(memberId);
+        currentTab = 'calendar';
+        renderFullPage(main, memberId, member, currentTab);
+    }
+
+    /**
+     * Render full page with tabs
+     */
+    function renderFullPage(container, memberId, member, tab = 'today') {
+        const data = getWidgetData(memberId);
+
+        // Calculate today's stats
+        const todayActivities = getTodayActivities(memberId);
+        const todayMinutes = todayActivities.reduce((sum, a) => sum + a.duration, 0);
+        const todayPoints = todayActivities.reduce((sum, a) => sum + a.points, 0);
+
+        // Calculate weekly stats
+        const weekActivities = getWeekActivities(memberId);
+        const weekMinutes = weekActivities.reduce((sum, a) => sum + a.duration, 0);
+        const weekPoints = weekActivities.reduce((sum, a) => sum + a.points, 0);
+        const weekDays = [...new Set(weekActivities.map(a => a.date))].length;
+        const weeklyGoal = data.settings.weeklyGoal;
+
+        // Get age-adaptive content
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const colors = useKidTheme ? KidTheme.getColors('kid-workout') : { gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%)' };
+
+        // Define tabs
+        const tabs = [
+            { id: 'calendar', label: 'Calendar', icon: 'calendar', emoji: '📅' },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📋' },
+            { id: 'stats', label: 'Stats', icon: 'bar-chart-2', emoji: '📊' }
+        ];
+
+        // Render tab content
+        const tabContent = renderTabContent(tab, memberId, member, data);
+
+        container.innerHTML = `
+            <div class="kid-page kid-page--workout ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
+                            ${isYoungKid ? '🏃 Move & Play!' : 'Move & Play'}
+                        </h1>
+                    </div>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${todayMinutes}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '⏱️ Mins Today' : 'Minutes Today'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${weekDays}/${weeklyGoal}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '🎯 Week Goal' : 'Weekly Goal'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${todayPoints}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '⭐ Points' : 'Points Today'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
+                            ${t.label}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindFullPageEvents(container, memberId, member, data, tab);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderTabContent(tab, memberId, member, data) {
+        switch (tab) {
+            case 'calendar':
+                return renderCalendarTab(memberId, member, data);
+            case 'history':
+                return renderHistoryTab(memberId, member, data);
+            case 'stats':
+                return renderStatsTab(memberId, member, data);
+            default:
+                return renderCalendarTab(memberId, member, data);
+        }
+    }
+
+    /**
+     * Render Calendar tab content
+     */
+    function renderCalendarTab(memberId, member, data) {
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        // Get current month/year for calendar
+        const today = new Date();
+        const currentMonth = today.getMonth();
+        const currentYear = today.getFullYear();
+
+        // Get all active dates from log
+        const activeDates = new Set(data.log.map(entry => entry.date));
+
+        // Generate calendar grid using DateUtils
+        const calendarGrid = DateUtils.getMonthGrid(currentYear, currentMonth);
+        const monthName = DateUtils.MONTHS[currentMonth];
+
+        // Calculate streak
+        const sortedDates = [...activeDates].sort((a, b) => b.localeCompare(a));
+        let currentStreak = 0;
+        if (sortedDates.length > 0) {
+            const todayStr = DateUtils.today();
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterdayStr = DateUtils.formatISO(yesterdayDate);
+
+            if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
+                currentStreak = 1;
+                for (let i = 1; i < sortedDates.length; i++) {
+                    const prevDate = new Date(sortedDates[i - 1]);
+                    const currDate = new Date(sortedDates[i]);
+                    const diffDays = Math.floor((prevDate - currDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 1) {
+                        currentStreak++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Count active days this month
+        const monthActiveDays = data.log.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate.getMonth() === currentMonth && entryDate.getFullYear() === currentYear;
+        });
+        const uniqueMonthDays = [...new Set(monthActiveDays.map(a => a.date))].length;
+
+        return `
+            <div class="kid-workout-calendar-page">
+                <!-- Streak Banner -->
+                <div class="kid-workout-streak-banner">
+                    <span class="kid-workout-streak-banner__icon">🔥</span>
+                    <span class="kid-workout-streak-banner__value">${currentStreak}</span>
+                    <span class="kid-workout-streak-banner__label">${isYoungKid ? 'Day Streak!' : 'Day Streak'}</span>
+                </div>
+
+                <!-- Calendar -->
+                <div class="kid-workout-calendar">
+                    <div class="kid-workout-calendar__header">
+                        <h3>${monthName} ${currentYear}</h3>
+                        <span class="kid-workout-calendar__summary">${uniqueMonthDays} active day${uniqueMonthDays !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="kid-workout-calendar__weekdays">
+                        ${DateUtils.DAYS_SHORT.map(day => `<div class="kid-workout-calendar__weekday">${day}</div>`).join('')}
+                    </div>
+                    <div class="kid-workout-calendar__grid">
+                        ${calendarGrid.map(({ date, isCurrentMonth }) => {
+                            const dateStr = DateUtils.formatISO(date);
+                            const isActive = activeDates.has(dateStr);
+                            const isToday = DateUtils.isToday(date);
+                            const dayNum = date.getDate();
+
+                            // Get activities for this day
+                            const dayActivities = data.log.filter(e => e.date === dateStr);
+                            const dayMinutes = dayActivities.reduce((sum, a) => sum + a.duration, 0);
+
+                            return `
+                                <div class="kid-workout-calendar__day ${!isCurrentMonth ? 'kid-workout-calendar__day--other' : ''} ${isActive ? 'kid-workout-calendar__day--active' : ''} ${isToday ? 'kid-workout-calendar__day--today' : ''}"
+                                     data-date="${dateStr}"
+                                     ${isActive ? `title="${dayActivities.length} activities, ${dayMinutes} mins"` : ''}>
+                                    <span class="kid-workout-calendar__day-num">${dayNum}</span>
+                                    ${isActive ? `<span class="kid-workout-calendar__day-dot"></span>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Legend -->
+                <div class="kid-workout-calendar__legend">
+                    <div class="kid-workout-calendar__legend-item">
+                        <span class="kid-workout-calendar__legend-dot kid-workout-calendar__legend-dot--active"></span>
+                        <span>Active Day</span>
+                    </div>
+                    <div class="kid-workout-calendar__legend-item">
+                        <span class="kid-workout-calendar__legend-dot kid-workout-calendar__legend-dot--today"></span>
+                        <span>Today</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render History tab content
+     */
+    function renderHistoryTab(memberId, member, data) {
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
 
         // Group log entries by date
         const logByDate = {};
@@ -1114,136 +1350,308 @@ const KidWorkout = (function() {
         // Sort dates descending
         const sortedDates = Object.keys(logByDate).sort((a, b) => b.localeCompare(a));
 
-        // Calculate weekly stats
+        // Weekly progress bar
         const weekActivities = getWeekActivities(memberId);
-        const weekMinutes = weekActivities.reduce((sum, a) => sum + a.duration, 0);
-        const weekPoints = weekActivities.reduce((sum, a) => sum + a.points, 0);
         const weekDays = [...new Set(weekActivities.map(a => a.date))].length;
+        const weeklyGoal = data.settings.weeklyGoal;
 
-        mainEl.innerHTML = `
-            <div class="kid-workout-page">
-                <div class="page-header">
-                    <button class="btn btn--ghost" id="backBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
-                    <h2 class="page-title">🏃 Move & Play</h2>
-                    <button class="btn btn--primary" id="logNewBtn">
-                        <i data-lucide="plus"></i>
-                        Log Activity
-                    </button>
+        if (sortedDates.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">📅</div>
+                    <p>${isYoungKid ? 'No history yet! Go move and play!' : 'No activity history yet.'}</p>
                 </div>
+            `;
+        }
 
-                <!-- Weekly Summary -->
-                <div class="kid-workout-week-summary">
-                    <h3 class="kid-workout-week-summary__title">This Week</h3>
-                    <div class="kid-workout-week-stats">
-                        <div class="kid-workout-week-stat">
-                            <span class="kid-workout-week-stat__value">${weekDays}</span>
-                            <span class="kid-workout-week-stat__label">Active Days</span>
-                        </div>
-                        <div class="kid-workout-week-stat">
-                            <span class="kid-workout-week-stat__value">${weekMinutes}</span>
-                            <span class="kid-workout-week-stat__label">Total Minutes</span>
-                        </div>
-                        <div class="kid-workout-week-stat">
-                            <span class="kid-workout-week-stat__value">${weekPoints}</span>
-                            <span class="kid-workout-week-stat__label">Points Earned</span>
-                        </div>
+        return `
+            <div class="kid-workout-history-page">
+                <!-- Weekly Progress -->
+                <div class="kid-workout-week-progress">
+                    <div class="kid-workout-week-progress__header">
+                        <span>${isYoungKid ? '🎯 This Week' : 'This Week'}</span>
+                        <span>${weekDays} of ${weeklyGoal} days</span>
                     </div>
-                    <div class="kid-workout-goal-progress">
-                        <div class="kid-workout-goal-progress__bar">
-                            <div class="kid-workout-goal-progress__fill" style="width: ${Math.min(100, (weekDays / data.settings.weeklyGoal) * 100)}%"></div>
-                        </div>
-                        <span class="kid-workout-goal-progress__text">${weekDays} of ${data.settings.weeklyGoal} days goal</span>
+                    <div class="kid-workout-week-progress__bar">
+                        <div class="kid-workout-week-progress__fill" style="width: ${Math.min(100, (weekDays / weeklyGoal) * 100)}%"></div>
                     </div>
                 </div>
 
-                <!-- Activity History -->
-                <div class="kid-workout-history">
-                    <h3 class="kid-workout-history__title">Activity History</h3>
-                    ${sortedDates.length > 0 ? sortedDates.slice(0, 14).map(date => `
-                        <div class="kid-workout-day">
-                            <div class="kid-workout-day__header">
-                                <span class="kid-workout-day__date">${formatDate(date)}</span>
-                                <span class="kid-workout-day__stats">
+                <!-- History List -->
+                <div class="kid-workout-history-list">
+                    ${sortedDates.slice(0, 14).map(date => `
+                        <div class="kid-workout-history-day">
+                            <div class="kid-workout-history-day__header">
+                                <span class="kid-workout-history-day__date">${formatDate(date)}</span>
+                                <span class="kid-workout-history-day__stats">
                                     ${logByDate[date].reduce((sum, a) => sum + a.duration, 0)}m · ${logByDate[date].reduce((sum, a) => sum + a.points, 0)} pts
                                 </span>
                             </div>
-                            <div class="kid-workout-day__activities">
+                            <div class="kid-workout-history-day__activities">
                                 ${logByDate[date].map(entry => `
-                                    <div class="kid-workout-day__activity">
-                                        <span class="kid-workout-day__emoji">${ACTIVITY_EMOJIS[entry.activityId] || '🏃'}</span>
-                                        <span class="kid-workout-day__name">${entry.name}</span>
-                                        <span class="kid-workout-day__duration">${entry.duration}m</span>
+                                    <div class="kid-workout-history-day__activity">
+                                        <span class="kid-workout-history-day__emoji">${entry.emoji || ACTIVITY_EMOJIS[entry.activityId] || '🏃'}</span>
+                                        <span class="kid-workout-history-day__name">${entry.name}</span>
+                                        <span class="kid-workout-history-day__duration">${entry.duration}m</span>
                                     </div>
                                 `).join('')}
                             </div>
                         </div>
-                    `).join('') : `
-                        <div class="kid-workout-empty-history">
-                            <span class="kid-workout-empty-history__emoji">🌟</span>
-                            <p>No activities logged yet!</p>
-                            <p class="kid-workout-empty-history__hint">Start moving and track your fun activities.</p>
-                        </div>
-                    `}
-                </div>
-
-                <!-- Manage Activities -->
-                <div class="kid-workout-manage">
-                    <h3 class="kid-workout-manage__title">My Activities</h3>
-                    <p class="kid-workout-manage__hint">Custom activities you've added</p>
-                    <div class="kid-workout-manage__list">
-                        ${data.activities.filter(a => a.isCustom).map(activity => `
-                            <div class="kid-workout-manage__item" data-activity-id="${activity.id}">
-                                <span class="kid-workout-manage__name">${activity.name}</span>
-                                <span class="kid-workout-manage__meta">${activity.duration}m · ${activity.points}pts</span>
-                                <button class="kid-workout-manage__delete" title="Delete">
-                                    <i data-lucide="trash-2"></i>
-                                </button>
-                            </div>
-                        `).join('')}
-                        ${data.activities.filter(a => a.isCustom).length === 0 ? `
-                            <p class="kid-workout-manage__empty">No custom activities yet</p>
-                        ` : ''}
-                    </div>
-                    <button class="btn btn--outline" id="addCustomPageBtn">
-                        <i data-lucide="plus"></i>
-                        Add Custom Activity
-                    </button>
+                    `).join('')}
                 </div>
             </div>
         `;
+    }
+
+    /**
+     * Render Stats tab content
+     */
+    function renderStatsTab(memberId, member, data) {
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        // Calculate this week's stats
+        const weekActivities = getWeekActivities(memberId);
+        const weekMinutes = weekActivities.reduce((sum, a) => sum + a.duration, 0);
+        const weekPoints = weekActivities.reduce((sum, a) => sum + a.points, 0);
+        const weekDays = [...new Set(weekActivities.map(a => a.date))].length;
+        const weeklyGoal = data.settings.weeklyGoal;
+
+        // Calculate this month's stats
+        const today = new Date();
+        const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthActivities = data.log.filter(entry => {
+            const entryDate = new Date(entry.date);
+            return entryDate >= startOfMonth && entryDate <= today;
+        });
+        const monthMinutes = monthActivities.reduce((sum, a) => sum + a.duration, 0);
+        const monthPoints = monthActivities.reduce((sum, a) => sum + a.points, 0);
+        const monthDays = [...new Set(monthActivities.map(a => a.date))].length;
+
+        // Calculate all-time stats
+        const totalMinutes = data.log.reduce((sum, a) => sum + a.duration, 0);
+        const totalPoints = data.log.reduce((sum, a) => sum + a.points, 0);
+        const totalDays = [...new Set(data.log.map(a => a.date))].length;
+
+        // Find favorite activities (most frequent)
+        const activityCounts = {};
+        data.log.forEach(entry => {
+            activityCounts[entry.activityId] = (activityCounts[entry.activityId] || 0) + 1;
+        });
+        const sortedActivities = Object.entries(activityCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        // Calculate streak
+        let currentStreak = 0;
+        const sortedDates = [...new Set(data.log.map(a => a.date))].sort((a, b) => b.localeCompare(a));
+        if (sortedDates.length > 0) {
+            const todayStr = DateUtils.today();
+            const yesterdayDate = new Date();
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            const yesterdayStr = DateUtils.formatISO(yesterdayDate);
+
+            // Start counting if today or yesterday has activity
+            if (sortedDates[0] === todayStr || sortedDates[0] === yesterdayStr) {
+                currentStreak = 1;
+                for (let i = 1; i < sortedDates.length; i++) {
+                    const prevDate = new Date(sortedDates[i - 1]);
+                    const currDate = new Date(sortedDates[i]);
+                    const diffDays = Math.floor((prevDate - currDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays === 1) {
+                        currentStreak++;
+                    } else {
+                        break;
+                    }
+                }
+            }
+        }
+
+        return `
+            <div class="kid-workout-stats-page">
+                <!-- Current Streak -->
+                <div class="kid-workout-stats-card kid-workout-stats-card--streak">
+                    <div class="kid-workout-stats-card__icon">🔥</div>
+                    <div class="kid-workout-stats-card__content">
+                        <span class="kid-workout-stats-card__value">${currentStreak}</span>
+                        <span class="kid-workout-stats-card__label">${isYoungKid ? 'Day Streak!' : 'Day Streak'}</span>
+                    </div>
+                </div>
+
+                <!-- This Week -->
+                <div class="kid-workout-stats-section">
+                    <h3>${isYoungKid ? '📅 This Week' : 'This Week'}</h3>
+                    <div class="kid-workout-stats-grid">
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${weekDays}</span>
+                            <span class="kid-workout-stats-item__label">Active Days</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${weekMinutes}</span>
+                            <span class="kid-workout-stats-item__label">Minutes</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${weekPoints}</span>
+                            <span class="kid-workout-stats-item__label">Points</span>
+                        </div>
+                    </div>
+                    <!-- Weekly Goal Progress -->
+                    <div class="kid-workout-stats-progress">
+                        <div class="kid-workout-stats-progress__header">
+                            <span>Weekly Goal</span>
+                            <span>${weekDays}/${weeklyGoal} days</span>
+                        </div>
+                        <div class="kid-workout-stats-progress__bar">
+                            <div class="kid-workout-stats-progress__fill" style="width: ${Math.min(100, (weekDays / weeklyGoal) * 100)}%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- This Month -->
+                <div class="kid-workout-stats-section">
+                    <h3>${isYoungKid ? '📆 This Month' : 'This Month'}</h3>
+                    <div class="kid-workout-stats-grid">
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${monthDays}</span>
+                            <span class="kid-workout-stats-item__label">Active Days</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${monthMinutes}</span>
+                            <span class="kid-workout-stats-item__label">Minutes</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${monthPoints}</span>
+                            <span class="kid-workout-stats-item__label">Points</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- All Time -->
+                <div class="kid-workout-stats-section">
+                    <h3>${isYoungKid ? '⭐ All Time' : 'All Time'}</h3>
+                    <div class="kid-workout-stats-grid">
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${totalDays}</span>
+                            <span class="kid-workout-stats-item__label">Active Days</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${totalMinutes}</span>
+                            <span class="kid-workout-stats-item__label">Minutes</span>
+                        </div>
+                        <div class="kid-workout-stats-item">
+                            <span class="kid-workout-stats-item__value">${totalPoints}</span>
+                            <span class="kid-workout-stats-item__label">Points</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Favorite Activities -->
+                ${sortedActivities.length > 0 ? `
+                    <div class="kid-workout-stats-section">
+                        <h3>${isYoungKid ? '💖 Favorites' : 'Most Frequent Activities'}</h3>
+                        <div class="kid-workout-favorites-list">
+                            ${sortedActivities.map(([activityId, count], index) => {
+                                const activity = data.activities.find(a => a.id === activityId);
+                                const emoji = activity?.emoji || ACTIVITY_EMOJIS[activityId] || '🏃';
+                                const name = activity?.name || activityId;
+                                return `
+                                    <div class="kid-workout-favorite-item">
+                                        <span class="kid-workout-favorite-item__rank">#${index + 1}</span>
+                                        <span class="kid-workout-favorite-item__emoji">${emoji}</span>
+                                        <span class="kid-workout-favorite-item__name">${name}</span>
+                                        <span class="kid-workout-favorite-item__count">${count}x</span>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, data, tab) {
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+
+        // Tab switching
+        container.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const newTab = btn.dataset.tab;
+                renderFullPage(container, memberId, member, newTab);
+            });
+        });
+
+        // Calendar tab - day click to show activities for that day
+        if (tab === 'calendar') {
+            container.querySelectorAll('.kid-workout-calendar__day--active').forEach(dayEl => {
+                dayEl.style.cursor = 'pointer';
+                dayEl.addEventListener('click', () => {
+                    const dateStr = dayEl.dataset.date;
+                    const dayActivities = data.log.filter(e => e.date === dateStr);
+                    if (dayActivities.length > 0) {
+                        showDayActivitiesModal(dateStr, dayActivities, memberId);
+                    }
+                });
+            });
+        }
+    }
+
+    /**
+     * Show modal with activities for a specific day
+     */
+    function showDayActivitiesModal(dateStr, activities, memberId) {
+        const formattedDate = formatDate(dateStr);
+        const totalMins = activities.reduce((sum, a) => sum + a.duration, 0);
+        const totalPts = activities.reduce((sum, a) => sum + a.points, 0);
+
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay modal-overlay--active';
+        modal.innerHTML = `
+            <div class="modal kid-workout-modal">
+                <div class="modal__header">
+                    <h3 class="modal__title">📅 ${formattedDate}</h3>
+                    <button class="modal__close" id="closeDayModal">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="modal__body">
+                    <div class="day-modal-summary">
+                        <span>${activities.length} activit${activities.length === 1 ? 'y' : 'ies'}</span>
+                        <span>•</span>
+                        <span>${totalMins} mins</span>
+                        <span>•</span>
+                        <span>${totalPts} pts</span>
+                    </div>
+                    <div class="day-modal-activities">
+                        ${activities.map(entry => `
+                            <div class="day-modal-activity">
+                                <span class="day-modal-activity__emoji">${entry.emoji || ACTIVITY_EMOJIS[entry.activityId] || '🏃'}</span>
+                                <span class="day-modal-activity__name">${entry.name}</span>
+                                <span class="day-modal-activity__meta">${entry.duration}m · +${entry.points}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
 
-        // Bind events
-        document.querySelector('#backBtn').addEventListener('click', () => {
-            if (typeof Tabs !== 'undefined') {
-                Tabs.switchTo(memberId);
-            }
-        });
-
-        document.querySelector('#logNewBtn').addEventListener('click', () => {
-            showQuickLogModal(memberId, mainEl);
-        });
-
-        document.querySelector('#addCustomPageBtn').addEventListener('click', () => {
-            showAddCustomModal(memberId, mainEl);
-        });
-
-        // Delete custom activities
-        mainEl.querySelectorAll('.kid-workout-manage__delete').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const item = btn.closest('.kid-workout-manage__item');
-                const activityId = item.dataset.activityId;
-                if (confirm('Delete this custom activity?')) {
-                    deleteActivity(memberId, activityId);
-                    showFullPage(memberId);
-                }
-            });
+        const closeModal = () => modal.remove();
+        modal.querySelector('#closeDayModal')?.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
         });
     }
 

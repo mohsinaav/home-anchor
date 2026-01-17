@@ -602,12 +602,11 @@ const Calendar = (function() {
     }
 
     /**
-     * Get today's highlights (calendar events + schedule blocks)
+     * Get today's highlights (calendar events only)
      */
     function getTodayHighlights() {
         const today = DateUtils.today();
         const events = Storage.getCalendarEvents();
-        const members = Storage.getMembers();
         const highlights = [];
 
         // Add calendar events for today
@@ -623,34 +622,6 @@ const Calendar = (function() {
                 color: member?.avatar?.color || event.color || '#6366F1',
                 icon: 'calendar'
             });
-        });
-
-        // Also add schedule time blocks for each member (to show unified view)
-        members.forEach(member => {
-            const schedule = Storage.getMemberScheduleForToday(member.id);
-            if (schedule && schedule.length > 0) {
-                schedule.forEach(block => {
-                    // Only add schedule blocks that are notable (not just routine)
-                    // Don't add if there's already a calendar event with same title at same time
-                    const isDuplicate = highlights.some(h =>
-                        h.time === block.start &&
-                        h.title.toLowerCase() === block.title.toLowerCase() &&
-                        h.memberId === member.id
-                    );
-                    if (!isDuplicate) {
-                        highlights.push({
-                            type: 'schedule',
-                            title: block.title,
-                            time: block.start,
-                            endTime: block.end,
-                            memberName: member.name,
-                            memberId: member.id,
-                            color: block.color || member.avatar?.color || '#6366F1',
-                            icon: block.icon || 'clock'
-                        });
-                    }
-                });
-            }
         });
 
         // Sort by time

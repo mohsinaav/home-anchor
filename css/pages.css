@@ -62,7 +62,104 @@
 .settings-page__content {
     display: flex;
     flex-direction: column;
-    gap: var(--space-6);
+    gap: var(--space-4);
+}
+
+/* Settings Category (Collapsible) */
+.settings-category {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--gray-200);
+    overflow: hidden;
+}
+
+.settings-category__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-4) var(--space-5);
+    background: var(--gray-50);
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.settings-category__header:hover {
+    background: var(--gray-100);
+}
+
+.settings-category__header-left {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-900);
+}
+
+.settings-category__header-left svg {
+    width: 22px;
+    height: 22px;
+    color: var(--primary);
+}
+
+.settings-category__header-right {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.settings-category__count {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--gray-500);
+    background: var(--gray-200);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+}
+
+.settings-category__chevron {
+    width: 20px;
+    height: 20px;
+    color: var(--gray-400);
+    transition: transform 0.3s ease;
+}
+
+.settings-category--expanded .settings-category__chevron {
+    transform: rotate(180deg);
+}
+
+.settings-category__body {
+    display: none;
+    padding: var(--space-4);
+    background: var(--white);
+}
+
+.settings-category--expanded .settings-category__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+/* Inside category, sections have lighter styling */
+.settings-category .settings-section {
+    background: var(--gray-50);
+    border: 1px solid var(--gray-100);
+}
+
+.settings-category .settings-section__header {
+    background: transparent;
+    border-bottom: 1px solid var(--gray-200);
+    padding: var(--space-3) var(--space-4);
+}
+
+.settings-category .settings-section__title {
+    font-size: var(--text-sm);
+}
+
+.settings-category .settings-section__content {
+    padding: var(--space-4);
 }
 
 /* Settings Section */
@@ -1572,5 +1669,662 @@
 
     .quick-action-btn {
         justify-content: center;
+    }
+}
+
+/* ============================================
+   Kids & Toddlers Management Section
+   ============================================ */
+
+.kids-management {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* Child Selector */
+.kids-management__selector {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kids-management__selector .form-label {
+    font-weight: 600;
+    color: var(--gray-700);
+    white-space: nowrap;
+    margin: 0;
+}
+
+.kids-management__selector select {
+    flex: 1;
+    max-width: 300px;
+}
+
+/* Sub Tabs */
+.kids-management__tabs {
+    display: flex;
+    gap: var(--space-2);
+    border-bottom: 2px solid var(--gray-200);
+    padding-bottom: var(--space-3);
+    flex-wrap: wrap;
+}
+
+.kids-management__tab {
+    padding: var(--space-2) var(--space-4);
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: 1px solid var(--gray-300);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.kids-management__tab:hover {
+    background: var(--gray-100);
+    color: var(--gray-800);
+}
+
+.kids-management__tab--active {
+    background: var(--primary);
+    color: var(--white);
+    border-color: var(--primary);
+}
+
+.kids-management__tab--active:hover {
+    background: var(--primary-dark);
+    color: var(--white);
+}
+
+.kids-management__tab svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Tab Content */
+.kids-management__content {
+    min-height: 200px;
+    padding: var(--space-4) 0;
+}
+
+.kids-tab-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+}
+
+/* ========== Points Tab ========== */
+.kids-points-display {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: linear-gradient(135deg, var(--amber-50) 0%, var(--amber-100) 100%);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.kids-points-display__balance {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.kids-points-display__value {
+    font-size: 3.5rem;
+    font-weight: 700;
+    color: var(--amber-600);
+    line-height: 1;
+}
+
+.kids-points-display__label {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    font-weight: 500;
+}
+
+.kids-points-display__quick-adjust {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-4);
+    border-top: 1px solid var(--amber-200);
+}
+
+.kids-points-display__adjust-label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.kids-points-display__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    justify-content: center;
+}
+
+.kids-points-display__buttons .btn--ghost {
+    background: var(--white);
+    border: 1px solid var(--red-200);
+    color: var(--red-600);
+}
+
+.kids-points-display__buttons .btn--ghost:hover {
+    background: var(--red-50);
+}
+
+.kids-points-display__buttons .btn--primary {
+    background: var(--green-500);
+    border-color: var(--green-500);
+}
+
+.kids-points-display__buttons .btn--primary:hover {
+    background: var(--green-600);
+}
+
+.kids-points-manual {
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kids-points-manual h4 {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--gray-700);
+    margin: 0 0 var(--space-3) 0;
+}
+
+.kids-points-manual__form {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.kids-points-manual__form input {
+    flex: 1;
+    min-width: 120px;
+}
+
+.kids-points-manual__form input[type="number"] {
+    max-width: 120px;
+}
+
+.kids-points-manual__actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+/* ========== Chores Tab ========== */
+.kids-chores-config {
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kids-chores-config .setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.kids-chores-config .setting-row__info {
+    flex: 1;
+    min-width: 150px;
+}
+
+.kids-chores-config .setting-label {
+    font-weight: 600;
+    color: var(--gray-800);
+    margin-bottom: var(--space-1);
+    display: block;
+}
+
+.kids-chores-config .setting-description {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin: 0;
+}
+
+.kids-chores-config__slider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    min-width: 200px;
+}
+
+.kids-chores-config__slider input[type="range"] {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    appearance: none;
+    background: var(--gray-200);
+}
+
+.kids-chores-config__slider input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--primary);
+    cursor: pointer;
+}
+
+.kids-chores-config__slider span {
+    font-weight: 700;
+    color: var(--primary);
+    font-size: var(--text-lg);
+    min-width: 24px;
+    text-align: center;
+}
+
+.kids-chores-pool {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.kids-chores-pool__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kids-chores-pool__header h4 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.kids-chores-pool__empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--gray-500);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    font-style: italic;
+}
+
+.kids-chores-pool__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kids-chore-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.kids-chore-item:hover {
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.kids-chore-item__icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--green-50);
+    border-radius: var(--radius-md);
+    color: var(--green-600);
+}
+
+.kids-chore-item__icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.kids-chore-item__info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.kids-chore-item__name {
+    font-weight: 500;
+    color: var(--gray-800);
+}
+
+.kids-chore-item__points {
+    font-size: var(--text-xs);
+    color: var(--amber-600);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.kids-chore-item__points svg {
+    width: 12px;
+    height: 12px;
+}
+
+.kids-chore-item__actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.kids-chores-actions {
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-200);
+}
+
+/* ========== Screen Time Tab ========== */
+.kids-screen-time-limits {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.kids-screen-time-limit {
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kids-screen-time-limit .setting-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: var(--space-3);
+}
+
+.kids-screen-time-limit .setting-label svg {
+    width: 18px;
+    height: 18px;
+    color: var(--gray-500);
+}
+
+.kids-screen-time-limit__control {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+}
+
+.kids-screen-time-limit__control input[type="range"] {
+    flex: 1;
+    height: 8px;
+    border-radius: 4px;
+    appearance: none;
+    background: var(--gray-200);
+}
+
+.kids-screen-time-limit__control input[type="range"]::-webkit-slider-thumb {
+    appearance: none;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--cyan-500);
+    cursor: pointer;
+}
+
+.kids-screen-time-limit__control span {
+    font-weight: 700;
+    color: var(--cyan-600);
+    font-size: var(--text-lg);
+    min-width: 60px;
+    text-align: right;
+}
+
+.kids-screen-time-presets {
+    padding: var(--space-4);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+}
+
+.kids-screen-time-presets__label {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--gray-600);
+    margin-bottom: var(--space-3);
+    display: block;
+}
+
+.kids-screen-time-presets__buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.kids-screen-time-actions {
+    display: flex;
+    gap: var(--space-3);
+    padding-top: var(--space-3);
+    flex-wrap: wrap;
+}
+
+/* ========== Rewards Tab ========== */
+.kids-rewards-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.kids-rewards-list__header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.kids-rewards-list__header h4 {
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--gray-800);
+    margin: 0;
+}
+
+.kids-rewards-list__empty {
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--gray-500);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    font-style: italic;
+}
+
+.kids-rewards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: var(--space-3);
+}
+
+.kids-reward-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--white);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    transition: all 0.2s ease;
+}
+
+.kids-reward-item:hover {
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-sm);
+}
+
+.kids-reward-item__icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--reward-color, var(--blue-500));
+    border-radius: var(--radius-md);
+    color: var(--white);
+}
+
+.kids-reward-item__icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.kids-reward-item__info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.kids-reward-item__name {
+    font-weight: 500;
+    color: var(--gray-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.kids-reward-item__cost {
+    font-size: var(--text-xs);
+    color: var(--amber-600);
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.kids-reward-item__cost svg {
+    width: 12px;
+    height: 12px;
+}
+
+.kids-reward-item__actions {
+    display: flex;
+    gap: var(--space-1);
+}
+
+/* ========== Danger Zone ========== */
+.kids-management__danger-zone {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background: var(--red-50);
+    border: 1px solid var(--red-200);
+    border-radius: var(--radius-lg);
+}
+
+.kids-management__danger-zone h4 {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--red-700);
+    margin: 0 0 var(--space-2) 0;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.kids-management__danger-zone h4 svg {
+    width: 16px;
+    height: 16px;
+}
+
+.kids-management__danger-zone p {
+    font-size: var(--text-xs);
+    color: var(--red-600);
+    margin: 0 0 var(--space-3) 0;
+    line-height: 1.5;
+}
+
+/* ========== Responsive ========== */
+@media (max-width: 640px) {
+    .kids-management__selector {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .kids-management__selector select {
+        max-width: none;
+    }
+
+    .kids-management__tabs {
+        justify-content: stretch;
+    }
+
+    .kids-management__tab {
+        flex: 1;
+        justify-content: center;
+        padding: var(--space-2) var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .kids-management__tab span:not(.icon) {
+        display: none;
+    }
+
+    .kids-points-display__value {
+        font-size: 2.5rem;
+    }
+
+    .kids-points-display__buttons {
+        gap: var(--space-1);
+    }
+
+    .kids-points-display__buttons .btn {
+        padding: var(--space-1) var(--space-2);
+        font-size: var(--text-xs);
+    }
+
+    .kids-points-manual__form {
+        flex-direction: column;
+    }
+
+    .kids-points-manual__form input {
+        width: 100%;
+        max-width: none;
+    }
+
+    .kids-points-manual__actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+
+    .kids-points-manual__actions .btn {
+        flex: 1;
+    }
+
+    .kids-chores-config .setting-row {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .kids-chores-config__slider {
+        width: 100%;
+    }
+
+    .kids-screen-time-actions {
+        flex-direction: column;
+    }
+
+    .kids-screen-time-actions .btn {
+        width: 100%;
+    }
+
+    .kids-rewards-grid {
+        grid-template-columns: 1fr;
     }
 }

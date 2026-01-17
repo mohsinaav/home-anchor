@@ -13,6 +13,12 @@ const Tasks = (function() {
     // Track which tasks are expanded (for subtasks view)
     const expandedTasks = new Set();
 
+    // Track current tab in full page view
+    let currentTab = 'tasks';
+
+    // Track current month offset for history view
+    let historyMonthOffset = 0;
+
     /**
      * Sort tasks by priority (high → medium → low → none)
      */
@@ -230,11 +236,22 @@ const Tasks = (function() {
         const displayTasks = pendingTasks.slice(0, MAX_WIDGET_TASKS);
         const hasMore = pendingTasks.length > MAX_WIDGET_TASKS;
 
+        // Check if any tasks have subtasks (to show expand/collapse buttons)
+        const hasAnySubtasks = tasks.some(t => t.subtasks && t.subtasks.length > 0);
+
         container.innerHTML = `
             <div class="tasks-widget">
                 <div class="tasks-widget__add">
                     <input type="text" class="form-input tasks-widget__input" id="newTaskInput"
                            placeholder="Add task...">
+                    ${hasAnySubtasks ? `
+                        <button class="btn btn--ghost btn--sm" id="expandAllBtn" title="Expand all subtasks">
+                            <i data-lucide="chevrons-down"></i>
+                        </button>
+                        <button class="btn btn--ghost btn--sm" id="collapseAllBtn" title="Collapse all subtasks">
+                            <i data-lucide="chevrons-up"></i>
+                        </button>
+                    ` : ''}
                     <button class="btn btn--primary btn--sm" id="addTaskBtn" title="Add task">
                         <i data-lucide="plus"></i>
                     </button>
@@ -311,9 +328,10 @@ const Tasks = (function() {
         const hasSubtasks = subtasksTotal > 0;
         // Can indent if not the first task and has no subtasks of its own
         const canIndent = taskIndex > 0 && !hasSubtasks;
+        const isExpanded = expandedTasks.has(task.id);
 
-        // Subtasks list - only render if has subtasks
-        const subtasksList = hasSubtasks ? `
+        // Subtasks list - only render if has subtasks and is expanded
+        const subtasksList = hasSubtasks && isExpanded ? `
             <div class="task-item__subtasks" data-subtasks-for="${task.id}">
                 ${(task.subtasks || []).map(subtask =>
                     renderWidgetSubtaskItem(subtask, task.id)
@@ -325,11 +343,15 @@ const Tasks = (function() {
         return `
             <div class="task-item-container" data-task-id="${task.id}">
                 <div class="task-item ${completedClass} ${priorityClass}" data-task-row="${task.id}">
-                    ${canIndent ? `
+                    ${hasSubtasks ? `
+                        <button class="task-item__toggle" data-toggle-subtasks="${task.id}" title="${isExpanded ? 'Collapse' : 'Expand'} subtasks">
+                            <i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}"></i>
+                        </button>
+                    ` : (canIndent ? `
                         <button class="btn btn--icon btn--ghost btn--xs task-item__indent-btn" data-indent-task="${task.id}" title="Make subtask">
                             <i data-lucide="arrow-right"></i>
                         </button>
-                    ` : '<div class="task-item__indent-spacer"></div>'}
+                    ` : '<div class="task-item__indent-spacer"></div>')}
                     <label class="task-item__checkbox-wrapper">
                         <input type="checkbox" class="task-item__checkbox" ${task.completed ? 'checked' : ''} data-task-toggle="${task.id}">
                         <span class="task-item__checkmark"></span>
@@ -413,6 +435,30 @@ const Tasks = (function() {
                 setTimeout(() => {
                     container.querySelector('#newTaskInput')?.focus();
                 }, 50);
+            }
+        });
+
+        // Expand all subtasks
+        const expandAllBtn = container.querySelector('#expandAllBtn');
+        expandAllBtn?.addEventListener('click', () => {
+            widgetData.tasks.forEach(task => {
+                if (task.subtasks && task.subtasks.length > 0) {
+                    expandedTasks.add(task.id);
+                }
+            });
+            renderWidget(container, memberId);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+
+        // Collapse all subtasks
+        const collapseAllBtn = container.querySelector('#collapseAllBtn');
+        collapseAllBtn?.addEventListener('click', () => {
+            expandedTasks.clear();
+            renderWidget(container, memberId);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
             }
         });
 
@@ -503,6 +549,25 @@ const Tasks = (function() {
                         }
                     }
                 });
+            });
+        });
+
+        // =========================================================================
+        // TOGGLE SUBTASKS (expand/collapse)
+        // =========================================================================
+        container.querySelectorAll('[data-toggle-subtasks]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const taskId = btn.dataset.toggleSubtasks;
+                if (expandedTasks.has(taskId)) {
+                    expandedTasks.delete(taskId);
+                } else {
+                    expandedTasks.add(taskId);
+                }
+                renderWidget(container, memberId);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
             });
         });
 
@@ -748,11 +813,21 @@ const Tasks = (function() {
     /**
      * Render full page tasks view
      */
-    function renderTasksFullPage(container, memberId, member) {
+    function renderTasksFullPage(container, memberId, member, activeTab = null) {
+        // Use passed tab or current tab
+        if (activeTab) {
+            currentTab = activeTab;
+        }
+
         const widgetData = Storage.getWidgetData(memberId, 'task-list') || { tasks: [] };
         const tasks = widgetData.tasks || [];
         const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
+
+        // Calculate stats
+        const streak = calculateCompletionStreak(tasks);
+        const thisMonthCompleted = getThisMonthCompletedCount(tasks);
+        const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
         container.innerHTML = `
             <div class="tasks-page">
@@ -771,64 +846,40 @@ const Tasks = (function() {
                     </div>
                     <div class="tasks-page__hero-stats">
                         <div class="tasks-hero-stat">
-                            <span class="tasks-hero-stat__value">${pendingTasks.length}</span>
-                            <span class="tasks-hero-stat__label">Pending</span>
+                            <span class="tasks-hero-stat__value">${streak}</span>
+                            <span class="tasks-hero-stat__label">Day Streak</span>
                         </div>
                         <div class="tasks-hero-stat">
-                            <span class="tasks-hero-stat__value">${completedTasks.length}</span>
-                            <span class="tasks-hero-stat__label">Completed</span>
+                            <span class="tasks-hero-stat__value">${thisMonthCompleted}</span>
+                            <span class="tasks-hero-stat__label">This Month</span>
                         </div>
                         <div class="tasks-hero-stat">
-                            <span class="tasks-hero-stat__value">${tasks.length}</span>
-                            <span class="tasks-hero-stat__label">Total</span>
+                            <span class="tasks-hero-stat__value">${completionRate}%</span>
+                            <span class="tasks-hero-stat__label">Done Rate</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="tasks-page__add">
-                    <input type="text" class="form-input" id="newTaskInputPage" placeholder="Quick add (press Enter)...">
-                    <button class="btn btn--primary" id="addTaskBtnPage" title="Quick add task">
-                        <i data-lucide="plus"></i>
+                <!-- Tab Navigation -->
+                <div class="tasks-page__tabs">
+                    <button class="tasks-page__tab ${currentTab === 'tasks' ? 'tasks-page__tab--active' : ''}" data-tab="tasks">
+                        <i data-lucide="list-todo"></i>
+                        Tasks
+                    </button>
+                    <button class="tasks-page__tab ${currentTab === 'history' ? 'tasks-page__tab--active' : ''}" data-tab="history">
+                        <i data-lucide="calendar-days"></i>
+                        History
+                    </button>
+                    <button class="tasks-page__tab ${currentTab === 'stats' ? 'tasks-page__tab--active' : ''}" data-tab="stats">
+                        <i data-lucide="bar-chart-3"></i>
+                        Stats
                     </button>
                 </div>
 
-                ${pendingTasks.length > 0 ? `
-                    <div class="tasks-page__section">
-                        <h2 class="tasks-page__section-title">
-                            <i data-lucide="circle"></i>
-                            To Do (${pendingTasks.length})
-                        </h2>
-                        <div class="tasks-page__list" id="pendingTasksList">
-                            ${pendingTasks.map((task, index) => renderFullPageTaskItem(task, memberId, false, index)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${completedTasks.length > 0 ? `
-                    <div class="tasks-page__section tasks-page__section--completed">
-                        <h2 class="tasks-page__section-title tasks-page__section-title--completed">
-                            <i data-lucide="check-circle"></i>
-                            Completed (${completedTasks.length})
-                            <button class="btn btn--sm btn--ghost btn--danger" id="clearCompletedBtn">
-                                <i data-lucide="trash-2"></i>
-                                Clear All
-                            </button>
-                        </h2>
-                        <div class="tasks-page__list">
-                            ${completedTasks.map(task => renderFullPageTaskItem(task, memberId, true)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${tasks.length === 0 ? `
-                    <div class="tasks-page__empty">
-                        <div class="tasks-page__empty-icon">
-                            <i data-lucide="check-square"></i>
-                        </div>
-                        <h2>No Tasks Yet</h2>
-                        <p>Add your first task using the form above!</p>
-                    </div>
-                ` : ''}
+                <!-- Tab Content -->
+                <div class="tasks-page__content">
+                    ${renderTabContent(currentTab, memberId, widgetData, pendingTasks, completedTasks)}
+                </div>
             </div>
         `;
 
@@ -837,6 +888,474 @@ const Tasks = (function() {
         }
 
         bindFullPageEvents(container, memberId, member, widgetData);
+    }
+
+    /**
+     * Calculate completion streak (consecutive days with at least 1 task completed)
+     */
+    function calculateCompletionStreak(tasks) {
+        const completedDates = new Set();
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                completedDates.add(task.completedAt);
+            }
+        });
+
+        if (completedDates.size === 0) return 0;
+
+        let streak = 0;
+        let currentDate = new Date();
+
+        // Check if today has completions, if not start from yesterday
+        const today = DateUtils.today();
+        if (!completedDates.has(today)) {
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+
+        while (true) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            if (completedDates.has(dateStr)) {
+                streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    }
+
+    /**
+     * Get count of tasks completed this month
+     */
+    function getThisMonthCompletedCount(tasks) {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        return tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear;
+        }).length;
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderTabContent(tab, memberId, widgetData, pendingTasks, completedTasks) {
+        switch (tab) {
+            case 'tasks':
+                return renderTasksTab(memberId, widgetData, pendingTasks, completedTasks);
+            case 'history':
+                return renderHistoryTab(memberId, widgetData);
+            case 'stats':
+                return renderStatsTab(memberId, widgetData);
+            default:
+                return renderTasksTab(memberId, widgetData, pendingTasks, completedTasks);
+        }
+    }
+
+    /**
+     * Render Tasks tab content
+     */
+    function renderTasksTab(memberId, widgetData, pendingTasks, completedTasks) {
+        const tasks = widgetData.tasks || [];
+        const hasAnySubtasks = tasks.some(t => t.subtasks && t.subtasks.length > 0);
+
+        return `
+            <div class="tasks-page__add">
+                <input type="text" class="form-input" id="newTaskInputPage" placeholder="Quick add (press Enter)...">
+                ${hasAnySubtasks ? `
+                    <button class="btn btn--ghost" id="expandAllBtnPage" title="Expand all subtasks">
+                        <i data-lucide="chevrons-down"></i>
+                    </button>
+                    <button class="btn btn--ghost" id="collapseAllBtnPage" title="Collapse all subtasks">
+                        <i data-lucide="chevrons-up"></i>
+                    </button>
+                ` : ''}
+                <button class="btn btn--primary" id="addTaskBtnPage" title="Quick add task">
+                    <i data-lucide="plus"></i>
+                </button>
+            </div>
+
+            ${pendingTasks.length > 0 ? `
+                <div class="tasks-page__section">
+                    <h2 class="tasks-page__section-title">
+                        <i data-lucide="circle"></i>
+                        To Do (${pendingTasks.length})
+                    </h2>
+                    <div class="tasks-page__list" id="pendingTasksList">
+                        ${pendingTasks.map((task, index) => renderFullPageTaskItem(task, memberId, false, index)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${completedTasks.length > 0 ? `
+                <div class="tasks-page__section tasks-page__section--completed">
+                    <h2 class="tasks-page__section-title tasks-page__section-title--completed">
+                        <i data-lucide="check-circle"></i>
+                        Completed (${completedTasks.length})
+                        <button class="btn btn--sm btn--ghost btn--danger" id="clearCompletedBtn">
+                            <i data-lucide="trash-2"></i>
+                            Clear All
+                        </button>
+                    </h2>
+                    <div class="tasks-page__list">
+                        ${completedTasks.map(task => renderFullPageTaskItem(task, memberId, true)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${tasks.length === 0 ? `
+                <div class="tasks-page__empty">
+                    <div class="tasks-page__empty-icon">
+                        <i data-lucide="check-square"></i>
+                    </div>
+                    <h2>No Tasks Yet</h2>
+                    <p>Add your first task using the form above!</p>
+                </div>
+            ` : ''}
+        `;
+    }
+
+    /**
+     * Render History tab content - shows completed tasks grouped by date
+     */
+    function renderHistoryTab(memberId, widgetData) {
+        const tasks = widgetData.tasks || [];
+        const completedTasks = tasks.filter(t => t.completed && t.completedAt);
+
+        // Get the target month based on offset
+        const targetDate = new Date();
+        targetDate.setMonth(targetDate.getMonth() + historyMonthOffset);
+        const targetMonth = targetDate.getMonth();
+        const targetYear = targetDate.getFullYear();
+
+        // Filter tasks for the target month
+        const monthTasks = completedTasks.filter(task => {
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === targetMonth && completedDate.getFullYear() === targetYear;
+        });
+
+        // Group by date
+        const groupedByDate = {};
+        monthTasks.forEach(task => {
+            const date = task.completedAt;
+            if (!groupedByDate[date]) {
+                groupedByDate[date] = [];
+            }
+            groupedByDate[date].push(task);
+        });
+
+        // Sort dates in descending order
+        const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a));
+
+        const monthName = targetDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const isCurrentMonth = historyMonthOffset === 0;
+
+        return `
+            <div class="tasks-history">
+                <div class="tasks-history__nav">
+                    <button class="btn btn--ghost btn--sm" id="historyPrevMonth">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="tasks-history__month">${monthName}</span>
+                    <button class="btn btn--ghost btn--sm" id="historyNextMonth" ${isCurrentMonth ? 'disabled' : ''}>
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="tasks-history__summary">
+                    <div class="tasks-history__summary-stat">
+                        <i data-lucide="check-circle"></i>
+                        <span>${monthTasks.length} tasks completed</span>
+                    </div>
+                    <div class="tasks-history__summary-stat">
+                        <i data-lucide="calendar"></i>
+                        <span>${sortedDates.length} active days</span>
+                    </div>
+                </div>
+
+                ${sortedDates.length > 0 ? `
+                    <div class="tasks-history__days">
+                        ${sortedDates.map(date => {
+                            const dayTasks = groupedByDate[date];
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const dayNum = dateObj.getDate();
+                            const monthShort = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                            const isToday = date === DateUtils.today();
+
+                            return `
+                                <div class="tasks-history__day ${isToday ? 'tasks-history__day--today' : ''}">
+                                    <div class="tasks-history__day-header">
+                                        <div class="tasks-history__day-date">
+                                            <span class="tasks-history__day-num">${dayNum}</span>
+                                            <div class="tasks-history__day-info">
+                                                <span class="tasks-history__day-name">${dayName}</span>
+                                                <span class="tasks-history__day-month">${monthShort}</span>
+                                            </div>
+                                        </div>
+                                        <span class="tasks-history__day-count">${dayTasks.length} task${dayTasks.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    <div class="tasks-history__day-tasks">
+                                        ${dayTasks.map(task => `
+                                            <div class="tasks-history__task">
+                                                <i data-lucide="check"></i>
+                                                <span>${task.title}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div class="tasks-page__empty">
+                        <div class="tasks-page__empty-icon">
+                            <i data-lucide="calendar-x"></i>
+                        </div>
+                        <h2>No Completed Tasks</h2>
+                        <p>No tasks were completed in ${monthName}</p>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab content
+     */
+    function renderStatsTab(memberId, widgetData) {
+        const tasks = widgetData.tasks || [];
+        const completedTasks = tasks.filter(t => t.completed);
+
+        // Calculate various stats
+        const streak = calculateCompletionStreak(tasks);
+        const bestStreak = calculateBestStreak(tasks);
+        const thisMonthCompleted = getThisMonthCompletedCount(tasks);
+        const lastMonthCompleted = getLastMonthCompletedCount(tasks);
+        const completionRate = tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+        const avgPerDay = calculateAvgTasksPerDay(tasks);
+        const mostProductiveDay = getMostProductiveDay(tasks);
+        const weeklyData = getWeeklyCompletionData(tasks);
+
+        // Month progress
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const dayOfMonth = now.getDate();
+        const monthProgress = Math.round((dayOfMonth / daysInMonth) * 100);
+
+        return `
+            <div class="tasks-stats">
+                <!-- Streak Cards -->
+                <div class="tasks-stats__streaks">
+                    <div class="tasks-stats__streak-card">
+                        <div class="tasks-stats__streak-icon tasks-stats__streak-icon--current">
+                            <i data-lucide="flame"></i>
+                        </div>
+                        <div class="tasks-stats__streak-info">
+                            <span class="tasks-stats__streak-value">${streak}</span>
+                            <span class="tasks-stats__streak-label">Current Streak</span>
+                        </div>
+                    </div>
+                    <div class="tasks-stats__streak-card">
+                        <div class="tasks-stats__streak-icon tasks-stats__streak-icon--best">
+                            <i data-lucide="trophy"></i>
+                        </div>
+                        <div class="tasks-stats__streak-info">
+                            <span class="tasks-stats__streak-value">${bestStreak}</span>
+                            <span class="tasks-stats__streak-label">Best Streak</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Month Progress -->
+                <div class="tasks-stats__month-card">
+                    <div class="tasks-stats__month-header">
+                        <h3>This Month's Progress</h3>
+                        <span class="tasks-stats__month-count">${thisMonthCompleted} completed</span>
+                    </div>
+                    <div class="tasks-stats__progress-bar">
+                        <div class="tasks-stats__progress-fill" style="width: ${monthProgress}%"></div>
+                    </div>
+                    <div class="tasks-stats__month-footer">
+                        <span>Day ${dayOfMonth} of ${daysInMonth}</span>
+                        ${lastMonthCompleted > 0 ? `
+                            <span class="tasks-stats__comparison ${thisMonthCompleted >= lastMonthCompleted ? 'tasks-stats__comparison--up' : 'tasks-stats__comparison--down'}">
+                                <i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'trending-down'}"></i>
+                                ${thisMonthCompleted >= lastMonthCompleted ? '+' : ''}${thisMonthCompleted - lastMonthCompleted} vs last month
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Weekly Chart -->
+                <div class="tasks-stats__weekly-card">
+                    <h3>This Week</h3>
+                    <div class="tasks-stats__weekly-chart">
+                        ${weeklyData.map(day => `
+                            <div class="tasks-stats__weekly-bar">
+                                <div class="tasks-stats__weekly-fill" style="height: ${day.percentage}%"></div>
+                                <span class="tasks-stats__weekly-label">${day.label}</span>
+                                <span class="tasks-stats__weekly-count">${day.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Quick Stats Grid -->
+                <div class="tasks-stats__grid">
+                    <div class="tasks-stats__grid-item">
+                        <i data-lucide="percent"></i>
+                        <span class="tasks-stats__grid-value">${completionRate}%</span>
+                        <span class="tasks-stats__grid-label">Completion Rate</span>
+                    </div>
+                    <div class="tasks-stats__grid-item">
+                        <i data-lucide="activity"></i>
+                        <span class="tasks-stats__grid-value">${avgPerDay}</span>
+                        <span class="tasks-stats__grid-label">Avg/Day</span>
+                    </div>
+                    <div class="tasks-stats__grid-item">
+                        <i data-lucide="star"></i>
+                        <span class="tasks-stats__grid-value">${mostProductiveDay || '-'}</span>
+                        <span class="tasks-stats__grid-label">Best Day</span>
+                    </div>
+                    <div class="tasks-stats__grid-item">
+                        <i data-lucide="list-checks"></i>
+                        <span class="tasks-stats__grid-value">${completedTasks.length}</span>
+                        <span class="tasks-stats__grid-label">Total Done</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Calculate best streak ever
+     */
+    function calculateBestStreak(tasks) {
+        const completedDates = new Set();
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                completedDates.add(task.completedAt);
+            }
+        });
+
+        if (completedDates.size === 0) return 0;
+
+        const sortedDates = Array.from(completedDates).sort();
+        let bestStreak = 1;
+        let currentStreak = 1;
+
+        for (let i = 1; i < sortedDates.length; i++) {
+            const prevDate = new Date(sortedDates[i - 1]);
+            const currDate = new Date(sortedDates[i]);
+            const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                currentStreak++;
+                bestStreak = Math.max(bestStreak, currentStreak);
+            } else {
+                currentStreak = 1;
+            }
+        }
+
+        return bestStreak;
+    }
+
+    /**
+     * Get last month's completed count
+     */
+    function getLastMonthCompletedCount(tasks) {
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthNum = lastMonth.getMonth();
+        const lastMonthYear = lastMonth.getFullYear();
+
+        return tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === lastMonthNum && completedDate.getFullYear() === lastMonthYear;
+        }).length;
+    }
+
+    /**
+     * Calculate average tasks completed per day (last 30 days)
+     */
+    function calculateAvgTasksPerDay(tasks) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const recentCompleted = tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            return new Date(task.completedAt) >= thirtyDaysAgo;
+        });
+
+        const avg = recentCompleted.length / 30;
+        return avg.toFixed(1);
+    }
+
+    /**
+     * Get most productive day of week
+     */
+    function getMostProductiveDay(tasks) {
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                const day = new Date(task.completedAt).getDay();
+                dayCounts[day]++;
+            }
+        });
+
+        const maxCount = Math.max(...dayCounts);
+        if (maxCount === 0) return null;
+
+        const maxDayIndex = dayCounts.indexOf(maxCount);
+        return dayNames[maxDayIndex];
+    }
+
+    /**
+     * Get weekly completion data for chart
+     */
+    function getWeeklyCompletionData(tasks) {
+        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const data = [];
+
+        // Get start of week (Sunday)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let maxCount = 0;
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+
+            const count = tasks.filter(task => task.completed && task.completedAt === dateStr).length;
+            maxCount = Math.max(maxCount, count);
+
+            data.push({
+                label: dayNames[i],
+                count,
+                date: dateStr,
+                percentage: 0
+            });
+        }
+
+        // Calculate percentages
+        data.forEach(day => {
+            day.percentage = maxCount > 0 ? Math.round((day.count / maxCount) * 100) : 0;
+        });
+
+        return data;
     }
 
     /**
@@ -869,9 +1388,10 @@ const Tasks = (function() {
         const hasSubtasks = subtasksTotal > 0;
         // Can indent if not the first task and has no subtasks of its own
         const canIndent = !isCompleted && taskIndex > 0 && !hasSubtasks;
+        const isExpanded = expandedTasks.has(task.id);
 
-        // Subtasks list - always visible if has subtasks
-        const subtasksList = hasSubtasks ? `
+        // Subtasks list - only render if has subtasks and is expanded
+        const subtasksList = hasSubtasks && isExpanded ? `
             <div class="task-page-item__subtasks" data-subtasks-for="${task.id}">
                 ${(task.subtasks || []).map(subtask =>
                     renderSubtaskItem(subtask, task.id)
@@ -883,11 +1403,15 @@ const Tasks = (function() {
         return `
             <div class="task-page-item-container" data-task-id="${task.id}">
                 <div class="task-page-item ${isCompleted ? 'task-page-item--completed' : ''} ${priorityClass}" data-task-row="${task.id}">
-                    ${canIndent ? `
+                    ${hasSubtasks ? `
+                        <button class="task-page-item__toggle" data-toggle-subtasks="${task.id}" title="${isExpanded ? 'Collapse' : 'Expand'} subtasks">
+                            <i data-lucide="${isExpanded ? 'chevron-down' : 'chevron-right'}"></i>
+                        </button>
+                    ` : (canIndent ? `
                         <button class="btn btn--icon btn--ghost btn--xs task-page-item__indent-btn" data-indent-task="${task.id}" title="Make subtask">
                             <i data-lucide="arrow-right"></i>
                         </button>
-                    ` : '<div class="task-page-item__indent-spacer"></div>'}
+                    ` : '<div class="task-page-item__indent-spacer"></div>')}
                     <label class="task-page-item__checkbox-wrapper">
                         <input type="checkbox" class="task-page-item__checkbox" ${isCompleted ? 'checked' : ''} data-task-toggle="${task.id}">
                         <span class="task-page-item__checkmark"></span>
@@ -948,6 +1472,34 @@ const Tasks = (function() {
             backBtn.style.cursor = 'pointer';
         }
 
+        // Tab switching
+        container.querySelectorAll('.tasks-page__tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabName = tab.dataset.tab;
+                if (tabName !== currentTab) {
+                    currentTab = tabName;
+                    historyMonthOffset = 0; // Reset history month when switching tabs
+                    renderTasksFullPage(container, memberId, member, tabName);
+                }
+            });
+        });
+
+        // History month navigation
+        const historyPrevBtn = container.querySelector('#historyPrevMonth');
+        const historyNextBtn = container.querySelector('#historyNextMonth');
+
+        historyPrevBtn?.addEventListener('click', () => {
+            historyMonthOffset--;
+            renderTasksFullPage(container, memberId, member, 'history');
+        });
+
+        historyNextBtn?.addEventListener('click', () => {
+            if (historyMonthOffset < 0) {
+                historyMonthOffset++;
+                renderTasksFullPage(container, memberId, member, 'history');
+            }
+        });
+
         // Add task from full page - use container-scoped selectors
         const addBtnPage = container.querySelector('#addTaskBtnPage');
         const inputPage = container.querySelector('#newTaskInputPage');
@@ -977,6 +1529,24 @@ const Tasks = (function() {
         addBtnPage?.addEventListener('click', addTaskFromPage);
         inputPage?.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') addTaskFromPage();
+        });
+
+        // Expand all subtasks
+        const expandAllBtnPage = container.querySelector('#expandAllBtnPage');
+        expandAllBtnPage?.addEventListener('click', () => {
+            widgetData.tasks.forEach(task => {
+                if (task.subtasks && task.subtasks.length > 0) {
+                    expandedTasks.add(task.id);
+                }
+            });
+            renderTasksFullPage(container, memberId, member);
+        });
+
+        // Collapse all subtasks
+        const collapseAllBtnPage = container.querySelector('#collapseAllBtnPage');
+        collapseAllBtnPage?.addEventListener('click', () => {
+            expandedTasks.clear();
+            renderTasksFullPage(container, memberId, member);
         });
 
         // Add task button (opens modal for advanced)
@@ -1061,6 +1631,22 @@ const Tasks = (function() {
                 // Don't trigger if clicking on checkbox
                 if (e.target.closest('.task-page-item__checkbox-wrapper')) return;
                 startInlineEdit(el, el.dataset.edit);
+            });
+        });
+
+        // =========================================================================
+        // TOGGLE SUBTASKS (expand/collapse)
+        // =========================================================================
+        container.querySelectorAll('[data-toggle-subtasks]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const taskId = btn.dataset.toggleSubtasks;
+                if (expandedTasks.has(taskId)) {
+                    expandedTasks.delete(taskId);
+                } else {
+                    expandedTasks.add(taskId);
+                }
+                renderTasksFullPage(container, memberId, member);
             });
         });
 

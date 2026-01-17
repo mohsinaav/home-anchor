@@ -596,17 +596,155 @@ const Points = (function() {
         }, isGoalComplete ? 4000 : 3000);
     }
 
+    // Track current tab in full page view
+    let currentFullPageTab = 'history';
+
     /**
-     * Show points history page (visual timeline) with calendar and stats
+     * Show full page view (standardized format with hero section)
      */
-    function showHistoryPage(memberId) {
+    function showFullPage(memberId) {
         const main = document.getElementById('mainContent');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
+        currentFullPageTab = 'history';
+        renderFullPage(main, memberId, member, currentFullPageTab);
+
+        // Scroll to today section after rendering
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                const todaySection = document.getElementById('todaySection');
+                if (todaySection) {
+                    todaySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                } else {
+                    // Fallback: scroll to top of content area
+                    main.scrollTo({ top: 0, behavior: 'smooth' });
+                }
+            }, 150);
+        });
+    }
+
+    /**
+     * Legacy function name for backwards compatibility
+     */
+    function showHistoryPage(memberId) {
+        showFullPage(memberId);
+    }
+
+    /**
+     * Render full page with hero section and tabs
+     */
+    function renderFullPage(container, memberId, member, tab = 'history') {
         const isTeen = member && member.type === 'teen';
         const widgetData = getWidgetData(memberId);
         const history = widgetData.history || [];
+
+        // Calculate streak
+        const streak = calculateStreak(history);
+
+        // Calculate level info
+        const totalXP = getTotalXP(history);
+        const levelInfo = calculateLevel(totalXP, isTeen);
+
+        // Get age-adaptive content
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const colors = useKidTheme ? KidTheme.getColors('points') : { gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%)' };
+
+        // Points label
+        const pointsLabel = isTeen ? 'Coins' : 'Points';
+        const pointsLabelLower = isTeen ? 'coins' : 'points';
+
+        // Get tab content
+        const tabContent = renderPointsTabContent(tab, memberId, member, widgetData, history, isTeen, isYoungKid);
+
+        // Define tabs
+        const tabs = [
+            { id: 'history', label: 'History', icon: 'history', emoji: '📋' },
+            { id: 'calendar', label: 'Calendar', icon: 'calendar', emoji: '📅' },
+            { id: 'stats', label: 'Stats', icon: 'bar-chart-3', emoji: '📊' }
+        ];
+
+        container.innerHTML = `
+            <div class="kid-page kid-page--points ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
+                            ${isYoungKid ? (isTeen ? '🪙 My Coins!' : '⭐ My Points!') : pointsLabel}
+                        </h1>
+                    </div>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat kid-hero-stat--primary">
+                            <span class="kid-hero-stat__value">${widgetData.balance || 0}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? (isTeen ? '🪙 ' : '⭐ ') + pointsLabel : 'Balance'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${levelInfo.level}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '🏆 ' : ''}${isTeen ? 'Rank' : 'Level'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${streak}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '🔥 Streak' : 'Day Streak'}</span>
+                        </div>
+                    </div>
+                    <!-- Add Points Button (Admin) -->
+                    <button class="btn btn--sm btn--secondary kid-page__hero-action" id="addBonusBtn" title="Add Bonus ${pointsLabel} (Admin)">
+                        <i data-lucide="plus-circle"></i>
+                        Add ${pointsLabel}
+                    </button>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
+                            ${t.label}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindFullPageEvents(container, memberId, member, widgetData, history, tab);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderPointsTabContent(tab, memberId, member, widgetData, history, isTeen, isYoungKid) {
+        switch (tab) {
+            case 'history':
+                return renderHistoryTab(memberId, member, widgetData, history, isTeen, isYoungKid);
+            case 'calendar':
+                return renderCalendarTab(memberId, member, widgetData, history, isTeen, isYoungKid);
+            case 'stats':
+                return renderStatsTab(memberId, member, widgetData, history, isTeen, isYoungKid);
+            default:
+                return renderHistoryTab(memberId, member, widgetData, history, isTeen, isYoungKid);
+        }
+    }
+
+    /**
+     * Render History tab content
+     */
+    function renderHistoryTab(memberId, member, widgetData, history, isTeen, isYoungKid) {
+        const pointsLabel = isTeen ? 'coins' : 'points';
 
         // Group history by date
         const groupedHistory = {};
@@ -620,69 +758,74 @@ const Points = (function() {
         // Sort dates descending
         const sortedDates = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a));
 
-        // Calculate streak
-        const streak = calculateStreak(history);
-
-        // Calculate level info
-        const totalXP = getTotalXP(history);
-        const levelInfo = calculateLevel(totalXP, isTeen);
-
-        // Calculate weekly stats
-        const today = new Date();
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - today.getDay());
-        weekStart.setHours(0, 0, 0, 0);
-
-        const weekHistory = history.filter(h => {
-            const entryDate = new Date(h.date);
-            return entryDate >= weekStart && h.type === 'earned';
-        });
-
-        const weekPoints = weekHistory.reduce((sum, h) => sum + h.points, 0);
-        const weekActivities = weekHistory.length;
-        const weekDays = [...new Set(weekHistory.map(h => h.date))].length;
-
-        // Calculate monthly stats
-        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
-        const monthHistory = history.filter(h => {
-            const entryDate = new Date(h.date);
-            return entryDate >= monthStart && h.type === 'earned';
-        });
-        const monthPoints = monthHistory.reduce((sum, h) => sum + h.points, 0);
-        const monthActivities = monthHistory.length;
-        const monthDays = [...new Set(monthHistory.map(h => h.date))].length;
-        const avgPointsPerDay = monthDays > 0 ? Math.round(monthPoints / monthDays) : 0;
-
-        // Get most completed activities
-        const activityCounts = {};
-        history.filter(h => h.type === 'earned').forEach(h => {
-            activityCounts[h.activityName] = (activityCounts[h.activityName] || 0) + 1;
-        });
-        const topActivities = Object.entries(activityCounts)
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, 5);
-
         // Get date labels
         const todayStr = DateUtils.today();
         const yesterday = DateUtils.formatISO(DateUtils.addDays(new Date(), -1));
 
         const getDateLabel = (date) => {
-            if (date === todayStr) return 'Today';
+            if (date === todayStr) return isYoungKid ? 'Today! 🌟' : 'Today';
             if (date === yesterday) return 'Yesterday';
             return DateUtils.formatShort(date);
         };
 
-        // Generate streak calendar (last 7 days)
-        const streakCalendar = [];
-        const earnedDates = new Set(history.filter(h => h.type === 'earned').map(h => h.date));
-        for (let i = 6; i >= 0; i--) {
-            const d = DateUtils.addDays(new Date(), -i);
-            const dateStr = DateUtils.formatISO(d);
-            const dayName = DateUtils.getDayName(d, true);
-            const hasActivity = earnedDates.has(dateStr);
-            const isToday = i === 0;
-            streakCalendar.push({ dateStr, dayName, hasActivity, isToday });
+        if (sortedDates.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">${isTeen ? '🪙' : '🌟'}</div>
+                    <p>No ${pointsLabel} history yet!</p>
+                    <p class="kid-page__empty-hint">Complete activities to start earning ${pointsLabel}.</p>
+                </div>
+            `;
         }
+
+        return `
+            <div class="points-history-tab">
+                ${sortedDates.slice(0, 14).map(date => `
+                    <div class="points-day" ${date === todayStr ? 'id="todaySection"' : ''}>
+                        <div class="points-day__header">
+                            <span class="points-day__date">${getDateLabel(date)}</span>
+                            <span class="points-day__stats">
+                                ${isYoungKid ? '⭐ ' : ''}${groupedHistory[date].filter(e => e.type === 'earned' || e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} earned
+                                ${groupedHistory[date].filter(e => e.type === 'bonus').length > 0 ?
+                                    ` (${groupedHistory[date].filter(e => e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} bonus)` : ''}
+                                ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
+                                    ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
+                            </span>
+                        </div>
+                        <div class="points-day__activities">
+                            ${groupedHistory[date].map(entry => `
+                                <div class="points-day__activity points-day__activity--${entry.type}">
+                                    <span class="points-day__icon">
+                                        ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : entry.type === 'deduction' ? '⚠️' : '⭐'}
+                                    </span>
+                                    <span class="points-day__name">${entry.activityName}${(entry.type === 'bonus' || entry.type === 'deduction') && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
+                                    <span class="points-day__points points-day__points--${entry.type}">
+                                        ${entry.type === 'spent' || entry.type === 'deduction' ? '-' : '+'}${entry.points}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Calendar tab content
+     */
+    function renderCalendarTab(memberId, member, widgetData, history, isTeen, isYoungKid) {
+        const today = new Date();
+        const todayStr = DateUtils.today();
+
+        // Group history by date
+        const groupedHistory = {};
+        history.forEach(entry => {
+            if (!groupedHistory[entry.date]) {
+                groupedHistory[entry.date] = [];
+            }
+            groupedHistory[entry.date].push(entry);
+        });
 
         // Generate monthly calendar grid
         const calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
@@ -721,348 +864,410 @@ const Points = (function() {
             });
         }
 
+        return `
+            <div class="points-calendar-tab">
+                <div class="points-calendar">
+                    <div class="points-calendar__header">
+                        <h3 class="points-calendar__month">${isYoungKid ? '📅 ' : ''}${monthName}</h3>
+                    </div>
+                    <div class="points-calendar__weekdays">
+                        <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+                    </div>
+                    <div class="points-calendar__grid">
+                        ${calendarDays.map(d => {
+                            if (d.empty) return '<div class="points-calendar__day points-calendar__day--empty"></div>';
+                            return `
+                                <div class="points-calendar__day ${d.isToday ? 'points-calendar__day--today' : ''} ${d.isFuture ? 'points-calendar__day--future' : ''} ${d.activityCount > 0 ? `points-calendar__day--level-${d.intensity}` : ''}"
+                                     data-date="${d.dateStr}"
+                                     title="${d.activityCount} activities, ${d.dayPoints} pts">
+                                    <span class="points-calendar__day-number">${d.day}</span>
+                                    ${d.activityCount > 0 ? `<span class="points-calendar__day-dots">${'●'.repeat(Math.min(3, d.activityCount))}</span>` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                    <div class="points-calendar__legend">
+                        <span class="points-calendar__legend-label">Less</span>
+                        <span class="points-calendar__legend-box points-calendar__legend-box--0"></span>
+                        <span class="points-calendar__legend-box points-calendar__legend-box--1"></span>
+                        <span class="points-calendar__legend-box points-calendar__legend-box--2"></span>
+                        <span class="points-calendar__legend-box points-calendar__legend-box--3"></span>
+                        <span class="points-calendar__legend-box points-calendar__legend-box--4"></span>
+                        <span class="points-calendar__legend-label">More</span>
+                    </div>
+                </div>
+
+                <!-- Hint for clickable days -->
+                <p class="points-calendar__hint">Tap on highlighted days to see activities</p>
+
+                <!-- Day Details (shown below calendar when clicking a date) -->
+                <div class="points-calendar__details" id="calendarDetails" style="display: none;">
+                    <div class="points-calendar__details-header">
+                        <span id="calendarDetailsDate"></span>
+                        <button class="btn btn--icon btn--ghost btn--sm" id="closeCalendarDetails">
+                            <i data-lucide="x"></i>
+                        </button>
+                    </div>
+                    <div class="points-calendar__details-body" id="calendarDetailsBody"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab content - includes level, streak, and statistics
+     */
+    function renderStatsTab(memberId, member, widgetData, history, isTeen, isYoungKid) {
+        const pointsLabel = isTeen ? 'coins' : 'points';
+
+        // Calculate streak
+        const streak = calculateStreak(history);
+
+        // Calculate level info
+        const totalXP = getTotalXP(history);
+        const levelInfo = calculateLevel(totalXP, isTeen);
+
+        // Calculate weekly stats
+        const today = new Date();
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - today.getDay());
+        weekStart.setHours(0, 0, 0, 0);
+
+        const weekHistory = history.filter(h => {
+            const entryDate = new Date(h.date);
+            return entryDate >= weekStart && h.type === 'earned';
+        });
+
+        const weekPoints = weekHistory.reduce((sum, h) => sum + h.points, 0);
+        const weekActivities = weekHistory.length;
+
+        // Calculate monthly stats
+        const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthHistory = history.filter(h => {
+            const entryDate = new Date(h.date);
+            return entryDate >= monthStart && h.type === 'earned';
+        });
+        const monthPoints = monthHistory.reduce((sum, h) => sum + h.points, 0);
+        const monthActivities = monthHistory.length;
+        const monthDays = [...new Set(monthHistory.map(h => h.date))].length;
+        const avgPointsPerDay = monthDays > 0 ? Math.round(monthPoints / monthDays) : 0;
+
+        // Get most completed activities
+        const activityCounts = {};
+        history.filter(h => h.type === 'earned').forEach(h => {
+            activityCounts[h.activityName] = (activityCounts[h.activityName] || 0) + 1;
+        });
+        const topActivities = Object.entries(activityCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+
+        // Generate streak calendar (last 7 days)
+        const streakCalendar = [];
+        const earnedDates = new Set(history.filter(h => h.type === 'earned').map(h => h.date));
+        for (let i = 6; i >= 0; i--) {
+            const d = DateUtils.addDays(new Date(), -i);
+            const dateStr = DateUtils.formatISO(d);
+            const dayName = DateUtils.getDayName(d, true);
+            const hasActivity = earnedDates.has(dateStr);
+            const isToday = i === 0;
+            streakCalendar.push({ dateStr, dayName, hasActivity, isToday });
+        }
+
+        // Generate weekly progress chart data (last 8 weeks / 2 months)
+        const weeklyChartData = [];
+        let maxWeekPoints = 0;
+        for (let i = 7; i >= 0; i--) {
+            // Calculate the start and end of each week
+            const today = new Date();
+            const currentWeekStart = DateUtils.getWeekStart(today);
+            const weekStart = DateUtils.addDays(currentWeekStart, -i * 7);
+            const weekEnd = DateUtils.addDays(weekStart, 6);
+
+            const weekStartStr = DateUtils.formatISO(weekStart);
+            const weekEndStr = DateUtils.formatISO(weekEnd);
+
+            // Get week label (e.g., "Jan 6" for the week starting Jan 6)
+            const weekLabel = DateUtils.formatShort(weekStart);
+            const isCurrentWeek = i === 0;
+
+            // Calculate total points for the week
+            const weekHistory = history.filter(h => {
+                return h.date >= weekStartStr && h.date <= weekEndStr && h.type === 'earned';
+            });
+            const weekTotalPoints = weekHistory.reduce((sum, h) => sum + h.points, 0);
+
+            if (weekTotalPoints > maxWeekPoints) maxWeekPoints = weekTotalPoints;
+            weeklyChartData.push({ weekStartStr, weekEndStr, weekLabel, weekTotalPoints, isCurrentWeek });
+        }
+        // Calculate bar heights as percentages (min 8% if has points, to show small bars)
+        weeklyChartData.forEach(d => {
+            d.barHeight = maxWeekPoints > 0 ? Math.max(d.weekTotalPoints > 0 ? 8 : 0, Math.round((d.weekTotalPoints / maxWeekPoints) * 100)) : 0;
+        });
+
         // Calculate streak bonus info
         let streakBonusText = '';
         if (streak >= 7) {
-            streakBonusText = '+10% bonus on all activities!';
+            streakBonusText = isYoungKid ? '+10% bonus! 🔥🔥' : '+10% bonus on all activities!';
         } else if (streak >= 3) {
-            streakBonusText = '+5% bonus on all activities!';
+            streakBonusText = isYoungKid ? '+5% bonus! 🔥' : '+5% bonus on all activities!';
         } else if (streak > 0) {
             streakBonusText = `${3 - streak} more day${3 - streak > 1 ? 's' : ''} until +5% bonus!`;
         }
 
-        main.innerHTML = `
-            <div class="points-history-page">
-                <div class="page-header">
-                    <button class="btn btn--ghost" id="backBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
-                    <h2 class="page-title">${isTeen ? '🪙 Coins' : '⭐ Points'}</h2>
-                    <div class="page-header__actions">
-                        <button class="btn btn--sm btn--secondary" id="addBonusBtn" title="Add Bonus ${isTeen ? 'Coins' : 'Points'} (Admin)">
-                            <i data-lucide="plus-circle"></i>
-                            Add ${isTeen ? 'Coins' : 'Points'}
-                        </button>
-                        <div class="page-header__balance">
-                            <span class="page-header__balance-value">${widgetData.balance || 0}</span>
-                            <span class="page-header__balance-label">${isTeen ? 'coins' : 'pts'}</span>
-                        </div>
-                    </div>
-                </div>
-
+        return `
+            <div class="points-stats-tab">
                 <!-- Level & XP Section -->
-                <div class="level-section">
-                    <div class="level-section__badge" style="--level-color: ${levelInfo.rankColor}">
-                        <div class="level-section__icon">
-                            <i data-lucide="${levelInfo.rankIcon}"></i>
+                <div class="points-stats-section points-stats-section--level">
+                    <h3 class="points-stats-section__title">${isYoungKid ? '🏆 ' : ''}${isTeen ? 'Rank Progress' : 'Level Progress'}</h3>
+                    <div class="level-section">
+                        <div class="level-section__badge" style="--level-color: ${levelInfo.rankColor}">
+                            <div class="level-section__icon">
+                                <i data-lucide="${levelInfo.rankIcon}"></i>
+                            </div>
+                            <div class="level-section__info">
+                                <span class="level-section__level">${isTeen ? 'Rank' : 'Level'} ${levelInfo.level}</span>
+                                <span class="level-section__rank">${levelInfo.rankName}</span>
+                            </div>
                         </div>
-                        <div class="level-section__info">
-                            <span class="level-section__level">${isTeen ? 'Rank' : 'Level'} ${levelInfo.level}</span>
-                            <span class="level-section__rank">${levelInfo.rankName}</span>
-                        </div>
-                    </div>
-                    <div class="level-section__xp">
-                        <div class="level-section__xp-bar">
-                            <div class="level-section__xp-fill" style="width: ${levelInfo.progress}%; background-color: ${levelInfo.rankColor}"></div>
-                        </div>
-                        <div class="level-section__xp-text">
-                            <span>${levelInfo.currentXP} / ${levelInfo.xpToNextLevel} XP to ${isTeen ? 'Rank' : 'Level'} ${levelInfo.level + 1}</span>
-                            <span class="level-section__total-xp">${totalXP} Total XP</span>
+                        <div class="level-section__xp">
+                            <div class="level-section__xp-bar">
+                                <div class="level-section__xp-fill" style="width: ${levelInfo.progress}%; background-color: ${levelInfo.rankColor}"></div>
+                            </div>
+                            <div class="level-section__xp-text">
+                                <span>${levelInfo.currentXP} / ${levelInfo.xpToNextLevel} XP to ${isTeen ? 'Rank' : 'Level'} ${levelInfo.level + 1}</span>
+                                <span class="level-section__total-xp">${totalXP} Total XP</span>
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Streak Section -->
-                <div class="streak-section">
-                    <div class="streak-section__header">
-                        <div class="streak-section__flame ${streak >= 3 ? 'streak-section__flame--active' : ''} ${streak >= 7 ? 'streak-section__flame--super' : ''}">
-                            🔥
-                        </div>
-                        <div class="streak-section__info">
-                            <span class="streak-section__count">${streak}</span>
-                            <span class="streak-section__label">Day Streak</span>
-                        </div>
-                        ${streakBonusText ? `<span class="streak-section__bonus">${streakBonusText}</span>` : ''}
-                    </div>
-                    <div class="streak-calendar">
-                        ${streakCalendar.map(day => `
-                            <div class="streak-calendar__day ${day.hasActivity ? 'streak-calendar__day--active' : ''} ${day.isToday ? 'streak-calendar__day--today' : ''}">
-                                <span class="streak-calendar__day-name">${day.dayName}</span>
-                                <span class="streak-calendar__day-icon">${day.hasActivity ? '✓' : '○'}</span>
+                <div class="points-stats-section points-stats-section--streak">
+                    <h3 class="points-stats-section__title">${isYoungKid ? '🔥 ' : ''}Day Streak</h3>
+                    <div class="streak-section">
+                        <div class="streak-section__header">
+                            <div class="streak-section__flame ${streak >= 3 ? 'streak-section__flame--active' : ''} ${streak >= 7 ? 'streak-section__flame--super' : ''}">
+                                🔥
                             </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- Stats Toggle Tabs -->
-                <div class="history-tabs">
-                    <button class="history-tab history-tab--active" data-tab="history">
-                        <i data-lucide="list"></i>
-                        History
-                    </button>
-                    <button class="history-tab" data-tab="calendar">
-                        <i data-lucide="calendar"></i>
-                        Calendar
-                    </button>
-                    <button class="history-tab" data-tab="stats">
-                        <i data-lucide="bar-chart-3"></i>
-                        Stats
-                    </button>
-                </div>
-
-                <!-- History View -->
-                <div class="history-panel history-panel--history" id="panelHistory">
-                    ${sortedDates.length === 0 ? `
-                        <div class="points-empty-history">
-                            <span class="points-empty-history__emoji">${isTeen ? '🪙' : '🌟'}</span>
-                            <p>No ${isTeen ? 'coins' : 'points'} history yet!</p>
-                            <p class="points-empty-history__hint">Complete activities to start earning ${isTeen ? 'coins' : 'points'}.</p>
-                        </div>
-                    ` : sortedDates.slice(0, 14).map(date => `
-                        <div class="points-day">
-                            <div class="points-day__header">
-                                <span class="points-day__date">${getDateLabel(date)}</span>
-                                <span class="points-day__stats">
-                                    ${groupedHistory[date].filter(e => e.type === 'earned' || e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} earned
-                                    ${groupedHistory[date].filter(e => e.type === 'bonus').length > 0 ?
-                                        ` (${groupedHistory[date].filter(e => e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} bonus)` : ''}
-                                    ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
-                                        ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
-                                </span>
+                            <div class="streak-section__info">
+                                <span class="streak-section__count">${streak}</span>
+                                <span class="streak-section__label">Day Streak</span>
                             </div>
-                            <div class="points-day__activities">
-                                ${groupedHistory[date].map(entry => `
-                                    <div class="points-day__activity points-day__activity--${entry.type}">
-                                        <span class="points-day__icon">
-                                            ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : entry.type === 'deduction' ? '⚠️' : '⭐'}
-                                        </span>
-                                        <span class="points-day__name">${entry.activityName}${(entry.type === 'bonus' || entry.type === 'deduction') && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
-                                        <span class="points-day__points points-day__points--${entry.type}">
-                                            ${entry.type === 'spent' || entry.type === 'deduction' ? '-' : '+'}${entry.points}
-                                        </span>
-                                    </div>
-                                `).join('')}
-                            </div>
+                            ${streakBonusText ? `<span class="streak-section__bonus">${streakBonusText}</span>` : ''}
                         </div>
-                    `).join('')}
-                </div>
-
-                <!-- Calendar View -->
-                <div class="history-panel history-panel--calendar" id="panelCalendar" style="display: none;">
-                    <div class="points-calendar">
-                        <div class="points-calendar__header">
-                            <h3 class="points-calendar__month">${monthName}</h3>
-                        </div>
-                        <div class="points-calendar__weekdays">
-                            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-                        </div>
-                        <div class="points-calendar__grid">
-                            ${calendarDays.map(d => {
-                                if (d.empty) return '<div class="points-calendar__day points-calendar__day--empty"></div>';
-                                return `
-                                    <div class="points-calendar__day ${d.isToday ? 'points-calendar__day--today' : ''} ${d.isFuture ? 'points-calendar__day--future' : ''} ${d.activityCount > 0 ? `points-calendar__day--level-${d.intensity}` : ''}"
-                                         data-date="${d.dateStr}"
-                                         title="${d.activityCount} activities, ${d.dayPoints} pts">
-                                        <span class="points-calendar__day-number">${d.day}</span>
-                                        ${d.activityCount > 0 ? `<span class="points-calendar__day-dots">${'●'.repeat(Math.min(3, d.activityCount))}</span>` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                        <div class="points-calendar__legend">
-                            <span class="points-calendar__legend-label">Less</span>
-                            <span class="points-calendar__legend-box points-calendar__legend-box--0"></span>
-                            <span class="points-calendar__legend-box points-calendar__legend-box--1"></span>
-                            <span class="points-calendar__legend-box points-calendar__legend-box--2"></span>
-                            <span class="points-calendar__legend-box points-calendar__legend-box--3"></span>
-                            <span class="points-calendar__legend-box points-calendar__legend-box--4"></span>
-                            <span class="points-calendar__legend-label">More</span>
-                        </div>
-                    </div>
-
-                    <!-- Day Details (shown when clicking a date) -->
-                    <div class="points-calendar__details" id="calendarDetails" style="display: none;">
-                        <div class="points-calendar__details-header">
-                            <span id="calendarDetailsDate"></span>
-                            <button class="btn btn--icon btn--ghost btn--sm" id="closeCalendarDetails">
-                                <i data-lucide="x"></i>
-                            </button>
-                        </div>
-                        <div class="points-calendar__details-body" id="calendarDetailsBody"></div>
-                    </div>
-                </div>
-
-                <!-- Stats View -->
-                <div class="history-panel history-panel--stats" id="panelStats" style="display: none;">
-                    <div class="stats-grid">
-                        <div class="stats-card stats-card--primary">
-                            <div class="stats-card__icon"><i data-lucide="trending-up"></i></div>
-                            <div class="stats-card__value">${avgPointsPerDay}</div>
-                            <div class="stats-card__label">Avg Points/Day</div>
-                        </div>
-                        <div class="stats-card">
-                            <div class="stats-card__icon"><i data-lucide="calendar-check"></i></div>
-                            <div class="stats-card__value">${monthDays}</div>
-                            <div class="stats-card__label">Active Days (Month)</div>
-                        </div>
-                        <div class="stats-card">
-                            <div class="stats-card__icon"><i data-lucide="check-circle"></i></div>
-                            <div class="stats-card__value">${monthActivities}</div>
-                            <div class="stats-card__label">Activities (Month)</div>
-                        </div>
-                        <div class="stats-card">
-                            <div class="stats-card__icon"><i data-lucide="star"></i></div>
-                            <div class="stats-card__value">${monthPoints}</div>
-                            <div class="stats-card__label">Points (Month)</div>
-                        </div>
-                    </div>
-
-                    <div class="stats-section">
-                        <h4 class="stats-section__title">
-                            <i data-lucide="trophy"></i>
-                            Top Activities
-                        </h4>
-                        <div class="top-activities">
-                            ${topActivities.length === 0 ? `
-                                <p class="top-activities__empty">Complete some activities to see your favorites!</p>
-                            ` : topActivities.map((activity, i) => `
-                                <div class="top-activity">
-                                    <span class="top-activity__rank">#${i + 1}</span>
-                                    <span class="top-activity__name">${activity[0]}</span>
-                                    <span class="top-activity__count">${activity[1]}x</span>
+                        <div class="streak-calendar">
+                            ${streakCalendar.map(day => `
+                                <div class="streak-calendar__day ${day.hasActivity ? 'streak-calendar__day--active' : ''} ${day.isToday ? 'streak-calendar__day--today' : ''}">
+                                    <span class="streak-calendar__day-name">${day.dayName}</span>
+                                    <span class="streak-calendar__day-icon">${day.hasActivity ? '✓' : '○'}</span>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
+                </div>
 
-                    <div class="stats-section">
-                        <h4 class="stats-section__title">
-                            <i data-lucide="bar-chart-3"></i>
-                            This Week vs Last Week
-                        </h4>
-                        <div class="week-comparison">
-                            <div class="week-comparison__item">
-                                <span class="week-comparison__label">This Week</span>
-                                <span class="week-comparison__value">${weekPoints} pts</span>
-                                <span class="week-comparison__activities">${weekActivities} activities</span>
-                            </div>
-                            <div class="week-comparison__item week-comparison__item--last">
-                                <span class="week-comparison__label">Last Week</span>
-                                <span class="week-comparison__value">${calculateLastWeekPoints(history)} pts</span>
-                                <span class="week-comparison__activities">${calculateLastWeekActivities(history)} activities</span>
-                            </div>
+                <!-- Stats Grid -->
+                <div class="points-stats-section">
+                    <h3 class="points-stats-section__title">${isYoungKid ? '📊 ' : ''}This Month</h3>
+                    <div class="stats-grid stats-grid--compact">
+                        <div class="stats-card">
+                            <div class="stats-card__icon">${isYoungKid ? '📈' : '<i data-lucide="trending-up"></i>'}</div>
+                            <div class="stats-card__value">${avgPointsPerDay}</div>
+                            <div class="stats-card__label">Avg/Day</div>
                         </div>
+                        <div class="stats-card">
+                            <div class="stats-card__icon">${isYoungKid ? '📅' : '<i data-lucide="calendar-check"></i>'}</div>
+                            <div class="stats-card__value">${monthDays}</div>
+                            <div class="stats-card__label">Active Days</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-card__icon">${isYoungKid ? '✅' : '<i data-lucide="check-circle"></i>'}</div>
+                            <div class="stats-card__value">${monthActivities}</div>
+                            <div class="stats-card__label">Activities</div>
+                        </div>
+                        <div class="stats-card">
+                            <div class="stats-card__icon">${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}</div>
+                            <div class="stats-card__value">${monthPoints}</div>
+                            <div class="stats-card__label">Earned</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Progress Chart (8 weeks / 2 months) -->
+                <div class="points-stats-section">
+                    <h3 class="points-stats-section__title">${isYoungKid ? '📈 ' : ''}8-Week Progress</h3>
+                    <div class="points-chart points-chart--weekly">
+                        <div class="points-chart__bars">
+                            ${weeklyChartData.map(d => `
+                                <div class="points-chart__bar-container">
+                                    <div class="points-chart__bar ${d.isCurrentWeek ? 'points-chart__bar--today' : ''} ${d.weekTotalPoints > 0 ? 'points-chart__bar--active' : ''}"
+                                         style="height: ${d.barHeight}%"
+                                         title="${d.weekTotalPoints} pts">
+                                        ${d.weekTotalPoints > 0 ? `<span class="points-chart__bar-value">${d.weekTotalPoints}</span>` : ''}
+                                    </div>
+                                    <span class="points-chart__bar-label ${d.isCurrentWeek ? 'points-chart__bar-label--today' : ''}">${d.weekLabel}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                        <div class="points-chart__summary">
+                            <span class="points-chart__total">${isYoungKid ? '⭐ ' : ''}${weekPoints} pts this week</span>
+                            <span class="points-chart__avg">${isYoungKid ? '📊 ' : ''}Total: ${weeklyChartData.reduce((sum, d) => sum + d.weekTotalPoints, 0)} pts in 8 weeks</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Top Activities -->
+                <div class="points-stats-section">
+                    <h3 class="points-stats-section__title">${isYoungKid ? '🏆 ' : ''}Top Activities</h3>
+                    <div class="top-activities">
+                        ${topActivities.length === 0 ? `
+                            <p class="top-activities__empty">${isYoungKid ? 'Complete activities to see your favorites!' : 'Complete some activities to see your favorites!'}</p>
+                        ` : topActivities.map((activity, i) => `
+                            <div class="top-activity">
+                                <span class="top-activity__rank">#${i + 1}</span>
+                                <span class="top-activity__name">${activity[0]}</span>
+                                <span class="top-activity__count">${activity[1]}x</span>
+                            </div>
+                        `).join('')}
                     </div>
                 </div>
             </div>
         `;
+    }
 
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // Scroll history panel to top to show today's points first
-        setTimeout(() => {
-            const historyPanel = document.getElementById('panelHistory');
-            if (historyPanel) historyPanel.scrollTop = 0;
-            // Also scroll the main content to top
-            const mainContent = document.getElementById('mainContent');
-            if (mainContent) mainContent.scrollTop = 0;
-        }, 0);
-
-        // Bind back button
-        document.getElementById('backBtn')?.addEventListener('click', () => {
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, widgetData, history, tab) {
+        // Back button
+        container.querySelector('#backToMemberBtn')?.addEventListener('click', () => {
             if (typeof Tabs !== 'undefined' && Tabs.switchTo) {
                 Tabs.switchTo(memberId);
             }
         });
 
-        // Bind add bonus button (admin only)
-        document.getElementById('addBonusBtn')?.addEventListener('click', async () => {
+        // Add bonus button (admin only)
+        container.querySelector('#addBonusBtn')?.addEventListener('click', async () => {
             const verified = await PIN.verify();
             if (verified) {
                 showAddBonusModal(memberId);
             }
         });
 
-        // Bind tab switching
-        document.querySelectorAll('.history-tab').forEach(tab => {
-            tab.addEventListener('click', () => {
-                const tabName = tab.dataset.tab;
-
-                // Update active tab
-                document.querySelectorAll('.history-tab').forEach(t => t.classList.remove('history-tab--active'));
-                tab.classList.add('history-tab--active');
-
-                // Show corresponding panel
-                document.querySelectorAll('.history-panel').forEach(panel => panel.style.display = 'none');
-                document.getElementById(`panel${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).style.display = 'block';
+        // Tab switching
+        container.querySelectorAll('.kid-page__tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                const tabName = tabBtn.dataset.tab;
+                currentFullPageTab = tabName;
+                renderFullPage(container, memberId, member, tabName);
             });
         });
 
-        // Bind calendar day clicks
-        document.querySelectorAll('.points-calendar__day[data-date]').forEach(dayEl => {
-            dayEl.addEventListener('click', () => {
-                // Don't allow clicking on future days or empty cells
-                if (dayEl.classList.contains('points-calendar__day--future') ||
-                    dayEl.classList.contains('points-calendar__day--empty')) {
-                    return;
-                }
+        // Calendar day clicks (only if on calendar tab)
+        if (tab === 'calendar') {
+            const isTeen = member && member.type === 'teen';
+            bindCalendarDayClicks(container, widgetData, history, isTeen);
+        }
+    }
 
-                const dateStr = dayEl.dataset.date;
-                const dayActivities = groupedHistory[dateStr] || [];
+    /**
+     * Bind calendar day click events
+     */
+    function bindCalendarDayClicks(container, widgetData, history, isTeen) {
+        const pointsLabel = isTeen ? 'coins' : 'pts';
 
-                const detailsContainer = document.getElementById('calendarDetails');
-                const detailsDate = document.getElementById('calendarDetailsDate');
-                const detailsBody = document.getElementById('calendarDetailsBody');
+        // Group history by date
+        const groupedHistory = {};
+        history.forEach(entry => {
+            if (!groupedHistory[entry.date]) {
+                groupedHistory[entry.date] = [];
+            }
+            groupedHistory[entry.date].push(entry);
+        });
 
-                // Format the date for display
-                const clickedDate = new Date(dateStr + 'T00:00:00');
-                const formattedDate = clickedDate.toLocaleDateString('en-US', {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric'
-                });
+        const detailsContainer = container.querySelector('#calendarDetails');
+        const detailsDate = container.querySelector('#calendarDetailsDate');
+        const detailsBody = container.querySelector('#calendarDetailsBody');
 
-                if (dayActivities.length === 0) {
-                    detailsDate.textContent = formattedDate;
-                    detailsBody.innerHTML = '<p class="points-calendar__no-activity">No activities on this day</p>';
-                } else {
-                    const earned = dayActivities.filter(a => a.type === 'earned');
+        // Make days with activity clickable
+        container.querySelectorAll('.points-calendar__day[data-date]').forEach(dayEl => {
+            const dateStr = dayEl.dataset.date;
+            const dayActivities = groupedHistory[dateStr] || [];
+
+            // Only make days with activities clickable
+            if (dayActivities.length > 0 && !dayEl.classList.contains('points-calendar__day--future')) {
+                dayEl.style.cursor = 'pointer';
+                dayEl.addEventListener('click', () => {
+                    // Remove selected state from all days
+                    container.querySelectorAll('.points-calendar__day--selected').forEach(el => {
+                        el.classList.remove('points-calendar__day--selected');
+                    });
+                    // Add selected state to clicked day
+                    dayEl.classList.add('points-calendar__day--selected');
+
+                    // Format the date for display
+                    const clickedDate = new Date(dateStr + 'T00:00:00');
+                    const formattedDate = clickedDate.toLocaleDateString('en-US', {
+                        weekday: 'long',
+                        month: 'short',
+                        day: 'numeric'
+                    });
+
+                    const earned = dayActivities.filter(a => a.type === 'earned' || a.type === 'bonus');
                     const spent = dayActivities.filter(a => a.type === 'spent');
+                    const deducted = dayActivities.filter(a => a.type === 'deduction');
                     const totalEarned = earned.reduce((s, a) => s + a.points, 0);
                     const totalSpent = spent.reduce((s, a) => s + a.points, 0);
+                    const totalDeducted = deducted.reduce((s, a) => s + a.points, 0);
 
-                    detailsDate.textContent = formattedDate;
+                    detailsDate.textContent = `📅 ${formattedDate}`;
                     detailsBody.innerHTML = `
-                        <div class="points-calendar__day-stats">
-                            <span>${earned.length} ${earned.length === 1 ? 'activity' : 'activities'}</span>
-                            <span>${totalEarned} pts earned</span>
-                            ${spent.length > 0 ? `<span>${totalSpent} pts spent</span>` : ''}
+                        <div class="points-calendar__day-summary">
+                            <span>⭐ ${earned.length} ${earned.length === 1 ? 'activity' : 'activities'}</span>
+                            <span>•</span>
+                            <span class="text-success">+${totalEarned} ${pointsLabel}</span>
+                            ${spent.length > 0 ? `<span>•</span><span class="text-danger">-${totalSpent} spent</span>` : ''}
+                            ${deducted.length > 0 ? `<span>•</span><span class="text-warning">-${totalDeducted} deducted</span>` : ''}
                         </div>
                         <div class="points-calendar__day-list">
-                            ${dayActivities.map(a => `
-                                <div class="points-calendar__day-item">
-                                    <span>${a.type === 'spent' ? '🎁' : '⭐'} ${a.activityName}</span>
-                                    <span class="${a.type === 'spent' ? 'text-danger' : 'text-success'}">${a.type === 'spent' ? '-' : '+'}${a.points}</span>
+                            ${dayActivities.map(entry => `
+                                <div class="points-calendar__day-item points-calendar__day-item--${entry.type}">
+                                    <span class="points-calendar__day-item-icon">
+                                        ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : entry.type === 'deduction' ? '⚠️' : '⭐'}
+                                    </span>
+                                    <span class="points-calendar__day-item-name">
+                                        ${entry.activityName}
+                                        ${entry.reason ? `<span class="points-calendar__day-item-reason">(${entry.reason})</span>` : ''}
+                                    </span>
+                                    <span class="points-calendar__day-item-points ${entry.type === 'spent' || entry.type === 'deduction' ? 'text-danger' : 'text-success'}">
+                                        ${entry.type === 'spent' || entry.type === 'deduction' ? '-' : '+'}${entry.points}
+                                    </span>
                                 </div>
                             `).join('')}
                         </div>
                     `;
-                }
 
-                detailsContainer.style.display = 'block';
+                    detailsContainer.style.display = 'block';
 
-                if (typeof lucide !== 'undefined') {
-                    lucide.createIcons();
-                }
-            });
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+
+                    // Auto-scroll to the details section
+                    setTimeout(() => {
+                        detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                });
+            }
         });
 
-        // Close calendar details
-        document.getElementById('closeCalendarDetails')?.addEventListener('click', () => {
-            document.getElementById('calendarDetails').style.display = 'none';
+        // Close button for details
+        container.querySelector('#closeCalendarDetails')?.addEventListener('click', () => {
+            detailsContainer.style.display = 'none';
+            // Remove selected state from all days
+            container.querySelectorAll('.points-calendar__day--selected').forEach(el => {
+                el.classList.remove('points-calendar__day--selected');
+            });
         });
     }
 
@@ -2035,7 +2240,8 @@ const Points = (function() {
         renderWidget,
         getWeeklySummary,
         completeActivity,
-        showHistoryPage,
+        showFullPage,
+        showHistoryPage, // Legacy alias for backwards compatibility
         ACTIVITY_CATEGORIES,
         ACTIVITY_ICONS
     };

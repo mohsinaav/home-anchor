@@ -665,6 +665,17 @@ const Meals = (function() {
                     </div>
                     <p class="form-hint">Press Enter or click a suggestion to add multiple items</p>
                 </div>
+                ${kidsMenuEnabled ? `
+                    <div class="form-group">
+                        <label class="form-checkbox apply-both-checkbox">
+                            <input type="checkbox" id="applyToBothCheckbox">
+                            <span class="form-checkbox__label">
+                                <i data-lucide="users"></i>
+                                Apply to both Adult & Kids
+                            </span>
+                        </label>
+                    </div>
+                ` : ''}
                 ${renderRecipeSuggestions(memberId, mealType)}
                 <div class="form-group">
                     <label class="form-label">Quick picks</label>
@@ -800,9 +811,20 @@ const Meals = (function() {
             if (remaining && !mealItems.includes(remaining)) {
                 mealItems.push(remaining);
             }
-            saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, currentVariant);
+
+            // Check if "Apply to both" checkbox is checked
+            const applyToBoth = document.getElementById('applyToBothCheckbox')?.checked;
+
+            if (applyToBoth && kidsMenuEnabled) {
+                // Save to both adult and kids
+                saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, 'adult');
+                saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, 'kids');
+                Toast.success('Meal saved to both Adults and Kids!');
+            } else {
+                saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, currentVariant);
+                Toast.success('Meal saved!');
+            }
             Modal.close();
-            Toast.success('Meal saved!');
         });
 
         // Enter to add item (only if no autocomplete item selected)
@@ -1934,7 +1956,8 @@ const Meals = (function() {
                 // Update UI immediately - support both desktop (planner-cell) and mobile (accordion-meal)
                 const cell = btn.closest('.planner-cell');
                 const accordionMeal = btn.closest('.accordion-meal');
-                const icon = btn.querySelector('i');
+                // Lucide replaces <i> with <svg>, so check for both
+                const icon = btn.querySelector('svg') || btn.querySelector('i');
 
                 if (cell) {
                     // Desktop table view
@@ -1950,13 +1973,16 @@ const Meals = (function() {
                     itemsContainer?.classList.toggle('accordion-meal__items--done', isCompleted);
                 }
 
-                // Update icon - use direct SVG update for better mobile performance
+                // Update icon - replace the SVG element entirely for immediate visual feedback
                 if (icon) {
                     const newIconName = isCompleted ? 'check-circle-2' : 'circle';
-                    icon.setAttribute('data-lucide', newIconName);
-                    // Only update this specific icon, not all icons on page
+                    // Create a new icon element since Lucide replaces <i> with <svg>
+                    const newIcon = document.createElement('i');
+                    newIcon.setAttribute('data-lucide', newIconName);
+                    icon.replaceWith(newIcon);
+                    // Render the new icon
                     if (typeof lucide !== 'undefined') {
-                        lucide.createIcons({ nodes: [icon] });
+                        lucide.createIcons({ nodes: [newIcon] });
                     }
                 }
 

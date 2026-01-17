@@ -1,9 +1,13 @@
 /**
  * Chores Feature - Random Chore Picker
  * Admin adds a pool of chores, and each day the widget picks random chores for the kid
+ * Full page with tabs: Today, History, Pool
  */
 
 const Chores = (function() {
+    // Track current tab in full page view
+    let currentTab = 'today';
+
     // Default chore pool
     const DEFAULT_CHORES = [
         { id: 'chore-1', name: 'Make bed', icon: 'bed', points: 5 },
@@ -175,9 +179,9 @@ const Chores = (function() {
                 ` : ''}
 
                 <div class="chores-widget__footer">
-                    <button class="btn btn--sm btn--ghost" data-action="view-chores" data-member-id="${memberId}">
-                        <i data-lucide="list"></i>
-                        View Chores
+                    <button class="btn btn--sm btn--ghost" data-action="view-all" data-member-id="${memberId}">
+                        <i data-lucide="maximize-2"></i>
+                        View All
                     </button>
                     <button class="btn btn--sm btn--ghost" data-action="manage-chores" data-member-id="${memberId}">
                         <i data-lucide="settings"></i>
@@ -218,9 +222,9 @@ const Chores = (function() {
             });
         });
 
-        // View all chores
-        container.querySelector('[data-action="view-chores"]')?.addEventListener('click', () => {
-            showViewChoresModal(memberId);
+        // View all - opens full page
+        container.querySelector('[data-action="view-all"]')?.addEventListener('click', () => {
+            showFullPage(memberId);
         });
 
         // Manage chores
@@ -348,6 +352,484 @@ const Chores = (function() {
                 lucide.createIcons();
             }
         }
+    }
+
+    // =========================================================================
+    // FULL PAGE VIEW
+    // =========================================================================
+
+    /**
+     * Show full page view
+     */
+    function showFullPage(memberId) {
+        const main = document.getElementById('mainContent');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        currentTab = 'today';
+        renderFullPage(main, memberId, member, currentTab);
+    }
+
+    /**
+     * Render full page with tabs
+     */
+    function renderFullPage(container, memberId, member, tab = 'today') {
+        const widgetData = getWidgetData(memberId);
+        const today = DateUtils.today();
+        const todaysChores = getTodaysChores(memberId, widgetData);
+
+        const completedIds = (widgetData.completedToday || [])
+            .filter(c => c.date === today)
+            .map(c => c.choreId);
+
+        const completedCount = todaysChores.filter(c => completedIds.includes(c.id)).length;
+        const totalToday = todaysChores.length;
+        const poolSize = (widgetData.chorePool || []).length;
+
+        // Calculate total points earned today
+        const pointsEarnedToday = todaysChores
+            .filter(c => completedIds.includes(c.id))
+            .reduce((sum, c) => sum + c.points, 0);
+
+        // Get age-adaptive content
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const colors = useKidTheme ? KidTheme.getColors('chores') : { gradient: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 50%, #6EE7B7 100%)' };
+
+        // Get tab content
+        const tabContent = renderTabContent(tab, memberId, member, widgetData, todaysChores, completedIds);
+
+        // Define tabs
+        const tabs = [
+            { id: 'today', label: 'Today', icon: 'calendar-check', emoji: '🧹' },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📅' },
+            { id: 'pool', label: isYoungKid ? 'All Chores' : 'Chore Pool', icon: 'list', emoji: '📋' }
+        ];
+
+        container.innerHTML = `
+            <div class="kid-page kid-page--chores ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
+                            ${isYoungKid ? '🧹 My Chores!' : 'Chores'}
+                        </h1>
+                    </div>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${completedCount}/${totalToday}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '✅ Done Today' : 'Done Today'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${pointsEarnedToday}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '⭐ Points' : 'Points Earned'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${poolSize}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '📋 In Pool' : 'Chore Pool'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
+                            ${t.label}
+                        </button>
+                    `).join('')}
+                </div>
+
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        bindFullPageEvents(container, memberId, member, widgetData, tab, todaysChores, completedIds);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderTabContent(tab, memberId, member, widgetData, todaysChores, completedIds) {
+        switch (tab) {
+            case 'today':
+                return renderTodayTab(memberId, member, widgetData, todaysChores, completedIds);
+            case 'history':
+                return renderHistoryTab(memberId, member, widgetData);
+            case 'pool':
+                return renderPoolTab(memberId, member, widgetData);
+            default:
+                return renderTodayTab(memberId, member, widgetData, todaysChores, completedIds);
+        }
+    }
+
+    /**
+     * Render Today tab content
+     */
+    function renderTodayTab(memberId, member, widgetData, todaysChores, completedIds) {
+        const pendingChores = todaysChores.filter(c => !completedIds.includes(c.id));
+        const completedChores = todaysChores.filter(c => completedIds.includes(c.id));
+        const allDone = pendingChores.length === 0 && todaysChores.length > 0;
+
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        if (todaysChores.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">🧹</div>
+                    <p>${isYoungKid ? 'No chores today! Ask a parent to add some!' : 'No chores assigned for today.'}</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="chores-today-page">
+                ${allDone ? `
+                    <div class="chores-today-celebration">
+                        <div class="chores-today-celebration__icon">🎉</div>
+                        <h2>${isYoungKid ? 'All Done! Great job!' : 'All Chores Complete!'}</h2>
+                        <p>${isYoungKid ? 'You did it! ⭐' : 'Well done completing all your chores today!'}</p>
+                    </div>
+                ` : ''}
+
+                ${pendingChores.length > 0 ? `
+                    <div class="chores-today-section">
+                        <h3>${isYoungKid ? '📝 To Do' : 'Pending Chores'}</h3>
+                        <div class="chores-today-list">
+                            ${pendingChores.map(chore => `
+                                <div class="chores-today-card" data-chore-id="${chore.id}">
+                                    <div class="chores-today-card__icon">
+                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                    </div>
+                                    <div class="chores-today-card__info">
+                                        <span class="chores-today-card__name">${chore.name}</span>
+                                        <span class="chores-today-card__points">
+                                            ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                            +${chore.points} ${isYoungKid ? '' : 'points'}
+                                        </span>
+                                    </div>
+                                    <button class="btn btn--primary" data-complete-chore="${chore.id}">
+                                        ${isYoungKid ? 'Done! ✓' : 'Complete'}
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+
+                ${completedChores.length > 0 ? `
+                    <div class="chores-today-section chores-today-section--completed">
+                        <h3>${isYoungKid ? '✅ Completed!' : 'Completed'}</h3>
+                        <div class="chores-today-list">
+                            ${completedChores.map(chore => `
+                                <div class="chores-today-card chores-today-card--completed">
+                                    <div class="chores-today-card__icon">
+                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                    </div>
+                                    <div class="chores-today-card__info">
+                                        <span class="chores-today-card__name">${chore.name}</span>
+                                        <span class="chores-today-card__points chores-today-card__points--earned">
+                                            ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                            +${chore.points}
+                                        </span>
+                                    </div>
+                                    <button class="btn btn--ghost btn--sm" data-reset-chore="${chore.id}" title="Undo">
+                                        <i data-lucide="rotate-ccw"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Render History tab content - shows completed chores by date
+     */
+    function renderHistoryTab(memberId, member, widgetData) {
+        const completed = widgetData.completedToday || [];
+        const dailyChores = widgetData.dailyChores || {};
+        const pool = widgetData.chorePool || [];
+
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        // Group by date
+        const groupedByDate = {};
+        completed.forEach(c => {
+            if (!groupedByDate[c.date]) {
+                groupedByDate[c.date] = [];
+            }
+            // Find chore details from daily chores or pool
+            const dayChores = dailyChores[c.date] || [];
+            const chore = dayChores.find(ch => ch.id === c.choreId) || pool.find(ch => ch.id === c.choreId);
+            if (chore) {
+                groupedByDate[c.date].push(chore);
+            }
+        });
+
+        const sortedDates = Object.keys(groupedByDate).sort().reverse().slice(0, 14);
+
+        if (sortedDates.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">📅</div>
+                    <p>${isYoungKid ? 'No history yet! Complete some chores!' : 'No chore history yet.'}</p>
+                </div>
+            `;
+        }
+
+        const today = DateUtils.today();
+        const yesterday = DateUtils.formatISO(DateUtils.addDays(new Date(), -1));
+
+        const getDateLabel = (date) => {
+            if (date === today) return isYoungKid ? 'Today! 🌟' : 'Today';
+            if (date === yesterday) return isYoungKid ? 'Yesterday' : 'Yesterday';
+            return new Date(date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+        };
+
+        // Calculate total points
+        const totalPoints = sortedDates.reduce((sum, date) => {
+            return sum + groupedByDate[date].reduce((s, c) => s + (c.points || 0), 0);
+        }, 0);
+
+        return `
+            <div class="chores-history-page">
+                <div class="chores-history-summary">
+                    <div class="chores-history-summary__stat">
+                        ${isYoungKid ? '✅' : '<i data-lucide="check-circle"></i>'}
+                        <span>${completed.length} ${isYoungKid ? 'chores done!' : 'chores completed'}</span>
+                    </div>
+                    <div class="chores-history-summary__stat">
+                        ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                        <span>${totalPoints} ${isYoungKid ? 'points earned!' : 'points earned'}</span>
+                    </div>
+                </div>
+
+                <div class="chores-history-list">
+                    ${sortedDates.map(date => {
+                        const dayChores = groupedByDate[date];
+                        const dayPoints = dayChores.reduce((s, c) => s + (c.points || 0), 0);
+                        return `
+                            <div class="chores-history-day">
+                                <div class="chores-history-day__header">
+                                    <span class="chores-history-day__date">${getDateLabel(date)}</span>
+                                    <span class="chores-history-day__points">
+                                        ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                        +${dayPoints}
+                                    </span>
+                                </div>
+                                <div class="chores-history-day__chores">
+                                    ${dayChores.map(chore => `
+                                        <div class="chores-history-chore">
+                                            <i data-lucide="${chore.icon || 'check'}"></i>
+                                            <span>${chore.name}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Pool tab content - shows all chores in the pool
+     */
+    function renderPoolTab(memberId, member, widgetData) {
+        const pool = widgetData.chorePool || [];
+        const choresPerDay = widgetData.choresPerDay || 2;
+
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        if (pool.length === 0) {
+            return `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">📋</div>
+                    <p>${isYoungKid ? 'No chores in the pool! Ask a parent to add some!' : 'No chores in the pool yet.'}</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="chores-pool-page">
+                <div class="chores-pool-info">
+                    <div class="chores-pool-info__card">
+                        ${isYoungKid ? '🔄' : '<i data-lucide="shuffle"></i>'}
+                        <div>
+                            <strong>${choresPerDay} ${isYoungKid ? 'chores' : 'chores per day'}</strong>
+                            <span>${isYoungKid ? 'picked daily!' : 'randomly selected'}</span>
+                        </div>
+                    </div>
+                    <div class="chores-pool-info__card">
+                        ${isYoungKid ? '📋' : '<i data-lucide="list"></i>'}
+                        <div>
+                            <strong>${pool.length} ${isYoungKid ? 'total' : 'chores in pool'}</strong>
+                            <span>${isYoungKid ? 'to pick from!' : 'available'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="chores-pool-title">${isYoungKid ? '📋 All My Chores' : 'Chore Pool'}</h3>
+                <div class="chores-pool-list">
+                    ${pool.map(chore => `
+                        <div class="chores-pool-card">
+                            <div class="chores-pool-card__icon">
+                                <i data-lucide="${chore.icon || 'check-square'}"></i>
+                            </div>
+                            <span class="chores-pool-card__name">${chore.name}</span>
+                            <span class="chores-pool-card__points">
+                                ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                ${chore.points}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, widgetData, tab, todaysChores, completedIds) {
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
+            State.emit('tabChanged', memberId);
+        });
+
+        // Tab switching
+        container.querySelectorAll('.kid-page__tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                const tabName = tabBtn.dataset.tab;
+                if (tabName !== currentTab) {
+                    currentTab = tabName;
+                    renderFullPage(container, memberId, member, tabName);
+                }
+            });
+        });
+
+        // Complete chore
+        container.querySelectorAll('[data-complete-chore]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choreId = btn.dataset.completeChore;
+                completeChoreFullPage(memberId, choreId, widgetData, container, member);
+            });
+        });
+
+        // Reset chore
+        container.querySelectorAll('[data-reset-chore]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const choreId = btn.dataset.resetChore;
+                resetChoreFullPage(memberId, choreId, widgetData, container, member);
+            });
+        });
+    }
+
+    /**
+     * Complete chore from full page
+     */
+    function completeChoreFullPage(memberId, choreId, widgetData, container, member) {
+        const today = DateUtils.today();
+        const todaysChores = getTodaysChores(memberId, widgetData);
+        const chore = todaysChores.find(c => c.id === choreId);
+        if (!chore) return;
+
+        // Check if already completed
+        const alreadyCompleted = (widgetData.completedToday || [])
+            .some(c => c.choreId === choreId && c.date === today);
+        if (alreadyCompleted) return;
+
+        // Update completed list
+        widgetData.completedToday = [
+            ...(widgetData.completedToday || []),
+            { choreId, date: today }
+        ];
+
+        Storage.setWidgetData(memberId, 'chores', widgetData);
+
+        // Award points if points widget exists
+        const pointsData = Storage.getWidgetData(memberId, 'points');
+        if (pointsData) {
+            const updatedPointsData = {
+                ...pointsData,
+                balance: (pointsData.balance || 0) + chore.points,
+                history: [
+                    { activityId: choreId, activityName: `Chore: ${chore.name}`, date: today, points: chore.points, type: 'earned' },
+                    ...(pointsData.history || []).slice(0, 99)
+                ]
+            };
+            Storage.setWidgetData(memberId, 'points', updatedPointsData);
+        }
+
+        // Update achievements
+        if (typeof Achievements !== 'undefined') {
+            Achievements.updateStats(memberId, 'activity', 1);
+            Achievements.updateStats(memberId, 'points', chore.points);
+        }
+
+        Toast.success(`+${chore.points} points for ${chore.name}!`);
+        renderFullPage(container, memberId, member, currentTab);
+    }
+
+    /**
+     * Reset chore from full page
+     */
+    function resetChoreFullPage(memberId, choreId, widgetData, container, member) {
+        const today = DateUtils.today();
+        const todaysChores = getTodaysChores(memberId, widgetData);
+        const chore = todaysChores.find(c => c.id === choreId);
+        if (!chore) return;
+
+        // Check if the chore was completed today
+        const completedEntry = (widgetData.completedToday || [])
+            .find(c => c.choreId === choreId && c.date === today);
+        if (!completedEntry) return;
+
+        // Remove from completed list
+        widgetData.completedToday = (widgetData.completedToday || [])
+            .filter(c => !(c.choreId === choreId && c.date === today));
+
+        Storage.setWidgetData(memberId, 'chores', widgetData);
+
+        // Deduct points if points widget exists
+        const pointsData = Storage.getWidgetData(memberId, 'points');
+        if (pointsData) {
+            const updatedPointsData = {
+                ...pointsData,
+                balance: Math.max(0, (pointsData.balance || 0) - chore.points),
+                history: [
+                    { activityId: choreId, activityName: `Reset: ${chore.name}`, date: today, points: -chore.points, type: 'deducted' },
+                    ...(pointsData.history || []).slice(0, 99)
+                ]
+            };
+            Storage.setWidgetData(memberId, 'points', updatedPointsData);
+        }
+
+        Toast.info(`Chore "${chore.name}" reset`);
+        renderFullPage(container, memberId, member, currentTab);
     }
 
     /**
@@ -791,6 +1273,7 @@ const Chores = (function() {
 
     return {
         init,
-        renderWidget
+        renderWidget,
+        showFullPage
     };
 })();

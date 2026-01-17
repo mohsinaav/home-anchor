@@ -1,7 +1,7 @@
 /**
  * Kid Tasks Feature
- * Fun, colorful task list for kids - same functionality as adult tasks
- * but with a kid-friendly color theme
+ * Fun, colorful task list for kids with age-adaptive styling
+ * Features: Tasks list, History, and Stats tabs
  */
 
 const KidTasks = (function() {
@@ -10,6 +10,12 @@ const KidTasks = (function() {
 
     // Priority order for sorting (high priority first)
     const PRIORITY_ORDER = { high: 0, medium: 1, low: 2, null: 3, undefined: 3 };
+
+    // Track current tab in full page view
+    let currentTab = 'tasks';
+
+    // Track current month offset for history view
+    let historyMonthOffset = 0;
 
     /**
      * Sort tasks by priority (high → medium → low → none)
@@ -40,16 +46,214 @@ const KidTasks = (function() {
         Storage.setWidgetData(memberId, 'kid-tasks', data);
     }
 
+    // =========================================================================
+    // STATS CALCULATION HELPERS
+    // =========================================================================
+
+    /**
+     * Calculate current completion streak (consecutive days with task completions)
+     */
+    function calculateCompletionStreak(tasks) {
+        const completedDates = new Set();
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                completedDates.add(task.completedAt);
+            }
+        });
+
+        if (completedDates.size === 0) return 0;
+
+        let streak = 0;
+        let currentDate = new Date();
+        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+
+        // Check if today has completions, if not start from yesterday
+        if (!completedDates.has(today)) {
+            currentDate.setDate(currentDate.getDate() - 1);
+        }
+
+        while (true) {
+            const dateStr = currentDate.toISOString().split('T')[0];
+            if (completedDates.has(dateStr)) {
+                streak++;
+                currentDate.setDate(currentDate.getDate() - 1);
+            } else {
+                break;
+            }
+        }
+
+        return streak;
+    }
+
+    /**
+     * Calculate best streak ever
+     */
+    function calculateBestStreak(tasks) {
+        const completedDates = new Set();
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                completedDates.add(task.completedAt);
+            }
+        });
+
+        if (completedDates.size === 0) return 0;
+
+        const sortedDates = Array.from(completedDates).sort();
+        let bestStreak = 1;
+        let currentStreak = 1;
+
+        for (let i = 1; i < sortedDates.length; i++) {
+            const prevDate = new Date(sortedDates[i - 1]);
+            const currDate = new Date(sortedDates[i]);
+            const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 1) {
+                currentStreak++;
+                bestStreak = Math.max(bestStreak, currentStreak);
+            } else {
+                currentStreak = 1;
+            }
+        }
+
+        return bestStreak;
+    }
+
+    /**
+     * Get count of tasks completed this month
+     */
+    function getThisMonthCompletedCount(tasks) {
+        const now = new Date();
+        const currentMonth = now.getMonth();
+        const currentYear = now.getFullYear();
+
+        return tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === currentMonth && completedDate.getFullYear() === currentYear;
+        }).length;
+    }
+
+    /**
+     * Get last month's completed count
+     */
+    function getLastMonthCompletedCount(tasks) {
+        const now = new Date();
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        const lastMonthNum = lastMonth.getMonth();
+        const lastMonthYear = lastMonth.getFullYear();
+
+        return tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === lastMonthNum && completedDate.getFullYear() === lastMonthYear;
+        }).length;
+    }
+
+    /**
+     * Calculate average tasks completed per day (last 30 days)
+     */
+    function calculateAvgTasksPerDay(tasks) {
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        const recentCompleted = tasks.filter(task => {
+            if (!task.completed || !task.completedAt) return false;
+            return new Date(task.completedAt) >= thirtyDaysAgo;
+        });
+
+        const avg = recentCompleted.length / 30;
+        return avg.toFixed(1);
+    }
+
+    /**
+     * Get most productive day of week
+     */
+    function getMostProductiveDay(tasks) {
+        const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayCounts = [0, 0, 0, 0, 0, 0, 0];
+
+        tasks.forEach(task => {
+            if (task.completed && task.completedAt) {
+                const day = new Date(task.completedAt).getDay();
+                dayCounts[day]++;
+            }
+        });
+
+        const maxCount = Math.max(...dayCounts);
+        if (maxCount === 0) return null;
+
+        const maxDayIndex = dayCounts.indexOf(maxCount);
+        return dayNames[maxDayIndex];
+    }
+
+    /**
+     * Get weekly completion data for chart
+     */
+    function getWeeklyCompletionData(tasks) {
+        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+        const today = new Date();
+        const dayOfWeek = today.getDay();
+        const data = [];
+
+        // Get start of week (Sunday)
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - dayOfWeek);
+        startOfWeek.setHours(0, 0, 0, 0);
+
+        let maxCount = 0;
+
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(startOfWeek);
+            date.setDate(startOfWeek.getDate() + i);
+            const dateStr = date.toISOString().split('T')[0];
+
+            const count = tasks.filter(task => task.completed && task.completedAt === dateStr).length;
+            maxCount = Math.max(maxCount, count);
+
+            data.push({
+                label: dayNames[i],
+                count,
+                date: dateStr,
+                percentage: 0
+            });
+        }
+
+        // Calculate percentages
+        data.forEach(day => {
+            day.percentage = maxCount > 0 ? Math.round((day.count / maxCount) * 100) : 0;
+        });
+
+        return data;
+    }
+
+    /**
+     * Get completion rate percentage
+     */
+    function getCompletionRate(tasks) {
+        const completedTasks = tasks.filter(t => t.completed);
+        return tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
+    }
+
+    // =========================================================================
+    // WIDGET RENDERING
+    // =========================================================================
+
     /**
      * Render the kid tasks widget
      */
     function renderWidget(container, memberId) {
+        const member = Storage.getMember(memberId);
         const widgetData = getWidgetData(memberId);
         const tasks = widgetData.tasks || [];
         const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
         const displayTasks = pendingTasks.slice(0, MAX_WIDGET_TASKS);
         const hasMore = pendingTasks.length > MAX_WIDGET_TASKS;
+
+        // Get age-adaptive text
+        const emptyText = typeof KidTheme !== 'undefined'
+            ? KidTheme.getText('tasks.empty', member)
+            : 'No tasks yet! Add something above! 📝';
 
         container.innerHTML = `
             <div class="kid-tasks-widget">
@@ -62,7 +266,7 @@ const KidTasks = (function() {
 
                 <div class="kid-tasks-widget__list">
                     ${pendingTasks.length === 0
-                        ? '<p class="kid-tasks-widget__empty">No tasks yet! Add something above! 📝</p>'
+                        ? `<p class="kid-tasks-widget__empty">${emptyText}</p>`
                         : ''
                     }
 
@@ -336,7 +540,7 @@ const KidTasks = (function() {
 
         // Re-render the appropriate view
         if (isFullPage && member) {
-            renderFullPage(container, memberId, member);
+            renderFullPage(container, memberId, member, currentTab);
         } else {
             renderWidget(container, memberId);
         }
@@ -346,6 +550,10 @@ const KidTasks = (function() {
         }
     }
 
+    // =========================================================================
+    // FULL PAGE RENDERING
+    // =========================================================================
+
     /**
      * Show full page view
      */
@@ -354,96 +562,84 @@ const KidTasks = (function() {
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        renderFullPage(main, memberId, member);
+        currentTab = 'tasks';
+        historyMonthOffset = 0;
+        renderFullPage(main, memberId, member, currentTab);
     }
 
     /**
-     * Render full page
+     * Render full page with tabs
      */
-    function renderFullPage(container, memberId, member) {
+    function renderFullPage(container, memberId, member, tab = 'tasks') {
         const widgetData = getWidgetData(memberId);
         const tasks = widgetData.tasks || [];
         const pendingTasks = sortByPriority(tasks.filter(t => !t.completed));
         const completedTasks = tasks.filter(t => t.completed);
 
+        // Get age-adaptive content
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const colors = useKidTheme ? KidTheme.getColors('kid-tasks') : { gradient: 'linear-gradient(135deg, #FEF9C3 0%, #FEF08A 50%, #FDE047 100%)' };
+
+        // Calculate hero stats
+        const streak = calculateCompletionStreak(tasks);
+        const thisMonth = getThisMonthCompletedCount(tasks);
+        const doneRate = getCompletionRate(tasks);
+
+        // Get tab content
+        const tabContent = renderTabContent(tab, memberId, member, widgetData, pendingTasks, completedTasks);
+
+        // Define tabs
+        const tabs = [
+            { id: 'tasks', label: isYoungKid ? '📋 Tasks' : 'Tasks', icon: 'list-todo', emoji: '📋' },
+            { id: 'history', label: isYoungKid ? '📅 History' : 'History', icon: 'history', emoji: '📅' },
+            { id: 'stats', label: isYoungKid ? '📊 Stats' : 'Stats', icon: 'bar-chart-2', emoji: '📊' }
+        ];
+
         container.innerHTML = `
-            <div class="kid-tasks-page">
-                <div class="kid-tasks-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
+            <div class="kid-page kid-page--tasks ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
-                        Back to ${member?.name || 'Dashboard'}
+                        Back
                     </button>
-                    <h1 class="kid-tasks-page__title">
-                        📝 My Task List
-                    </h1>
-                    <div></div>
-                </div>
-
-                <div class="kid-tasks-page__stats">
-                    <div class="kid-tasks-page-stat kid-tasks-page-stat--pending">
-                        <div class="kid-tasks-page-stat__icon">📋</div>
-                        <div class="kid-tasks-page-stat__info">
-                            <span class="kid-tasks-page-stat__value">${pendingTasks.length}</span>
-                            <span class="kid-tasks-page-stat__label">To Do</span>
-                        </div>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
+                            ${isYoungKid ? '📝 My Tasks!' : 'My Tasks'}
+                        </h1>
                     </div>
-                    <div class="kid-tasks-page-stat kid-tasks-page-stat--done">
-                        <div class="kid-tasks-page-stat__icon">✅</div>
-                        <div class="kid-tasks-page-stat__info">
-                            <span class="kid-tasks-page-stat__value">${completedTasks.length}</span>
-                            <span class="kid-tasks-page-stat__label">Done</span>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${streak}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '🔥 Day Streak' : 'Day Streak'}</span>
                         </div>
-                    </div>
-                    <div class="kid-tasks-page-stat kid-tasks-page-stat--total">
-                        <div class="kid-tasks-page-stat__icon">📊</div>
-                        <div class="kid-tasks-page-stat__info">
-                            <span class="kid-tasks-page-stat__value">${tasks.length}</span>
-                            <span class="kid-tasks-page-stat__label">Total</span>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${thisMonth}</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '⭐ This Month' : 'This Month'}</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${doneRate}%</span>
+                            <span class="kid-hero-stat__label">${isYoungKid ? '✅ Done Rate' : 'Done Rate'}</span>
                         </div>
                     </div>
                 </div>
 
-                <div class="kid-tasks-page__add">
-                    <input type="text" class="form-input" id="newKidTaskInputPage" placeholder="What do you want to do?">
-                    <button class="btn btn--primary" id="addKidTaskBtnPage">
-                        <i data-lucide="plus"></i>
-                        Add
-                    </button>
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
+                            ${t.label}
+                        </button>
+                    `).join('')}
                 </div>
 
-                ${pendingTasks.length > 0 ? `
-                    <div class="kid-tasks-page__section">
-                        <h2 class="kid-tasks-page__section-title">
-                            📋 Things To Do
-                        </h2>
-                        <div class="kid-tasks-page__list">
-                            ${pendingTasks.map(task => renderFullPageTaskItem(task)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${completedTasks.length > 0 ? `
-                    <div class="kid-tasks-page__section kid-tasks-page__section--completed">
-                        <h2 class="kid-tasks-page__section-title kid-tasks-page__section-title--done">
-                            ✅ Completed
-                            <button class="btn btn--sm btn--ghost btn--danger" id="clearCompletedBtn">
-                                <i data-lucide="trash-2"></i>
-                                Clear All
-                            </button>
-                        </h2>
-                        <div class="kid-tasks-page__list">
-                            ${completedTasks.map(task => renderFullPageTaskItem(task, true)).join('')}
-                        </div>
-                    </div>
-                ` : ''}
-
-                ${tasks.length === 0 ? `
-                    <div class="kid-tasks-page__empty">
-                        <div class="kid-tasks-page__empty-icon">📝</div>
-                        <h2>No Tasks Yet</h2>
-                        <p>Add your first task using the form above!</p>
-                    </div>
-                ` : ''}
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
+                </div>
             </div>
         `;
 
@@ -451,7 +647,299 @@ const KidTasks = (function() {
             lucide.createIcons();
         }
 
-        bindFullPageEvents(container, memberId, member, widgetData);
+        bindFullPageEvents(container, memberId, member, widgetData, tab);
+    }
+
+    /**
+     * Render tab content based on active tab
+     */
+    function renderTabContent(tab, memberId, member, widgetData, pendingTasks, completedTasks) {
+        switch (tab) {
+            case 'tasks':
+                return renderTasksTab(memberId, member, widgetData, pendingTasks, completedTasks);
+            case 'history':
+                return renderHistoryTab(memberId, member, widgetData);
+            case 'stats':
+                return renderStatsTab(memberId, member, widgetData);
+            default:
+                return renderTasksTab(memberId, member, widgetData, pendingTasks, completedTasks);
+        }
+    }
+
+    /**
+     * Render Tasks tab content
+     */
+    function renderTasksTab(memberId, member, widgetData, pendingTasks, completedTasks) {
+        const tasks = widgetData.tasks || [];
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        const todoLabel = isYoungKid ? '📋 Things To Do' : 'To Do';
+        const doneLabel = isYoungKid ? '✅ All Done!' : 'Completed';
+        const emptyText = useKidTheme ? KidTheme.getText('tasks.empty', member) : 'No tasks yet! Add your first task above!';
+
+        return `
+            <div class="kid-tasks-page__add">
+                <input type="text" class="form-input" id="newKidTaskInputPage" placeholder="${isYoungKid ? 'What do you want to do?' : 'Add a new task...'}">
+                <button class="btn btn--primary" id="addKidTaskBtnPage">
+                    <i data-lucide="plus"></i>
+                    ${isYoungKid ? 'Add!' : 'Add'}
+                </button>
+            </div>
+
+            ${pendingTasks.length > 0 ? `
+                <div class="kid-tasks-page__section">
+                    <h2 class="kid-tasks-page__section-title">
+                        ${todoLabel} (${pendingTasks.length})
+                    </h2>
+                    <div class="kid-tasks-page__list">
+                        ${pendingTasks.map(task => renderFullPageTaskItem(task)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${completedTasks.length > 0 ? `
+                <div class="kid-tasks-page__section kid-tasks-page__section--completed">
+                    <h2 class="kid-tasks-page__section-title kid-tasks-page__section-title--done">
+                        ${doneLabel}
+                        <button class="btn btn--sm btn--ghost btn--danger" id="clearCompletedBtn">
+                            <i data-lucide="trash-2"></i>
+                            Clear All
+                        </button>
+                    </h2>
+                    <div class="kid-tasks-page__list">
+                        ${completedTasks.map(task => renderFullPageTaskItem(task, true)).join('')}
+                    </div>
+                </div>
+            ` : ''}
+
+            ${tasks.length === 0 ? `
+                <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                    <div class="kid-page__empty-icon">📝</div>
+                    <p>${emptyText}</p>
+                </div>
+            ` : ''}
+        `;
+    }
+
+    /**
+     * Render History tab content - shows completed tasks grouped by date
+     */
+    function renderHistoryTab(memberId, member, widgetData) {
+        const tasks = widgetData.tasks || [];
+        const completedTasks = tasks.filter(t => t.completed && t.completedAt);
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        // Get the target month based on offset
+        const targetDate = new Date();
+        targetDate.setMonth(targetDate.getMonth() + historyMonthOffset);
+        const targetMonth = targetDate.getMonth();
+        const targetYear = targetDate.getFullYear();
+
+        // Filter tasks for the target month
+        const monthTasks = completedTasks.filter(task => {
+            const completedDate = new Date(task.completedAt);
+            return completedDate.getMonth() === targetMonth && completedDate.getFullYear() === targetYear;
+        });
+
+        // Group by date
+        const groupedByDate = {};
+        monthTasks.forEach(task => {
+            const date = task.completedAt;
+            if (!groupedByDate[date]) {
+                groupedByDate[date] = [];
+            }
+            groupedByDate[date].push(task);
+        });
+
+        // Sort dates in descending order
+        const sortedDates = Object.keys(groupedByDate).sort((a, b) => new Date(b) - new Date(a));
+
+        const monthName = targetDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+        const isCurrentMonth = historyMonthOffset === 0;
+        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+
+        return `
+            <div class="kid-tasks-history">
+                <div class="kid-tasks-history__nav">
+                    <button class="btn btn--ghost btn--sm" id="historyPrevMonth">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="kid-tasks-history__month">${monthName}</span>
+                    <button class="btn btn--ghost btn--sm" id="historyNextMonth" ${isCurrentMonth ? 'disabled' : ''}>
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+
+                <div class="kid-tasks-history__summary">
+                    <div class="kid-tasks-history__summary-stat">
+                        ${isYoungKid ? '✅' : '<i data-lucide="check-circle"></i>'}
+                        <span>${monthTasks.length} ${isYoungKid ? 'tasks done!' : 'tasks completed'}</span>
+                    </div>
+                    <div class="kid-tasks-history__summary-stat">
+                        ${isYoungKid ? '📅' : '<i data-lucide="calendar"></i>'}
+                        <span>${sortedDates.length} ${isYoungKid ? 'active days!' : 'active days'}</span>
+                    </div>
+                </div>
+
+                ${sortedDates.length > 0 ? `
+                    <div class="kid-tasks-history__days">
+                        ${sortedDates.map(date => {
+                            const dayTasks = groupedByDate[date];
+                            const dateObj = new Date(date);
+                            const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+                            const dayNum = dateObj.getDate();
+                            const monthShort = dateObj.toLocaleDateString('en-US', { month: 'short' });
+                            const isToday = date === today;
+
+                            return `
+                                <div class="kid-tasks-history__day ${isToday ? 'kid-tasks-history__day--today' : ''}">
+                                    <div class="kid-tasks-history__day-header">
+                                        <div class="kid-tasks-history__day-date">
+                                            <span class="kid-tasks-history__day-num">${dayNum}</span>
+                                            <div class="kid-tasks-history__day-info">
+                                                <span class="kid-tasks-history__day-name">${dayName}</span>
+                                                <span class="kid-tasks-history__day-month">${monthShort}</span>
+                                            </div>
+                                        </div>
+                                        <span class="kid-tasks-history__day-count">${dayTasks.length} ${isYoungKid ? '⭐' : 'task' + (dayTasks.length !== 1 ? 's' : '')}</span>
+                                    </div>
+                                    <div class="kid-tasks-history__day-tasks">
+                                        ${dayTasks.map(task => `
+                                            <div class="kid-tasks-history__task">
+                                                ${isYoungKid ? '✓' : '<i data-lucide="check"></i>'}
+                                                <span>${task.title}</span>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div class="kid-page__empty ${isYoungKid ? 'kid-page__empty--playful' : ''}">
+                        <div class="kid-page__empty-icon">📅</div>
+                        <p>${isYoungKid ? 'No tasks done yet this month! Keep going! 💪' : 'No tasks were completed in ' + monthName}</p>
+                    </div>
+                `}
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab content
+     */
+    function renderStatsTab(memberId, member, widgetData) {
+        const tasks = widgetData.tasks || [];
+        const completedTasks = tasks.filter(t => t.completed);
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
+        const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+
+        // Calculate various stats
+        const streak = calculateCompletionStreak(tasks);
+        const bestStreak = calculateBestStreak(tasks);
+        const thisMonthCompleted = getThisMonthCompletedCount(tasks);
+        const lastMonthCompleted = getLastMonthCompletedCount(tasks);
+        const completionRate = getCompletionRate(tasks);
+        const avgPerDay = calculateAvgTasksPerDay(tasks);
+        const mostProductiveDay = getMostProductiveDay(tasks);
+        const weeklyData = getWeeklyCompletionData(tasks);
+
+        // Month progress
+        const now = new Date();
+        const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+        const dayOfMonth = now.getDate();
+        const monthProgress = Math.round((dayOfMonth / daysInMonth) * 100);
+
+        return `
+            <div class="kid-tasks-stats">
+                <!-- Streak Cards -->
+                <div class="kid-tasks-stats__streaks">
+                    <div class="kid-tasks-stats__streak-card kid-tasks-stats__streak-card--current">
+                        <div class="kid-tasks-stats__streak-icon">
+                            ${isYoungKid ? '🔥' : '<i data-lucide="flame"></i>'}
+                        </div>
+                        <div class="kid-tasks-stats__streak-info">
+                            <span class="kid-tasks-stats__streak-value">${streak}</span>
+                            <span class="kid-tasks-stats__streak-label">${isYoungKid ? 'Day Streak!' : 'Current Streak'}</span>
+                        </div>
+                    </div>
+                    <div class="kid-tasks-stats__streak-card kid-tasks-stats__streak-card--best">
+                        <div class="kid-tasks-stats__streak-icon">
+                            ${isYoungKid ? '🏆' : '<i data-lucide="trophy"></i>'}
+                        </div>
+                        <div class="kid-tasks-stats__streak-info">
+                            <span class="kid-tasks-stats__streak-value">${bestStreak}</span>
+                            <span class="kid-tasks-stats__streak-label">${isYoungKid ? 'Best Streak!' : 'Best Streak'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Month Progress -->
+                <div class="kid-tasks-stats__month-card">
+                    <div class="kid-tasks-stats__month-header">
+                        <h3>${isYoungKid ? '📅 This Month' : "This Month's Progress"}</h3>
+                        <span class="kid-tasks-stats__month-count">${thisMonthCompleted} ${isYoungKid ? '⭐' : 'completed'}</span>
+                    </div>
+                    <div class="kid-tasks-stats__progress-bar">
+                        <div class="kid-tasks-stats__progress-fill" style="width: ${monthProgress}%"></div>
+                    </div>
+                    <div class="kid-tasks-stats__month-footer">
+                        <span>Day ${dayOfMonth} of ${daysInMonth}</span>
+                        ${lastMonthCompleted > 0 ? `
+                            <span class="kid-tasks-stats__comparison ${thisMonthCompleted >= lastMonthCompleted ? 'kid-tasks-stats__comparison--up' : 'kid-tasks-stats__comparison--down'}">
+                                ${isYoungKid
+                                    ? (thisMonthCompleted >= lastMonthCompleted ? '📈 +' : '📉 ') + (thisMonthCompleted - lastMonthCompleted)
+                                    : `<i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'trending-down'}"></i> ${thisMonthCompleted >= lastMonthCompleted ? '+' : ''}${thisMonthCompleted - lastMonthCompleted}`
+                                } vs last month
+                            </span>
+                        ` : ''}
+                    </div>
+                </div>
+
+                <!-- Weekly Chart -->
+                <div class="kid-tasks-stats__weekly-card">
+                    <h3>${isYoungKid ? '📊 This Week' : 'This Week'}</h3>
+                    <div class="kid-tasks-stats__weekly-chart">
+                        ${weeklyData.map(day => `
+                            <div class="kid-tasks-stats__weekly-bar">
+                                <div class="kid-tasks-stats__weekly-fill" style="height: ${day.percentage}%"></div>
+                                <span class="kid-tasks-stats__weekly-label">${day.label}</span>
+                                <span class="kid-tasks-stats__weekly-count">${day.count}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <!-- Quick Stats Grid -->
+                <div class="kid-tasks-stats__grid">
+                    <div class="kid-tasks-stats__grid-item">
+                        ${isYoungKid ? '<span class="emoji-stat">📊</span>' : '<i data-lucide="percent"></i>'}
+                        <span class="kid-tasks-stats__grid-value">${completionRate}%</span>
+                        <span class="kid-tasks-stats__grid-label">${isYoungKid ? 'Done!' : 'Completion Rate'}</span>
+                    </div>
+                    <div class="kid-tasks-stats__grid-item">
+                        ${isYoungKid ? '<span class="emoji-stat">⚡</span>' : '<i data-lucide="activity"></i>'}
+                        <span class="kid-tasks-stats__grid-value">${avgPerDay}</span>
+                        <span class="kid-tasks-stats__grid-label">${isYoungKid ? 'Per Day' : 'Avg/Day'}</span>
+                    </div>
+                    <div class="kid-tasks-stats__grid-item">
+                        ${isYoungKid ? '<span class="emoji-stat">⭐</span>' : '<i data-lucide="star"></i>'}
+                        <span class="kid-tasks-stats__grid-value">${mostProductiveDay || '-'}</span>
+                        <span class="kid-tasks-stats__grid-label">${isYoungKid ? 'Best Day' : 'Best Day'}</span>
+                    </div>
+                    <div class="kid-tasks-stats__grid-item">
+                        ${isYoungKid ? '<span class="emoji-stat">✅</span>' : '<i data-lucide="list-checks"></i>'}
+                        <span class="kid-tasks-stats__grid-value">${completedTasks.length}</span>
+                        <span class="kid-tasks-stats__grid-label">${isYoungKid ? 'Total Done!' : 'Total Done'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
     }
 
     /**
@@ -492,12 +980,36 @@ const KidTasks = (function() {
     /**
      * Bind full page events
      */
-    function bindFullPageEvents(container, memberId, member, widgetData) {
+    function bindFullPageEvents(container, memberId, member, widgetData, tab) {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
+        // Tab switching
+        container.querySelectorAll('.kid-page__tab').forEach(tabBtn => {
+            tabBtn.addEventListener('click', () => {
+                const tabName = tabBtn.dataset.tab;
+                if (tabName !== currentTab) {
+                    currentTab = tabName;
+                    historyMonthOffset = 0;
+                    renderFullPage(container, memberId, member, tabName);
+                }
+            });
+        });
+
+        // Tab-specific event bindings
+        if (tab === 'tasks') {
+            bindTasksTabEvents(container, memberId, member, widgetData);
+        } else if (tab === 'history') {
+            bindHistoryTabEvents(container, memberId, member, widgetData);
+        }
+    }
+
+    /**
+     * Bind events for Tasks tab
+     */
+    function bindTasksTabEvents(container, memberId, member, widgetData) {
         // Add task from full page
         const addBtnPage = document.getElementById('addKidTaskBtnPage');
         const inputPage = document.getElementById('newKidTaskInputPage');
@@ -515,7 +1027,7 @@ const KidTasks = (function() {
 
             widgetData.tasks = [...(widgetData.tasks || []), newTask];
             saveWidgetData(memberId, widgetData);
-            renderFullPage(container, memberId, member);
+            renderFullPage(container, memberId, member, 'tasks');
             Toast.success('Task added!');
 
             // Re-focus input after re-render
@@ -540,7 +1052,7 @@ const KidTasks = (function() {
                     saveWidgetData(memberId, widgetData);
                     // Sync with Vision Board if this task came from a goal step
                     syncWithVisionBoard(memberId, task);
-                    renderFullPage(container, memberId, member);
+                    renderFullPage(container, memberId, member, 'tasks');
                 }
             });
         });
@@ -551,7 +1063,7 @@ const KidTasks = (function() {
                 const taskId = btn.dataset.delete;
                 widgetData.tasks = widgetData.tasks.filter(t => t.id !== taskId);
                 saveWidgetData(memberId, widgetData);
-                renderFullPage(container, memberId, member);
+                renderFullPage(container, memberId, member, 'tasks');
                 Toast.success('Task deleted');
             });
         });
@@ -561,7 +1073,7 @@ const KidTasks = (function() {
             if (confirm('Delete all completed tasks?')) {
                 widgetData.tasks = widgetData.tasks.filter(t => !t.completed);
                 saveWidgetData(memberId, widgetData);
-                renderFullPage(container, memberId, member);
+                renderFullPage(container, memberId, member, 'tasks');
                 Toast.success('Completed tasks cleared');
             }
         });
@@ -590,7 +1102,7 @@ const KidTasks = (function() {
                     saveWidgetData(memberId, widgetData);
                     Toast.success('Task updated!');
                 }
-                renderFullPage(container, memberId, member);
+                renderFullPage(container, memberId, member, 'tasks');
             };
 
             input.addEventListener('blur', saveEdit);
@@ -599,7 +1111,7 @@ const KidTasks = (function() {
                     evt.preventDefault();
                     input.blur();
                 } else if (evt.key === 'Escape') {
-                    renderFullPage(container, memberId, member);
+                    renderFullPage(container, memberId, member, 'tasks');
                 }
             });
         };
@@ -625,6 +1137,25 @@ const KidTasks = (function() {
 
         // Drag and drop for reordering tasks (full page)
         bindDragAndDrop(container, memberId, widgetData, true, member);
+    }
+
+    /**
+     * Bind events for History tab
+     */
+    function bindHistoryTabEvents(container, memberId, member, widgetData) {
+        // Previous month
+        document.getElementById('historyPrevMonth')?.addEventListener('click', () => {
+            historyMonthOffset--;
+            renderFullPage(container, memberId, member, 'history');
+        });
+
+        // Next month
+        document.getElementById('historyNextMonth')?.addEventListener('click', () => {
+            if (historyMonthOffset < 0) {
+                historyMonthOffset++;
+                renderFullPage(container, memberId, member, 'history');
+            }
+        });
     }
 
     /**

@@ -118,11 +118,14 @@ const Journal = (function() {
     }
 
     /**
-     * Check if user has written today
+     * Check if user has written a proper journal entry today
+     * (not just gratitude - must have actual content or mood)
      */
     function hasWrittenToday(entries) {
         const today = DateUtils.today();
-        return entries.some(e => e.date === today);
+        const todayEntry = entries.find(e => e.date === today);
+        // Only count as "written" if there's actual journal content or a mood selected
+        return todayEntry && (todayEntry.content?.trim() || todayEntry.mood);
     }
 
     /**

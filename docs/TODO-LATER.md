@@ -516,3 +516,63 @@ Mobile browsers render native `<select>` dropdown options using their own system
 
 ### Decision
 **Parked** - Current stats are functional. These enhancements would require significant testing and may add complexity. Revisit after core features are stable.
+
+---
+
+## Kids/Toddler/Teen Mobile Focus View - Scrollbar Seamless Background
+
+**Status:** Unresolved
+**Priority:** Low
+**Affected:** Kids, Toddler, and Teen tabs in mobile focus view (< 600px viewport)
+**Files:** `css/kids-widgets.css`, `css/theme-kid.css`, `css/theme-teen.css`
+
+### Problem
+In mobile focus view for kids/toddler/teen tabs, the scrollbar track has a white background that doesn't match the tab's gradient background. This creates a visual discontinuity - a white gap appears between the widget icons and the scrollbar area, making the scrollbar look "chopped" at the top.
+
+### Visual Reference
+- See snapshot 3.png (adult tab) - scrollbar looks refined and seamless
+- See snapshot 4.png (kids tab) - white gap visible near scrollbar, not seamless
+
+### Tab Background Colors
+- **Kid**: `linear-gradient(135deg, #E0E7FF 0%, #FCE7F3 100%)` (indigo to pink)
+- **Toddler**: `linear-gradient(135deg, #DBEAFE 0%, #FEF3C7 50%, #FECACA 100%)` (blue to yellow to pink)
+- **Teen**: `linear-gradient(135deg, #E0E7FF 0%, #F3E8FF 100%)` (indigo to purple)
+
+### Attempts Made
+1. Added `-webkit-scrollbar-track` styles matching tab gradients - didn't work
+2. Added `body:has(.tab-content--kid)::-webkit-scrollbar-track` with `!important` - didn't work
+3. Set `.focus-layout__main` background to match tab gradient - didn't work
+4. Targeted `html:has()`, `body:has()`, element-level scrollbar tracks - still showing white
+
+### Root Cause
+The scrollbar track background on mobile browsers (especially iOS Safari, Chrome mobile) doesn't respond to CSS `::-webkit-scrollbar-track` styling the same way desktop browsers do. The white area may be:
+- Part of the browser's native scrollbar rendering
+- A padding/margin area outside the styled scrollable container
+- The body/html background showing through
+
+### Potential Solutions
+1. **Hide native scrollbar, use custom**: Use `-webkit-overflow-scrolling: touch` with hidden scrollbar and implement custom scroll indicator
+2. **Extend background beyond container**: Use negative margins or pseudo-elements to extend the gradient background into the scrollbar gutter area
+3. **Use scroll-snap or overflow containment**: Change scroll container structure to control where scrollbar renders
+4. **Accept limitation on mobile**: Native mobile scrollbars often overlay content rather than taking space - the issue may only be visible on desktop emulating mobile
+
+### CSS Currently Applied
+```css
+/* In kids-widgets.css */
+body:has(.tab-content--kid)::-webkit-scrollbar-track,
+html:has(.tab-content--kid)::-webkit-scrollbar-track,
+.tab-content--kid::-webkit-scrollbar-track,
+.tab-content--kid *::-webkit-scrollbar-track {
+    background: linear-gradient(135deg, #E0E7FF 0%, #FCE7F3 100%) !important;
+}
+
+.tab-content--kid .focus-layout__main {
+    background: linear-gradient(135deg, #E0E7FF 0%, #FCE7F3 100%);
+}
+```
+
+### Next Steps
+- Test on actual mobile devices (not just browser DevTools simulation)
+- Investigate scrollbar-gutter CSS property
+- Consider if this is browser-specific (Chrome vs Safari vs Firefox)
+- Research mobile-first scrollbar styling approaches

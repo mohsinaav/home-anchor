@@ -498,22 +498,20 @@ const Habits = (function() {
         if (!main) return;
 
         const member = Storage.getMember(memberId);
-        // Default to 'today' tab, current month
-        renderFullPage(main, memberId, member, 'today', new Date());
+        // Default to 'calendar' tab, current month
+        renderFullPage(main, memberId, member, 'calendar', new Date());
     }
 
     /**
      * Render the full page with tabbed interface
      */
-    function renderFullPage(container, memberId, member, activeTab = 'today', currentDate = new Date()) {
+    function renderFullPage(container, memberId, member, activeTab = 'calendar', currentDate = new Date()) {
         const widgetData = getWidgetData(memberId);
         const habits = (widgetData.habits || []).filter(h => !h.archived);
         const archivedHabits = widgetData.archivedHabits || [];
         const log = widgetData.log || {};
         const restDays = widgetData.restDays || {};
         const today = DateUtils.today();
-        const todayHabits = getTodayHabits(habits);
-        const todayLog = log[today] || [];
         const isRest = restDays[today] || false;
 
         // Calculate stats
@@ -529,13 +527,6 @@ const Habits = (function() {
         }, 0);
         const overallPercentage = totalScheduled > 0 ? Math.round((totalCompletions / totalScheduled) * 100) : 0;
         const bestStreak = Math.max(...habits.map(h => h.streak || 0), 0);
-        const completedToday = todayHabits.filter(h => todayLog.includes(h.id)).length;
-
-        // Tab counts
-        const tabCounts = {
-            today: `${completedToday}/${todayHabits.length}`,
-            archived: archivedHabits.length
-        };
 
         container.innerHTML = `
             <div class="habits-page">
@@ -570,11 +561,6 @@ const Habits = (function() {
 
                 <!-- Tab Navigation -->
                 <div class="habits-page__tabs">
-                    <button class="habits-tab ${activeTab === 'today' ? 'habits-tab--active' : ''}" data-tab="today">
-                        <i data-lucide="calendar-check"></i>
-                        <span>Today</span>
-                        <span class="habits-tab__count">${tabCounts.today}</span>
-                    </button>
                     <button class="habits-tab ${activeTab === 'calendar' ? 'habits-tab--active' : ''}" data-tab="calendar">
                         <i data-lucide="calendar"></i>
                         <span>Calendar</span>
@@ -587,7 +573,7 @@ const Habits = (function() {
                         <button class="habits-tab ${activeTab === 'archived' ? 'habits-tab--active' : ''}" data-tab="archived">
                             <i data-lucide="archive"></i>
                             <span>Archived</span>
-                            <span class="habits-tab__count">${tabCounts.archived}</span>
+                            <span class="habits-tab__count">${archivedHabits.length}</span>
                         </button>
                     ` : ''}
                 </div>
@@ -606,7 +592,7 @@ const Habits = (function() {
 
                 <!-- Tab Content -->
                 <div class="habits-page__content">
-                    ${renderTabContent(activeTab, memberId, widgetData, habits, archivedHabits, log, restDays, currentDate, todayHabits, todayLog, isRest)}
+                    ${renderTabContent(activeTab, memberId, habits, archivedHabits, log, restDays, currentDate)}
                 </div>
             </div>
         `;
@@ -623,10 +609,8 @@ const Habits = (function() {
     /**
      * Render content for each tab
      */
-    function renderTabContent(activeTab, memberId, widgetData, habits, archivedHabits, log, restDays, currentDate, todayHabits, todayLog, isRest) {
+    function renderTabContent(activeTab, memberId, habits, archivedHabits, log, restDays, currentDate) {
         switch (activeTab) {
-            case 'today':
-                return renderTodayTab(memberId, todayHabits, todayLog, isRest, habits);
             case 'calendar':
                 return renderCalendarTab(memberId, habits, log, restDays, currentDate);
             case 'stats':
@@ -634,203 +618,8 @@ const Habits = (function() {
             case 'archived':
                 return renderArchivedTab(memberId, archivedHabits);
             default:
-                return renderTodayTab(memberId, todayHabits, todayLog, isRest, habits);
+                return renderCalendarTab(memberId, habits, log, restDays, currentDate);
         }
-    }
-
-    /**
-     * Render Today tab - Today's habits with checkboxes
-     */
-    function renderTodayTab(memberId, todayHabits, todayLog, isRest, allHabits) {
-        const completedCount = todayHabits.filter(h => todayLog.includes(h.id)).length;
-        const totalHabits = todayHabits.length;
-        const allDone = totalHabits > 0 && completedCount === totalHabits;
-        const progress = totalHabits > 0 ? Math.round((completedCount / totalHabits) * 100) : 0;
-
-        // Get weekly data for the week strip
-        const today = new Date();
-        const weekData = getWeekData(today, memberId, allHabits);
-
-        if (isRest) {
-            return `
-                <div class="habits-today habits-today--rest">
-                    <div class="habits-today__rest-banner">
-                        <i data-lucide="coffee"></i>
-                        <div>
-                            <h3>Rest Day</h3>
-                            <p>Take it easy today! Your streaks won't be affected.</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        if (todayHabits.length === 0) {
-            return `
-                <div class="page-content__empty">
-                    <div class="page-content__empty-icon">
-                        <i data-lucide="calendar-off"></i>
-                    </div>
-                    <h3>No habits scheduled for today</h3>
-                    <p>Add habits or adjust your schedule to see them here.</p>
-                    <button class="btn btn--primary" id="addHabitEmptyBtn">
-                        <i data-lucide="plus"></i>
-                        Add Habit
-                    </button>
-                </div>
-            `;
-        }
-
-        // Calculate best streak from all habits
-        const bestStreak = Math.max(...allHabits.map(h => h.bestStreak || 0), 0);
-        const currentStreak = Math.max(...allHabits.map(h => h.streak || 0), 0);
-
-        return `
-            <div class="habits-today ${allDone ? 'habits-today--complete' : ''}">
-                <!-- Stats Row -->
-                <div class="habits-today__stats">
-                    <div class="habits-today__stat">
-                        <div class="habits-today__stat-icon habits-today__stat-icon--progress">
-                            <i data-lucide="target"></i>
-                        </div>
-                        <div class="habits-today__stat-content">
-                            <span class="habits-today__stat-value">${progress}%</span>
-                            <span class="habits-today__stat-label">Today</span>
-                        </div>
-                    </div>
-                    <div class="habits-today__stat">
-                        <div class="habits-today__stat-icon habits-today__stat-icon--streak">
-                            <i data-lucide="flame"></i>
-                        </div>
-                        <div class="habits-today__stat-content">
-                            <span class="habits-today__stat-value">${currentStreak}</span>
-                            <span class="habits-today__stat-label">Current Streak</span>
-                        </div>
-                    </div>
-                    <div class="habits-today__stat">
-                        <div class="habits-today__stat-icon habits-today__stat-icon--best">
-                            <i data-lucide="trophy"></i>
-                        </div>
-                        <div class="habits-today__stat-content">
-                            <span class="habits-today__stat-value">${bestStreak}</span>
-                            <span class="habits-today__stat-label">Best Streak</span>
-                        </div>
-                    </div>
-                    <div class="habits-today__stat">
-                        <div class="habits-today__stat-icon habits-today__stat-icon--total">
-                            <i data-lucide="list-checks"></i>
-                        </div>
-                        <div class="habits-today__stat-content">
-                            <span class="habits-today__stat-value">${allHabits.length}</span>
-                            <span class="habits-today__stat-label">Total Habits</span>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Weekly Calendar Strip -->
-                <div class="habits-today__week">
-                    <div class="habits-today__week-header">
-                        <i data-lucide="calendar-days"></i>
-                        <span>This Week</span>
-                    </div>
-                    <div class="habits-today__week-days">
-                        ${weekData.map(day => `
-                            <div class="habits-today__week-day ${day.isToday ? 'habits-today__week-day--today' : ''} ${day.isComplete ? 'habits-today__week-day--complete' : ''} ${day.isPast && !day.isComplete && day.hasHabits ? 'habits-today__week-day--missed' : ''}">
-                                <span class="habits-today__week-day-name">${day.dayName}</span>
-                                <span class="habits-today__week-day-num">${day.dayNum}</span>
-                                ${day.isComplete ? '<i data-lucide="check" class="habits-today__week-day-check"></i>' : ''}
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-
-                <!-- Progress Section -->
-                <div class="habits-today__progress-section">
-                    <div class="habits-today__progress-header">
-                        <span class="habits-today__progress-label">Today's Progress</span>
-                        <span class="habits-today__progress-count">${completedCount}/${totalHabits}</span>
-                    </div>
-                    <div class="habits-today__progress-bar">
-                        <div class="habits-today__progress-fill ${allDone ? 'habits-today__progress-fill--complete' : ''}" style="width: ${progress}%"></div>
-                    </div>
-                </div>
-
-                <!-- Habit List -->
-                <div class="habits-today__list">
-                    ${todayHabits.map(habit => {
-                        const isCompleted = todayLog.includes(habit.id);
-                        const cat = CATEGORIES[habit.category] || CATEGORIES.other;
-                        return `
-                            <button class="habits-today__item ${isCompleted ? 'habits-today__item--done' : ''}"
-                                    data-habit-id="${habit.id}"
-                                    style="--habit-color: ${cat.color}">
-                                <span class="habits-today__item-checkbox">
-                                    <i data-lucide="${isCompleted ? 'check-circle-2' : 'circle'}"></i>
-                                </span>
-                                <span class="habits-today__item-icon" style="background: ${cat.color}15">
-                                    <i data-lucide="${habit.icon || 'circle'}" style="color: ${cat.color}"></i>
-                                </span>
-                                <div class="habits-today__item-info">
-                                    <span class="habits-today__item-name">${habit.name}</span>
-                                    <span class="habits-today__item-category" style="color: ${cat.color}">${cat.name}</span>
-                                </div>
-                                ${habit.streak > 0 ? `
-                                    <span class="habits-today__item-streak">
-                                        <i data-lucide="flame"></i>
-                                        <span>${habit.streak} day${habit.streak !== 1 ? 's' : ''}</span>
-                                    </span>
-                                ` : ''}
-                            </button>
-                        `;
-                    }).join('')}
-                </div>
-
-                ${allDone ? `
-                    <div class="habits-today__celebration">
-                        <i data-lucide="party-popper"></i>
-                        <h3>All habits completed!</h3>
-                        <p>Great job staying consistent today!</p>
-                    </div>
-                ` : ''}
-            </div>
-        `;
-    }
-
-    /**
-     * Get weekly data for the week strip in Today tab
-     */
-    function getWeekData(today, memberId, habits) {
-        const widgetData = Storage.getWidgetData(memberId, 'habits') || {};
-        const log = widgetData.log || {};
-        const dayOfWeek = today.getDay();
-        const weekStart = new Date(today);
-        weekStart.setDate(today.getDate() - dayOfWeek);
-
-        const weekDays = [];
-        const dayNames = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-
-        for (let i = 0; i < 7; i++) {
-            const date = new Date(weekStart);
-            date.setDate(weekStart.getDate() + i);
-            const dateStr = formatDateStr(date.getFullYear(), date.getMonth(), date.getDate());
-            const dayLog = log[dateStr] || [];
-
-            // Get habits scheduled for this day
-            const scheduledHabits = habits.filter(h => isHabitScheduledForDate(h, dateStr));
-            const completedCount = scheduledHabits.filter(h => dayLog.includes(h.id)).length;
-            const isComplete = scheduledHabits.length > 0 && completedCount === scheduledHabits.length;
-
-            weekDays.push({
-                dayName: dayNames[i],
-                dayNum: date.getDate(),
-                isToday: i === dayOfWeek,
-                isPast: date < new Date(today.getFullYear(), today.getMonth(), today.getDate()),
-                isComplete: isComplete,
-                hasHabits: scheduledHabits.length > 0
-            });
-        }
-
-        return weekDays;
     }
 
     /**
