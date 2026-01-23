@@ -257,8 +257,43 @@
 .adult-layout-header {
     display: flex;
     justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-3);
     padding: var(--space-2) var(--space-4);
     margin-bottom: var(--space-2);
+}
+
+/* Quick Access Button (Shopping List shortcut) */
+.quick-access-btn {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.2);
+}
+
+.quick-access-btn:hover {
+    background: var(--primary-dark);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(99, 102, 241, 0.3);
+}
+
+.quick-access-btn:active {
+    transform: translateY(0);
+}
+
+.quick-access-btn svg,
+.quick-access-btn i {
+    width: 16px;
+    height: 16px;
 }
 
 /* Layout Toggle Button Group (shared between adults and kids) */
@@ -1769,6 +1804,16 @@
 
 .points-day__points--bonus {
     color: #8B5CF6;
+}
+
+.points-day__points--deducted,
+.points-day__points--deduction {
+    color: #DC2626;
+}
+
+.points-day__activity--deducted,
+.points-day__activity--deduction {
+    background-color: rgba(220, 38, 38, 0.08);
 }
 
 .points-day__activity--bonus {
@@ -4772,13 +4817,16 @@
     color: var(--primary);
 }
 
-.kid-page__tab svg {
+.kid-page__tab svg,
+.kid-page__tab i {
     width: 18px;
     height: 18px;
+    pointer-events: none;
 }
 
 .kid-page__tab .emoji-icon {
     font-size: 18px;
+    pointer-events: none;
 }
 
 /* Page content */
@@ -6869,6 +6917,228 @@
     margin: 0;
 }
 
+/* Kid Journal Stats Section */
+.kid-journal-stats-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: var(--space-4);
+}
+
+.kid-journal-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-3);
+}
+
+.kid-journal-stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-4);
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+}
+
+.kid-journal-stat-card__icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-lg);
+    font-size: 24px;
+}
+
+.kid-journal-stat-card__icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.kid-journal-stat-card--flame .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+    color: #DC2626;
+}
+
+.kid-journal-stat-card--trophy .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    color: #D97706;
+}
+
+.kid-journal-stat-card--book .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 100%);
+    color: #2563EB;
+}
+
+.kid-journal-stat-card--calendar .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 100%);
+    color: #059669;
+}
+
+.kid-journal-stat-card__info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.kid-journal-stat-card__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+    line-height: 1;
+}
+
+.kid-journal-stat-card__label {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.kid-journal-month-card {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.kid-journal-month-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 100%);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    font-size: 16px;
+}
+
+.kid-journal-month-card__header svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kid-journal-month-card__content {
+    padding: var(--space-4);
+}
+
+.kid-journal-month-card__progress {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.kid-journal-month-card__bar {
+    height: 12px;
+    background: var(--gray-200);
+    border-radius: var(--radius-full);
+    overflow: hidden;
+}
+
+.kid-journal-month-card__fill {
+    height: 100%;
+    background: linear-gradient(90deg, #F472B6 0%, #EC4899 100%);
+    border-radius: var(--radius-full);
+    transition: width 0.5s ease;
+}
+
+.kid-journal-month-card__text {
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    text-align: center;
+}
+
+.kid-journal-mood-card {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+}
+
+.kid-journal-mood-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-4);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+    font-size: 16px;
+}
+
+.kid-journal-mood-card__header svg {
+    width: 18px;
+    height: 18px;
+}
+
+.kid-journal-mood-card__content {
+    padding: var(--space-4);
+}
+
+.kid-journal-mood-card__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.kid-journal-mood-card__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2);
+    border-radius: var(--radius-lg);
+    background: color-mix(in srgb, var(--mood-color, var(--gray-200)) 20%, transparent);
+}
+
+.kid-journal-mood-card__emoji {
+    font-size: 24px;
+}
+
+.kid-journal-mood-card__count {
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-700);
+}
+
+.kid-journal-mood-card__label {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+.kid-journal-mood-card__most-common {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.kid-journal-mood-card__most-common-mood {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    background: color-mix(in srgb, var(--mood-color, var(--gray-200)) 30%, white);
+    font-weight: var(--font-medium);
+}
+
+/* Mobile adjustments for kid journal stats */
+@media (max-width: 480px) {
+    .kid-journal-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .kid-journal-mood-card__grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
 /* Journal Modal Styles */
 .kid-journal-modal {
     background:
@@ -7822,6 +8092,244 @@
     font-size: var(--text-sm);
     color: var(--gray-500);
     line-height: 1.5;
+}
+
+/* Teen Journal Calendar View */
+.teen-journal-calendar {
+    background: var(--white);
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-sm);
+}
+
+.teen-journal-calendar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.teen-journal-calendar__month {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.teen-journal-calendar__summary {
+    text-align: center;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin-bottom: var(--space-3);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.teen-journal-calendar__weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-1);
+    margin-bottom: var(--space-2);
+}
+
+.teen-journal-calendar__weekdays span {
+    text-align: center;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: var(--gray-400);
+    text-transform: uppercase;
+}
+
+.teen-journal-calendar__days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: var(--space-1);
+}
+
+.teen-journal-calendar__day {
+    aspect-ratio: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    background: var(--gray-50);
+    gap: 2px;
+}
+
+.teen-journal-calendar__day:hover:not(.teen-journal-calendar__day--empty) {
+    background: var(--gray-100);
+    transform: scale(1.05);
+}
+
+.teen-journal-calendar__day--empty {
+    background: transparent;
+    cursor: default;
+}
+
+.teen-journal-calendar__day--today {
+    border: 2px solid var(--indigo-500);
+}
+
+.teen-journal-calendar__day--has-entry {
+    background: var(--day-mood-color, rgba(99, 102, 241, 0.15));
+}
+
+.teen-journal-calendar__day--selected {
+    box-shadow: 0 0 0 2px var(--indigo-500), 0 2px 8px rgba(99, 102, 241, 0.3);
+    transform: scale(1.05);
+}
+
+.teen-journal-calendar__day-num {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-700);
+}
+
+.teen-journal-calendar__day-mood {
+    font-size: 12px;
+    line-height: 1;
+}
+
+.teen-journal-calendar__selected {
+    margin-top: var(--space-4);
+    min-height: 100px;
+}
+
+.teen-journal-calendar__selected-hint {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    color: var(--gray-400);
+    font-size: var(--text-sm);
+    padding: var(--space-8);
+    text-align: center;
+}
+
+.teen-journal-calendar__selected-hint svg {
+    width: 16px;
+    height: 16px;
+}
+
+.teen-journal-calendar__selected-date {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin-bottom: var(--space-3);
+    text-align: center;
+}
+
+.teen-journal-calendar__selected-empty {
+    color: var(--gray-500);
+    text-align: center;
+    font-style: italic;
+}
+
+.teen-journal-calendar__entry {
+    background: #F5F1EB;
+    border-radius: var(--radius-xl);
+    box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.08),
+        0 1px 3px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+    margin-bottom: var(--space-4);
+}
+
+.teen-journal-calendar__entry-paper {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            #B8D4E3 31px,
+            #B8D4E3 32px
+        ),
+        linear-gradient(to right, #F8C8C8 0px, #F8C8C8 3px, transparent 3px);
+    background-color: #FFFEF5;
+    padding: var(--space-4);
+    padding-left: calc(var(--space-4) + 25px);
+    position: relative;
+}
+
+.teen-journal-calendar__entry-paper::before {
+    content: '';
+    position: absolute;
+    left: 30px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background-color: #F8C8C8;
+}
+
+.teen-journal-calendar__entry-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+    line-height: 32px;
+}
+
+.teen-journal-calendar__entry-date {
+    font-family: 'Kalam', cursive;
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: #5B4636;
+}
+
+.teen-journal-calendar__entry-mood {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-full);
+    background: var(--day-mood-color, rgba(139, 92, 246, 0.15));
+}
+
+.teen-journal-calendar__entry-content {
+    font-family: 'Kalam', cursive;
+    color: #5B4636;
+    line-height: 32px;
+    margin-bottom: var(--space-3);
+    white-space: pre-wrap;
+    font-size: var(--text-base);
+}
+
+.teen-journal-calendar__entry-stickers {
+    font-size: var(--text-lg);
+    margin-bottom: var(--space-3);
+    line-height: 32px;
+}
+
+.teen-journal-calendar__entry-actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: flex-end;
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px dashed #B8D4E3;
+}
+
+/* Mobile adjustments for teen journal calendar */
+@media (max-width: 480px) {
+    .teen-journal-calendar__day-num {
+        font-size: var(--text-xs);
+    }
+
+    .teen-journal-calendar__day-mood {
+        font-size: 10px;
+    }
+
+    .teen-journal-calendar__entry-actions {
+        flex-direction: column;
+    }
+
+    .teen-journal-calendar__entry-actions .btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 
 /* Teen Stats Section */

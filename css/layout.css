@@ -217,6 +217,11 @@
     line-height: 1;
 }
 
+.tabs__avatar-emoji {
+    font-size: 18px;
+    line-height: 1;
+}
+
 /* Tab Label */
 .tabs__label {
     font-size: var(--text-sm);
@@ -528,6 +533,11 @@
     width: 24px;
     height: 24px;
     color: var(--gray-500);
+}
+
+.family-card__emoji {
+    font-size: 24px;
+    line-height: 1;
 }
 
 .family-card__info {

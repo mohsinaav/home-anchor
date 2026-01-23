@@ -403,6 +403,10 @@ const WidgetRenderer = (function() {
                         <span>Grid</span>
                     </button>
                 </div>
+                <button class="quick-access-btn" id="quickShoppingListBtn" title="Shopping List">
+                    <i data-lucide="shopping-cart"></i>
+                    <span>Shopping List</span>
+                </button>
             </div>
             <div class="${gridClass}" id="widgetGrid"></div>
             ${hasMoreWidgets ? `
@@ -496,6 +500,16 @@ const WidgetRenderer = (function() {
             setAdultLayoutPreference(member.id, 'focus');
             renderMemberWidgets(container, member);
         });
+
+        // Bind quick shopping list button
+        container.querySelector('#quickShoppingListBtn')?.addEventListener('click', () => {
+            if (typeof Grocery !== 'undefined') {
+                Grocery.showGroceryListPage('home');
+            }
+        });
+
+        // Render voice assistant FAB button
+        renderVoiceFab();
     }
 
     /**
@@ -526,6 +540,10 @@ const WidgetRenderer = (function() {
                         <span>Grid</span>
                     </button>
                 </div>
+                <button class="quick-access-btn" id="quickShoppingListBtn" title="Shopping List">
+                    <i data-lucide="shopping-cart"></i>
+                    <span>Shopping List</span>
+                </button>
             </div>
             <div class="focus-layout">
                 <!-- Left sidebar: Sticky-tab navigation -->
@@ -630,6 +648,16 @@ const WidgetRenderer = (function() {
             setAdultLayoutPreference(member.id, 'grid');
             renderMemberWidgets(container, member);
         });
+
+        // Bind quick shopping list button
+        container.querySelector('#quickShoppingListBtn')?.addEventListener('click', () => {
+            if (typeof Grocery !== 'undefined') {
+                Grocery.showGroceryListPage('home');
+            }
+        });
+
+        // Render voice assistant FAB button
+        renderVoiceFab();
     }
 
     /**
@@ -900,6 +928,9 @@ const WidgetRenderer = (function() {
             setKidLayoutPreference(member.id, 'grid');
             renderMemberWidgets(container, member);
         });
+
+        // Render voice assistant FAB button
+        renderVoiceFab();
     }
 
     /**
@@ -1018,6 +1049,9 @@ const WidgetRenderer = (function() {
             setKidLayoutPreference(member.id, 'focus');
             renderMemberWidgets(container, member);
         });
+
+        // Render voice assistant FAB button
+        renderVoiceFab();
     }
 
     /**
@@ -1553,10 +1587,98 @@ const WidgetRenderer = (function() {
         });
     }
 
+    /**
+     * Render voice assistant FAB button if enabled
+     */
+    function renderVoiceFab() {
+        // Remove any existing voice FAB first
+        // Remove existing FAB container or single FAB
+        const existingContainer = document.getElementById('voiceFabContainer');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        const existingFab = document.getElementById('voiceFab');
+        if (existingFab) {
+            existingFab.remove();
+        }
+
+        // Check if voice assistant is available and enabled
+        if (typeof VoiceAssistant === 'undefined' || !VoiceAssistant.isSupported()) {
+            return;
+        }
+
+        const settings = Storage.getSettings();
+        if (!settings.voiceAssistant?.enabled) {
+            return;
+        }
+
+        // Don't show on home or settings tabs
+        const activeTab = State.getActiveTab();
+        if (!activeTab || activeTab === 'home' || activeTab === 'settings') {
+            return;
+        }
+
+        // Create FAB container for both buttons
+        const fabContainer = document.createElement('div');
+        fabContainer.id = 'voiceFabContainer';
+        fabContainer.className = 'voice-fab-container';
+
+        // Create help button (smaller, positioned above mic)
+        const helpBtn = document.createElement('button');
+        helpBtn.id = 'voiceHelpFab';
+        helpBtn.className = 'voice-fab voice-fab--help';
+        helpBtn.setAttribute('aria-label', 'Voice commands help');
+        helpBtn.innerHTML = '<i data-lucide="help-circle"></i>';
+
+        // Create main mic FAB button
+        const fab = document.createElement('button');
+        fab.id = 'voiceFab';
+        fab.className = 'voice-fab';
+        fab.setAttribute('aria-label', 'Voice assistant');
+        fab.innerHTML = '<i data-lucide="mic"></i>';
+
+        fabContainer.appendChild(helpBtn);
+        fabContainer.appendChild(fab);
+        document.body.appendChild(fabContainer);
+
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Bind click events
+        fab.addEventListener('click', () => {
+            VoiceAssistant.startListening();
+        });
+
+        helpBtn.addEventListener('click', () => {
+            if (typeof VoiceAssistant !== 'undefined' && VoiceAssistant.showVoiceCommandsModal) {
+                VoiceAssistant.showVoiceCommandsModal();
+            }
+        });
+    }
+
+    /**
+     * Remove voice FAB button (for non-member views)
+     */
+    function removeVoiceFab() {
+        const existingContainer = document.getElementById('voiceFabContainer');
+        if (existingContainer) {
+            existingContainer.remove();
+        }
+        // Also check for old single FAB (backwards compatibility)
+        const existingFab = document.getElementById('voiceFab');
+        if (existingFab && !existingFab.closest('#voiceFabContainer')) {
+            existingFab.remove();
+        }
+    }
+
     // Public API
     return {
         renderMemberWidgets,
         getWidgetInfo,
-        registerWidget
+        registerWidget,
+        renderVoiceFab,
+        removeVoiceFab
     };
 })();

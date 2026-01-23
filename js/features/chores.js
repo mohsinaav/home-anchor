@@ -1065,11 +1065,31 @@ const Chores = (function() {
                 const count = parseInt(btn.dataset.count);
                 const widgetData = getWidgetData(memberId);
                 widgetData.choresPerDay = count;
+
+                // Regenerate today's chores with new count
+                const today = DateUtils.today();
+                const pool = widgetData.chorePool || [];
+                if (pool.length > 0) {
+                    const shuffled = [...pool].sort(() => Math.random() - 0.5);
+                    const picked = shuffled.slice(0, Math.min(count, pool.length));
+                    widgetData.dailyChores = widgetData.dailyChores || {};
+                    widgetData.dailyChores[today] = picked;
+                }
+
                 Storage.setWidgetData(memberId, 'chores', widgetData);
 
                 document.querySelectorAll('.chores-per-day-btn').forEach(b =>
                     b.classList.remove('chores-per-day-btn--selected'));
                 btn.classList.add('chores-per-day-btn--selected');
+
+                // Refresh the widget to show updated chores
+                const widgetBody = document.getElementById('widget-chores');
+                if (widgetBody) {
+                    renderWidget(widgetBody, memberId);
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
 
                 Toast.success(`Now picking ${count} chore${count > 1 ? 's' : ''} per day`);
             });

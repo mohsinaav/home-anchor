@@ -167,8 +167,11 @@ const Points = (function() {
             ? allActivities
             : allActivities.filter(a => a.category === currentFilter);
 
-        // Calculate today's points earned
-        const todayPoints = todayActivities.reduce((sum, c) => sum + (c.points || 0), 0);
+        // Calculate today's points earned from ALL sources (history includes all widgets)
+        const todayHistory = (widgetData.history || []).filter(h => h.date === today);
+        const todayEarned = todayHistory.filter(h => h.type === 'earned' || h.type === 'bonus').reduce((sum, h) => sum + (h.points || 0), 0);
+        const todayDeducted = todayHistory.filter(h => h.type === 'deducted' || h.type === 'spent').reduce((sum, h) => sum + (h.points || 0), 0);
+        const todayPoints = todayEarned - todayDeducted;
         const dailyGoal = widgetData.dailyGoal || 20;
         const dailyGoalEnabled = widgetData.dailyGoalEnabled !== false;
         const goalProgress = dailyGoalEnabled ? Math.min(100, Math.round((todayPoints / dailyGoal) * 100)) : 0;
@@ -791,20 +794,24 @@ const Points = (function() {
                                     ` (${groupedHistory[date].filter(e => e.type === 'bonus').reduce((sum, e) => sum + e.points, 0)} bonus)` : ''}
                                 ${groupedHistory[date].filter(e => e.type === 'spent').length > 0 ?
                                     ` · ${groupedHistory[date].filter(e => e.type === 'spent').reduce((sum, e) => sum + e.points, 0)} spent` : ''}
+                                ${groupedHistory[date].filter(e => e.type === 'deducted' || e.type === 'deduction').length > 0 ?
+                                    ` · -${groupedHistory[date].filter(e => e.type === 'deducted' || e.type === 'deduction').reduce((sum, e) => sum + e.points, 0)} penalty` : ''}
                             </span>
                         </div>
                         <div class="points-day__activities">
-                            ${groupedHistory[date].map(entry => `
+                            ${groupedHistory[date].map(entry => {
+                                const isNegative = entry.type === 'spent' || entry.type === 'deduction' || entry.type === 'deducted';
+                                const icon = entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : isNegative ? '⚠️' : '⭐';
+                                return `
                                 <div class="points-day__activity points-day__activity--${entry.type}">
-                                    <span class="points-day__icon">
-                                        ${entry.type === 'spent' ? '🎁' : entry.type === 'bonus' ? '🎯' : entry.type === 'deduction' ? '⚠️' : '⭐'}
-                                    </span>
-                                    <span class="points-day__name">${entry.activityName}${(entry.type === 'bonus' || entry.type === 'deduction') && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
-                                    <span class="points-day__points points-day__points--${entry.type}">
-                                        ${entry.type === 'spent' || entry.type === 'deduction' ? '-' : '+'}${entry.points}
+                                    <span class="points-day__icon">${icon}</span>
+                                    <span class="points-day__name">${entry.activityName}${(entry.type === 'bonus' || isNegative) && entry.reason ? ` <span class="points-day__reason">(${entry.reason})</span>` : ''}</span>
+                                    <span class="points-day__points points-day__points--${isNegative ? 'deducted' : entry.type}">
+                                        ${isNegative ? '-' : '+'}${entry.points}
                                     </span>
                                 </div>
-                            `).join('')}
+                            `;
+                            }).join('')}
                         </div>
                     </div>
                 `).join('')}

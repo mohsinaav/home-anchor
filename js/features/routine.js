@@ -241,29 +241,61 @@ const Routine = (function() {
     }
 
     /**
-     * Show completion celebration animation
+     * Show completion celebration animation (consistent with habits)
      */
-    function showCompletionAnimation(routine) {
+    function showCompletionAnimation(routine, isAllDone = false) {
         const overlay = document.createElement('div');
         overlay.className = 'routine-celebration';
+
+        const message = isAllDone ? 'All Done!' : routine.name;
+        const streakText = routine.streak > 1 ? `${routine.streak} in a row` : 'Keep it up!';
+        const routineColor = routine.color || '#6366F1';
+
+        // Generate confetti particles
+        const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8D8EA'];
+        let confettiHTML = '';
+        for (let i = 0; i < 50; i++) {
+            const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            const left = Math.random() * 100;
+            const delay = Math.random() * 0.5;
+            const size = Math.random() * 8 + 4;
+            const rotation = Math.random() * 360;
+            confettiHTML += `<div class="routine-celebration__confetti" style="--confetti-color: ${color}; --confetti-left: ${left}%; --confetti-delay: ${delay}s; --confetti-size: ${size}px; --confetti-rotation: ${rotation}deg;"></div>`;
+        }
+
         overlay.innerHTML = `
+            <div class="routine-celebration__confetti-container">${confettiHTML}</div>
             <div class="routine-celebration__content">
-                <div class="routine-celebration__icon" style="--routine-color: ${routine.color || '#6366F1'}">
-                    <i data-lucide="check-circle-2"></i>
+                <div class="routine-celebration__ring" style="--ring-color: ${routineColor}">
+                    <div class="routine-celebration__checkmark">
+                        <svg viewBox="0 0 52 52">
+                            <circle class="routine-celebration__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="routine-celebration__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
                 </div>
-                <div class="routine-celebration__text">Done!</div>
-                ${routine.streak > 1 ? `<div class="routine-celebration__streak">${routine.streak} in a row!</div>` : ''}
+                <div class="routine-celebration__text">${message}</div>
+                <div class="routine-celebration__streak">
+                    <span class="routine-celebration__flame">🔥</span>
+                    <span>${streakText}</span>
+                </div>
+                ${isAllDone ? '<div class="routine-celebration__trophy">🏆</div>' : ''}
             </div>
         `;
 
         document.body.appendChild(overlay);
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
+        // Click to dismiss early
+        overlay.addEventListener('click', () => {
+            overlay.classList.add('routine-celebration--fade');
+            setTimeout(() => overlay.remove(), 300);
+        });
 
+        // Auto-remove after animation
         setTimeout(() => {
             overlay.classList.add('routine-celebration--fade');
             setTimeout(() => overlay.remove(), 300);
-        }, 1200);
+        }, isAllDone ? 2500 : 1800);
     }
 
     /**
@@ -320,6 +352,73 @@ const Routine = (function() {
         }
 
         return true;
+    }
+
+    /**
+     * Undo marking a routine as done (for today only)
+     */
+    function undoMarkDone(memberId, routineId) {
+        const data = getWidgetData(memberId);
+        const routineIndex = data.routines.findIndex(r => r.id === routineId);
+        const today = DateUtils.today();
+
+        if (routineIndex === -1) return false;
+
+        const routine = data.routines[routineIndex];
+
+        // Check if it was completed today
+        const todayLog = data.completionLog[today] || [];
+        const completionIndex = todayLog.findIndex(c => c.routineId === routineId);
+
+        if (completionIndex === -1) return false; // Not completed today
+
+        // Remove from today's completion log
+        data.completionLog[today].splice(completionIndex, 1);
+
+        // Revert lastCompleted to previous completion (if any)
+        // Find the most recent completion before today
+        let previousCompletion = null;
+        const sortedDates = Object.keys(data.completionLog).sort().reverse();
+        for (const date of sortedDates) {
+            if (date === today) continue;
+            const dayLog = data.completionLog[date] || [];
+            const prevEntry = dayLog.find(c => c.routineId === routineId);
+            if (prevEntry) {
+                previousCompletion = prevEntry.completedAt;
+                break;
+            }
+        }
+
+        data.routines[routineIndex].lastCompleted = previousCompletion;
+
+        // Revert streak (decrement by 1, minimum 0)
+        data.routines[routineIndex].streak = Math.max(0, (routine.streak || 1) - 1);
+
+        saveWidgetData(memberId, data);
+        Toast.info('Routine marked as not done');
+
+        return true;
+    }
+
+    /**
+     * Check if routine was completed today
+     */
+    function isCompletedToday(memberId, routineId) {
+        const data = getWidgetData(memberId);
+        const today = DateUtils.today();
+        const todayLog = data.completionLog[today] || [];
+        return todayLog.some(c => c.routineId === routineId);
+    }
+
+    /**
+     * Toggle routine completion (mark done or undo)
+     */
+    function toggleRoutineCompletion(memberId, routineId) {
+        if (isCompletedToday(memberId, routineId)) {
+            return undoMarkDone(memberId, routineId);
+        } else {
+            return markDone(memberId, routineId);
+        }
     }
 
     /**
@@ -678,12 +777,12 @@ const Routine = (function() {
      * Bind widget events
      */
     function bindWidgetEvents(container, memberId) {
-        // Mark done buttons
+        // Mark done / undo buttons (toggleable)
         container.querySelectorAll('[data-mark-done]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const routineId = btn.dataset.markDone;
-                markDone(memberId, routineId);
+                toggleRoutineCompletion(memberId, routineId);
                 renderWidget(container, memberId);
             });
         });
@@ -1287,8 +1386,8 @@ const Routine = (function() {
                                 </button>
                             ` : ''}
                             <button class="btn btn--icon ${status.status === 'done' ? 'btn--success' : 'btn--primary'}"
-                                    data-mark-done="${routine.id}" ${status.status === 'done' ? 'disabled' : ''}
-                                    title="${status.status === 'done' ? 'Already completed today' : 'Mark as done'}">
+                                    data-mark-done="${routine.id}"
+                                    title="${status.status === 'done' ? 'Click to undo' : 'Mark as done'}">
                                 <i data-lucide="${status.status === 'done' ? 'check-circle-2' : 'check'}"></i>
                             </button>
                         </div>
@@ -1310,12 +1409,12 @@ const Routine = (function() {
      * Bind routine card events
      */
     function bindRoutineCardEvents(container, memberId, refreshCallback) {
-        // Mark done
+        // Mark done / undo (toggleable)
         container.querySelectorAll('[data-mark-done]').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 e.stopPropagation();
                 const routineId = btn.dataset.markDone;
-                markDone(memberId, routineId);
+                toggleRoutineCompletion(memberId, routineId);
                 if (refreshCallback) refreshCallback();
             });
         });

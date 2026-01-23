@@ -178,6 +178,19 @@ const SettingsPage = (function() {
                                     ${renderMealSettings(settings)}
                                 </div>
                             </section>
+
+                            <!-- Voice Assistant -->
+                            <section class="settings-section" id="voiceSettings">
+                                <div class="settings-section__header">
+                                    <h3 class="settings-section__title">
+                                        <i data-lucide="mic"></i>
+                                        Voice Assistant
+                                    </h3>
+                                </div>
+                                <div class="settings-section__content">
+                                    ${renderVoiceSettings(settings)}
+                                </div>
+                            </section>
                         </div>
                     </div>
 
@@ -339,6 +352,14 @@ const SettingsPage = (function() {
 
         if (avatar.type === 'photo' && avatar.photoUrl) {
             return `<img src="${avatar.photoUrl}" alt="${name}" class="avatar avatar--photo">`;
+        }
+
+        if (avatar.type === 'emoji' && avatar.emoji) {
+            return `
+                <div class="avatar avatar--emoji" style="background-color: ${avatar.color}">
+                    <span class="avatar__emoji">${avatar.emoji}</span>
+                </div>
+            `;
         }
 
         const textColor = typeof AvatarUtils !== 'undefined'
@@ -533,6 +554,111 @@ const SettingsPage = (function() {
         `;
     }
 
+    function renderVoiceSettings(settings) {
+        const voiceSettings = settings.voiceAssistant || { enabled: false, ttsEnabled: false };
+        const supported = typeof VoiceAssistant !== 'undefined' && VoiceAssistant.isSupported();
+
+        if (!supported) {
+            return `
+                <div class="voice-settings">
+                    <div class="setting-warning">
+                        <i data-lucide="alert-triangle"></i>
+                        <p>Voice assistant is not supported in your browser. Please use Chrome, Edge, or Safari for voice features.</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get available voices
+        const voices = VoiceAssistant.getAvailableVoices();
+        const selectedVoice = voiceSettings.selectedVoice || '';
+        const speechRate = voiceSettings.speechRate || 1.0;
+
+        // Group voices by language variant
+        const voiceOptions = voices.map(v => {
+            const label = v.name.replace('Microsoft ', '').replace(' Online (Natural)', '').replace(' - English', '');
+            return `<option value="${v.name}" ${v.name === selectedVoice ? 'selected' : ''}>${label}</option>`;
+        }).join('');
+
+        return `
+            <div class="voice-settings">
+                <div class="setting-group">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Enable Voice Assistant</label>
+                            <p class="setting-description">Show a microphone button on your dashboard for quick voice commands.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="voiceEnabledToggle" ${voiceSettings.enabled ? 'checked' : ''}>
+                            <span class="toggle-switch__slider"></span>
+                        </label>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Voice Feedback</label>
+                            <p class="setting-description">Speak responses aloud using text-to-speech.</p>
+                        </div>
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="voiceTtsToggle" ${voiceSettings.ttsEnabled ? 'checked' : ''}>
+                            <span class="toggle-switch__slider"></span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Voice Selection (shown when TTS is enabled) -->
+                <div class="setting-group voice-tts-options" id="voiceTtsOptions" style="${voiceSettings.ttsEnabled ? '' : 'display: none;'}">
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Voice</label>
+                            <p class="setting-description">Choose the voice for spoken responses.</p>
+                        </div>
+                        <select class="form-select" id="voiceSelectDropdown" style="width: 200px;">
+                            <option value="">System Default</option>
+                            ${voiceOptions}
+                        </select>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Speech Speed</label>
+                            <p class="setting-description">Adjust how fast the voice speaks.</p>
+                        </div>
+                        <div class="speed-control" style="display: flex; align-items: center; gap: var(--space-3);">
+                            <input type="range" id="voiceSpeedSlider" min="0.5" max="2" step="0.1" value="${speechRate}" style="width: 120px;">
+                            <span id="voiceSpeedValue" style="min-width: 40px; text-align: center;">${speechRate}x</span>
+                        </div>
+                    </div>
+
+                    <div class="setting-row">
+                        <div class="setting-row__info">
+                            <label class="setting-label">Test Voice</label>
+                            <p class="setting-description">Hear a sample of the selected voice.</p>
+                        </div>
+                        <button class="btn btn--secondary btn--sm" id="testVoiceBtn">
+                            <i data-lucide="volume-2"></i>
+                            Test
+                        </button>
+                    </div>
+                </div>
+
+                <div class="setting-info" style="margin-top: var(--space-4);">
+                    <i data-lucide="info"></i>
+                    <div>
+                        <p style="margin-bottom: 0.5rem;"><strong>Try these voice commands:</strong></p>
+                        <ul style="margin: 0; padding-left: 1.25rem; font-size: 0.875rem; color: var(--gray-600);">
+                            <li>"Add task buy milk"</li>
+                            <li>"Add eggs to grocery"</li>
+                            <li>"Check off exercise"</li>
+                            <li>"Dinner is pasta"</li>
+                            <li>"What's for dinner?"</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     function renderPointsConfigSettings(settings) {
         const pointsConfig = settings.pointsConfig || {};
         const journalPoints = pointsConfig.journalPoints !== undefined ? pointsConfig.journalPoints : 5;
@@ -604,6 +730,55 @@ const SettingsPage = (function() {
         }
 
         const selectedMember = Storage.getMember(selectedKidId);
+        const isToddler = selectedMember?.type === 'toddler';
+
+        // Reset tab if switching between kid/toddler and current tab doesn't apply
+        const kidTabs = ['points', 'chores', 'screen-time', 'rewards'];
+        const toddlerTabs = ['routine', 'milestones', 'daily-log'];
+
+        if (isToddler && kidTabs.includes(kidsManagementTab)) {
+            kidsManagementTab = 'routine';
+        } else if (!isToddler && toddlerTabs.includes(kidsManagementTab)) {
+            kidsManagementTab = 'points';
+        }
+
+        const renderKidTabs = () => `
+            <button class="kids-management__tab ${kidsManagementTab === 'points' ? 'kids-management__tab--active' : ''}" data-kids-tab="points">
+                <i data-lucide="star"></i>
+                Points
+            </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'chores' ? 'kids-management__tab--active' : ''}" data-kids-tab="chores">
+                <i data-lucide="check-square"></i>
+                Chores
+            </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'screen-time' ? 'kids-management__tab--active' : ''}" data-kids-tab="screen-time">
+                <i data-lucide="monitor"></i>
+                Screen Time
+            </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'rewards' ? 'kids-management__tab--active' : ''}" data-kids-tab="rewards">
+                <i data-lucide="gift"></i>
+                Rewards
+            </button>
+        `;
+
+        const renderToddlerTabs = () => `
+            <button class="kids-management__tab ${kidsManagementTab === 'routine' ? 'kids-management__tab--active' : ''}" data-kids-tab="routine">
+                <i data-lucide="clock"></i>
+                Routine
+            </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'milestones' ? 'kids-management__tab--active' : ''}" data-kids-tab="milestones">
+                <i data-lucide="award"></i>
+                Milestones
+            </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'daily-log' ? 'kids-management__tab--active' : ''}" data-kids-tab="daily-log">
+                <i data-lucide="book-open"></i>
+                Daily Log
+            </button>
+        `;
+
+        const dangerZoneText = isToddler
+            ? `Reset all progress for ${selectedMember?.name || 'this toddler'}. This clears routine history, milestones, and daily logs.`
+            : `Reset all progress for ${selectedMember?.name || 'this child'}. This clears points, chores history, screen time log, and achievements.`;
 
         return `
             <section class="settings-section" id="kidsManagementSettings">
@@ -629,22 +804,7 @@ const SettingsPage = (function() {
 
                         <!-- Sub-tabs -->
                         <div class="kids-management__tabs">
-                            <button class="kids-management__tab ${kidsManagementTab === 'points' ? 'kids-management__tab--active' : ''}" data-kids-tab="points">
-                                <i data-lucide="star"></i>
-                                Points
-                            </button>
-                            <button class="kids-management__tab ${kidsManagementTab === 'chores' ? 'kids-management__tab--active' : ''}" data-kids-tab="chores">
-                                <i data-lucide="check-square"></i>
-                                Chores
-                            </button>
-                            <button class="kids-management__tab ${kidsManagementTab === 'screen-time' ? 'kids-management__tab--active' : ''}" data-kids-tab="screen-time">
-                                <i data-lucide="monitor"></i>
-                                Screen Time
-                            </button>
-                            <button class="kids-management__tab ${kidsManagementTab === 'rewards' ? 'kids-management__tab--active' : ''}" data-kids-tab="rewards">
-                                <i data-lucide="gift"></i>
-                                Rewards
-                            </button>
+                            ${isToddler ? renderToddlerTabs() : renderKidTabs()}
                         </div>
 
                         <!-- Tab Content -->
@@ -655,7 +815,7 @@ const SettingsPage = (function() {
                         <!-- Danger Zone -->
                         <div class="kids-management__danger-zone">
                             <h4><i data-lucide="alert-triangle"></i> Danger Zone</h4>
-                            <p>Reset all progress for ${selectedMember?.name || 'this child'}. This clears points, chores history, screen time log, and achievements.</p>
+                            <p>${dangerZoneText}</p>
                             <button class="btn btn--danger btn--sm" id="resetKidProgressBtn" data-member-id="${selectedKidId}">
                                 <i data-lucide="trash-2"></i>
                                 Reset All Progress
@@ -671,7 +831,11 @@ const SettingsPage = (function() {
      * Render tab content based on active tab
      */
     function renderKidsTabContent(memberId, tab) {
+        const member = Storage.getMember(memberId);
+        const isToddler = member?.type === 'toddler';
+
         switch (tab) {
+            // Kid tabs
             case 'points':
                 return renderKidsPointsTab(memberId);
             case 'chores':
@@ -680,8 +844,15 @@ const SettingsPage = (function() {
                 return renderKidsScreenTimeTab(memberId);
             case 'rewards':
                 return renderKidsRewardsTab(memberId);
+            // Toddler tabs
+            case 'routine':
+                return renderToddlerRoutineTab(memberId);
+            case 'milestones':
+                return renderToddlerMilestonesTab(memberId);
+            case 'daily-log':
+                return renderToddlerDailyLogTab(memberId);
             default:
-                return renderKidsPointsTab(memberId);
+                return isToddler ? renderToddlerRoutineTab(memberId) : renderKidsPointsTab(memberId);
         }
     }
 
@@ -854,8 +1025,11 @@ const SettingsPage = (function() {
                     <button class="btn btn--primary" id="kidsSaveScreenTimeLimitsBtn">
                         <i data-lucide="save"></i> Save Limits
                     </button>
+                    <button class="btn btn--ghost btn--sm" id="kidsResetTodayScreenTimeBtn">
+                        <i data-lucide="refresh-cw"></i> Reset Today's Usage
+                    </button>
                     <button class="btn btn--ghost" id="kidsResetScreenTimeLogBtn">
-                        <i data-lucide="trash-2"></i> Clear Usage History
+                        <i data-lucide="trash-2"></i> Clear All History
                     </button>
                 </div>
             </div>
@@ -905,6 +1079,171 @@ const SettingsPage = (function() {
                             `).join('')}
                         </div>
                     `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Toddler Routine Tab
+     */
+    function renderToddlerRoutineTab(memberId) {
+        const routineData = Storage.getWidgetData(memberId, 'toddler-routine') || { routines: [] };
+        const routines = routineData.routines || [];
+
+        return `
+            <div class="kids-tab-content kids-tab-content--routine">
+                <div class="toddler-routine-settings">
+                    <div class="toddler-routine-header">
+                        <h4>Daily Routines (${routines.length})</h4>
+                        <button class="btn btn--primary btn--sm" id="toddlerAddRoutineBtn">
+                            <i data-lucide="plus"></i> Add Routine
+                        </button>
+                    </div>
+                    ${routines.length === 0 ? `
+                        <p class="toddler-empty-message">No routines set up yet. Add daily routines like meals, naps, and activities!</p>
+                    ` : `
+                        <div class="toddler-routine-list">
+                            ${routines.map(routine => `
+                                <div class="toddler-routine-item" data-routine-id="${routine.id}">
+                                    <div class="toddler-routine-item__icon" style="background-color: ${routine.color || '#6366F1'}">
+                                        <i data-lucide="${routine.icon || 'clock'}"></i>
+                                    </div>
+                                    <div class="toddler-routine-item__info">
+                                        <span class="toddler-routine-item__name">${routine.name}</span>
+                                        <span class="toddler-routine-item__time">${routine.time || 'No time set'}</span>
+                                    </div>
+                                    <div class="toddler-routine-item__actions">
+                                        <button class="btn btn--ghost btn--sm" data-edit-routine="${routine.id}">
+                                            <i data-lucide="pencil"></i>
+                                        </button>
+                                        <button class="btn btn--ghost btn--sm" data-delete-routine="${routine.id}">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+                <div class="toddler-routine-actions">
+                    <button class="btn btn--ghost btn--sm" id="toddlerResetRoutinesBtn">
+                        <i data-lucide="refresh-cw"></i> Reset Today's Progress
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Toddler Milestones Tab
+     */
+    function renderToddlerMilestonesTab(memberId) {
+        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
+        const milestones = milestonesData.milestones || [];
+        const achievedCount = milestones.filter(m => m.achieved).length;
+
+        return `
+            <div class="kids-tab-content kids-tab-content--milestones">
+                <div class="toddler-milestones-settings">
+                    <div class="toddler-milestones-header">
+                        <h4>Milestones (${achievedCount}/${milestones.length} achieved)</h4>
+                        <button class="btn btn--primary btn--sm" id="toddlerAddMilestoneBtn">
+                            <i data-lucide="plus"></i> Add Milestone
+                        </button>
+                    </div>
+                    ${milestones.length === 0 ? `
+                        <p class="toddler-empty-message">No milestones tracked yet. Add developmental milestones to celebrate!</p>
+                    ` : `
+                        <div class="toddler-milestones-list">
+                            ${milestones.map(milestone => `
+                                <div class="toddler-milestone-item ${milestone.achieved ? 'toddler-milestone-item--achieved' : ''}" data-milestone-id="${milestone.id}">
+                                    <div class="toddler-milestone-item__check">
+                                        <input type="checkbox" ${milestone.achieved ? 'checked' : ''} data-toggle-milestone="${milestone.id}">
+                                    </div>
+                                    <div class="toddler-milestone-item__info">
+                                        <span class="toddler-milestone-item__name">${milestone.name}</span>
+                                        ${milestone.achievedDate ? `<span class="toddler-milestone-item__date">Achieved: ${milestone.achievedDate}</span>` : ''}
+                                    </div>
+                                    <div class="toddler-milestone-item__actions">
+                                        <button class="btn btn--ghost btn--sm" data-delete-milestone="${milestone.id}">
+                                            <i data-lucide="trash-2"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Toddler Daily Log Tab
+     */
+    function renderToddlerDailyLogTab(memberId) {
+        const logData = Storage.getWidgetData(memberId, 'daily-log') || { entries: [] };
+        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+        const todayEntry = logData.entries?.find(e => e.date === today) || {};
+
+        return `
+            <div class="kids-tab-content kids-tab-content--daily-log">
+                <div class="toddler-daily-log-settings">
+                    <h4>Today's Log</h4>
+
+                    <div class="toddler-log-section">
+                        <label class="form-label">
+                            <i data-lucide="moon"></i> Sleep
+                        </label>
+                        <div class="toddler-log-row">
+                            <input type="text" class="form-input" id="toddlerSleepLog"
+                                   placeholder="e.g., 8pm-6am, nap 1-3pm"
+                                   value="${todayEntry.sleep || ''}">
+                        </div>
+                    </div>
+
+                    <div class="toddler-log-section">
+                        <label class="form-label">
+                            <i data-lucide="utensils"></i> Meals
+                        </label>
+                        <div class="toddler-log-row">
+                            <textarea class="form-input" id="toddlerMealsLog" rows="2"
+                                      placeholder="e.g., Breakfast: oatmeal, Lunch: pasta...">${todayEntry.meals || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="toddler-log-section">
+                        <label class="form-label">
+                            <i data-lucide="smile"></i> Mood
+                        </label>
+                        <div class="toddler-mood-selector">
+                            ${['😊', '😐', '😢', '😴', '🤒'].map(mood => `
+                                <button type="button" class="toddler-mood-btn ${todayEntry.mood === mood ? 'toddler-mood-btn--active' : ''}" data-mood="${mood}">
+                                    ${mood}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="toddler-log-section">
+                        <label class="form-label">
+                            <i data-lucide="file-text"></i> Notes
+                        </label>
+                        <div class="toddler-log-row">
+                            <textarea class="form-input" id="toddlerNotesLog" rows="3"
+                                      placeholder="Any notes about the day...">${todayEntry.notes || ''}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="toddler-log-actions">
+                        <button class="btn btn--primary" id="toddlerSaveLogBtn">
+                            <i data-lucide="save"></i> Save Today's Log
+                        </button>
+                        <button class="btn btn--ghost" id="toddlerClearLogBtn">
+                            <i data-lucide="trash-2"></i> Clear All Logs
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -1053,9 +1392,23 @@ const SettingsPage = (function() {
             Toast.success('Screen time limits saved');
         });
 
+        // Reset today's screen time usage
+        container.querySelector('#kidsResetTodayScreenTimeBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.confirm('Reset today\'s screen time usage? This will clear today\'s logged time.', 'Reset Today\'s Usage');
+            if (confirmed) {
+                const screenData = Storage.getWidgetData(selectedKidId, 'screen-time') || {};
+                const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+                if (screenData.log) {
+                    delete screenData.log[today];
+                }
+                Storage.setWidgetData(selectedKidId, 'screen-time', screenData);
+                Toast.success('Today\'s screen time reset');
+            }
+        });
+
         // Clear screen time history
         container.querySelector('#kidsResetScreenTimeLogBtn')?.addEventListener('click', async () => {
-            const confirmed = await Modal.dangerConfirm('Clear all screen time usage history?', 'Clear History');
+            const confirmed = await Modal.dangerConfirm('Clear all screen time usage history?', 'Clear All History');
             if (confirmed) {
                 const screenData = Storage.getWidgetData(selectedKidId, 'screen-time') || {};
                 screenData.log = {};
@@ -1095,6 +1448,116 @@ const SettingsPage = (function() {
             );
             if (confirmed) {
                 resetKidProgress(selectedKidId);
+                refreshKidsManagementSection(container);
+            }
+        });
+
+        // === TODDLER TAB EVENTS ===
+
+        // Add routine button
+        container.querySelector('#toddlerAddRoutineBtn')?.addEventListener('click', () => {
+            showAddToddlerRoutineModal(selectedKidId, container);
+        });
+
+        // Edit routine buttons
+        container.querySelectorAll('[data-edit-routine]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditToddlerRoutineModal(selectedKidId, btn.dataset.editRoutine, container);
+            });
+        });
+
+        // Delete routine buttons
+        container.querySelectorAll('[data-delete-routine]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this routine?', 'Delete Routine');
+                if (confirmed) {
+                    deleteToddlerRoutine(selectedKidId, btn.dataset.deleteRoutine);
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Reset today's routine progress
+        container.querySelector('#toddlerResetRoutinesBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.confirm('Reset today\'s routine progress?', 'Reset Progress');
+            if (confirmed) {
+                const routineData = Storage.getWidgetData(selectedKidId, 'toddler-routine') || {};
+                const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+                if (routineData.completed) {
+                    delete routineData.completed[today];
+                }
+                Storage.setWidgetData(selectedKidId, 'toddler-routine', routineData);
+                Toast.success('Today\'s routine progress reset');
+            }
+        });
+
+        // Add milestone button
+        container.querySelector('#toddlerAddMilestoneBtn')?.addEventListener('click', () => {
+            showAddToddlerMilestoneModal(selectedKidId, container);
+        });
+
+        // Toggle milestone checkboxes
+        container.querySelectorAll('[data-toggle-milestone]').forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                toggleToddlerMilestone(selectedKidId, checkbox.dataset.toggleMilestone, checkbox.checked);
+                refreshKidsManagementSection(container);
+            });
+        });
+
+        // Delete milestone buttons
+        container.querySelectorAll('[data-delete-milestone]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this milestone?', 'Delete Milestone');
+                if (confirmed) {
+                    deleteToddlerMilestone(selectedKidId, btn.dataset.deleteMilestone);
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Mood selector buttons
+        container.querySelectorAll('.toddler-mood-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active from all mood buttons
+                container.querySelectorAll('.toddler-mood-btn').forEach(b => b.classList.remove('toddler-mood-btn--active'));
+                btn.classList.add('toddler-mood-btn--active');
+            });
+        });
+
+        // Save daily log button
+        container.querySelector('#toddlerSaveLogBtn')?.addEventListener('click', () => {
+            const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+            const logData = Storage.getWidgetData(selectedKidId, 'daily-log') || { entries: [] };
+
+            const sleep = container.querySelector('#toddlerSleepLog')?.value?.trim() || '';
+            const meals = container.querySelector('#toddlerMealsLog')?.value?.trim() || '';
+            const notes = container.querySelector('#toddlerNotesLog')?.value?.trim() || '';
+            const moodBtn = container.querySelector('.toddler-mood-btn--active');
+            const mood = moodBtn?.dataset?.mood || '';
+
+            // Find or create today's entry
+            let todayEntry = logData.entries?.find(e => e.date === today);
+            if (!todayEntry) {
+                todayEntry = { date: today };
+                logData.entries = logData.entries || [];
+                logData.entries.push(todayEntry);
+            }
+
+            todayEntry.sleep = sleep;
+            todayEntry.meals = meals;
+            todayEntry.notes = notes;
+            todayEntry.mood = mood;
+
+            Storage.setWidgetData(selectedKidId, 'daily-log', logData);
+            Toast.success('Daily log saved');
+        });
+
+        // Clear all logs button
+        container.querySelector('#toddlerClearLogBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.dangerConfirm('Clear all daily log entries? This cannot be undone.', 'Clear All Logs');
+            if (confirmed) {
+                Storage.setWidgetData(selectedKidId, 'daily-log', { entries: [] });
+                Toast.success('All logs cleared');
                 refreshKidsManagementSection(container);
             }
         });
@@ -1196,6 +1659,276 @@ const SettingsPage = (function() {
         Storage.setWidgetData(memberId, 'rewards', rewardsData);
 
         Toast.success('All progress has been reset');
+    }
+
+    // === TODDLER HELPER FUNCTIONS ===
+
+    /**
+     * Delete a toddler routine
+     */
+    function deleteToddlerRoutine(memberId, routineId) {
+        const routineData = Storage.getWidgetData(memberId, 'toddler-routine') || { routines: [] };
+        routineData.routines = (routineData.routines || []).filter(r => r.id !== routineId);
+        Storage.setWidgetData(memberId, 'toddler-routine', routineData);
+        Toast.success('Routine deleted');
+    }
+
+    /**
+     * Toggle a toddler milestone
+     */
+    function toggleToddlerMilestone(memberId, milestoneId, achieved) {
+        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
+        const milestone = milestonesData.milestones?.find(m => m.id === milestoneId);
+        if (milestone) {
+            milestone.achieved = achieved;
+            milestone.achievedDate = achieved ? (typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0]) : null;
+            Storage.setWidgetData(memberId, 'milestones', milestonesData);
+            Toast.success(achieved ? 'Milestone achieved! 🎉' : 'Milestone unmarked');
+        }
+    }
+
+    /**
+     * Delete a toddler milestone
+     */
+    function deleteToddlerMilestone(memberId, milestoneId) {
+        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
+        milestonesData.milestones = (milestonesData.milestones || []).filter(m => m.id !== milestoneId);
+        Storage.setWidgetData(memberId, 'milestones', milestonesData);
+        Toast.success('Milestone deleted');
+    }
+
+    /**
+     * Show Add Toddler Routine Modal
+     */
+    function showAddToddlerRoutineModal(memberId, container) {
+        const routineIcons = ['sun', 'moon', 'utensils', 'baby', 'book', 'music', 'palette', 'bath', 'bed', 'heart', 'star', 'clock'];
+        const routineColors = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+
+        const content = `
+            <form id="addToddlerRoutineForm">
+                <div class="form-group">
+                    <label class="form-label">Routine Name</label>
+                    <input type="text" class="form-input" id="routineNameInput" placeholder="e.g., Morning nap" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time (optional)</label>
+                    <input type="time" class="form-input" id="routineTimeInput">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${routineIcons.map((icon, i) => `
+                            <label class="icon-option">
+                                <input type="radio" name="routineIcon" value="${icon}" ${i === 0 ? 'checked' : ''}>
+                                <span class="icon-option__display"><i data-lucide="${icon}"></i></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${routineColors.map((color, i) => `
+                            <label class="color-option">
+                                <input type="radio" name="routineColor" value="${color}" ${i === 0 ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Routine',
+            content,
+            onOpen: () => {
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            },
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Add Routine',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#routineNameInput')?.value?.trim();
+                        const time = document.querySelector('#routineTimeInput')?.value || '';
+                        const icon = document.querySelector('input[name="routineIcon"]:checked')?.value || 'clock';
+                        const color = document.querySelector('input[name="routineColor"]:checked')?.value || '#6366F1';
+
+                        if (!name) {
+                            Toast.error('Please enter a routine name');
+                            return;
+                        }
+
+                        const routineData = Storage.getWidgetData(memberId, 'toddler-routine') || { routines: [] };
+                        routineData.routines = routineData.routines || [];
+                        routineData.routines.push({
+                            id: `routine-${Date.now()}`,
+                            name,
+                            time,
+                            icon,
+                            color
+                        });
+                        Storage.setWidgetData(memberId, 'toddler-routine', routineData);
+                        Toast.success('Routine added');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Show Edit Toddler Routine Modal
+     */
+    function showEditToddlerRoutineModal(memberId, routineId, container) {
+        const routineData = Storage.getWidgetData(memberId, 'toddler-routine') || { routines: [] };
+        const routine = routineData.routines?.find(r => r.id === routineId);
+        if (!routine) return;
+
+        const routineIcons = ['sun', 'moon', 'utensils', 'baby', 'book', 'music', 'palette', 'bath', 'bed', 'heart', 'star', 'clock'];
+        const routineColors = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6'];
+
+        const content = `
+            <form id="editToddlerRoutineForm">
+                <div class="form-group">
+                    <label class="form-label">Routine Name</label>
+                    <input type="text" class="form-input" id="routineNameInput" value="${routine.name}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Time (optional)</label>
+                    <input type="time" class="form-input" id="routineTimeInput" value="${routine.time || ''}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Icon</label>
+                    <div class="icon-selector">
+                        ${routineIcons.map(icon => `
+                            <label class="icon-option">
+                                <input type="radio" name="routineIcon" value="${icon}" ${icon === routine.icon ? 'checked' : ''}>
+                                <span class="icon-option__display"><i data-lucide="${icon}"></i></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${routineColors.map(color => `
+                            <label class="color-option">
+                                <input type="radio" name="routineColor" value="${color}" ${color === routine.color ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Routine',
+            content,
+            onOpen: () => {
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            },
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Save Changes',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#routineNameInput')?.value?.trim();
+                        const time = document.querySelector('#routineTimeInput')?.value || '';
+                        const icon = document.querySelector('input[name="routineIcon"]:checked')?.value || 'clock';
+                        const color = document.querySelector('input[name="routineColor"]:checked')?.value || '#6366F1';
+
+                        if (!name) {
+                            Toast.error('Please enter a routine name');
+                            return;
+                        }
+
+                        routine.name = name;
+                        routine.time = time;
+                        routine.icon = icon;
+                        routine.color = color;
+                        Storage.setWidgetData(memberId, 'toddler-routine', routineData);
+                        Toast.success('Routine updated');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Show Add Toddler Milestone Modal
+     */
+    function showAddToddlerMilestoneModal(memberId, container) {
+        const content = `
+            <form id="addToddlerMilestoneForm">
+                <div class="form-group">
+                    <label class="form-label">Milestone</label>
+                    <input type="text" class="form-input" id="milestoneNameInput" placeholder="e.g., First steps" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category (optional)</label>
+                    <select class="form-input" id="milestoneCategoryInput">
+                        <option value="">Select category...</option>
+                        <option value="motor">Motor Skills</option>
+                        <option value="language">Language</option>
+                        <option value="social">Social & Emotional</option>
+                        <option value="cognitive">Cognitive</option>
+                        <option value="self-care">Self-Care</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" id="milestoneAchievedInput">
+                        Already achieved
+                    </label>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Milestone',
+            content,
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Add Milestone',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#milestoneNameInput')?.value?.trim();
+                        const category = document.querySelector('#milestoneCategoryInput')?.value || '';
+                        const achieved = document.querySelector('#milestoneAchievedInput')?.checked || false;
+
+                        if (!name) {
+                            Toast.error('Please enter a milestone');
+                            return;
+                        }
+
+                        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
+                        milestonesData.milestones = milestonesData.milestones || [];
+                        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
+
+                        milestonesData.milestones.push({
+                            id: `milestone-${Date.now()}`,
+                            name,
+                            category,
+                            achieved,
+                            achievedDate: achieved ? today : null
+                        });
+                        Storage.setWidgetData(memberId, 'milestones', milestonesData);
+                        Toast.success('Milestone added');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
     }
 
     /**
@@ -2183,6 +2916,67 @@ const SettingsPage = (function() {
             Toast.success(e.target.checked ? 'Kids menu enabled' : 'Kids menu disabled');
         });
 
+        // Voice assistant enable toggle
+        container.querySelector('#voiceEnabledToggle')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.voiceAssistant = settings.voiceAssistant || {};
+            settings.voiceAssistant.enabled = e.target.checked;
+            Storage.updateSettings(settings);
+            Toast.success(e.target.checked ? 'Voice assistant enabled' : 'Voice assistant disabled');
+        });
+
+        // Voice TTS toggle
+        container.querySelector('#voiceTtsToggle')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.voiceAssistant = settings.voiceAssistant || {};
+            settings.voiceAssistant.ttsEnabled = e.target.checked;
+            Storage.updateSettings(settings);
+
+            // Show/hide voice options
+            const voiceOptions = container.querySelector('#voiceTtsOptions');
+            if (voiceOptions) {
+                voiceOptions.style.display = e.target.checked ? '' : 'none';
+            }
+
+            Toast.success(e.target.checked ? 'Voice feedback enabled' : 'Voice feedback disabled');
+        });
+
+        // Voice selection dropdown
+        container.querySelector('#voiceSelectDropdown')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.voiceAssistant = settings.voiceAssistant || {};
+            settings.voiceAssistant.selectedVoice = e.target.value;
+            Storage.updateSettings(settings);
+        });
+
+        // Voice speed slider
+        container.querySelector('#voiceSpeedSlider')?.addEventListener('input', (e) => {
+            const speed = parseFloat(e.target.value);
+            const speedLabel = container.querySelector('#voiceSpeedValue');
+            if (speedLabel) {
+                speedLabel.textContent = `${speed}x`;
+            }
+        });
+
+        container.querySelector('#voiceSpeedSlider')?.addEventListener('change', (e) => {
+            const settings = Storage.getSettings();
+            settings.voiceAssistant = settings.voiceAssistant || {};
+            settings.voiceAssistant.speechRate = parseFloat(e.target.value);
+            Storage.updateSettings(settings);
+        });
+
+        // Test voice button
+        container.querySelector('#testVoiceBtn')?.addEventListener('click', () => {
+            const voiceSelect = container.querySelector('#voiceSelectDropdown');
+            const speedSlider = container.querySelector('#voiceSpeedSlider');
+            const voiceName = voiceSelect?.value || '';
+            const rate = parseFloat(speedSlider?.value) || 1.0;
+
+            if (typeof VoiceAssistant !== 'undefined') {
+                VoiceAssistant.testVoice(voiceName, rate);
+            }
+        });
+
         // Reset all tours
         container.querySelector('#resetToursBtn')?.addEventListener('click', () => {
             if (typeof Tour !== 'undefined') {
@@ -2335,11 +3129,65 @@ const SettingsPage = (function() {
         const member = Storage.getMember(memberId);
         if (!member) return;
 
+        // Emoji options for avatars
+        const avatarEmojis = ['👤', '👩', '👨', '👧', '👦', '👶', '🧒', '👩‍🦰', '👨‍🦰', '👩‍🦱', '👨‍🦱', '👩‍🦳', '👨‍🦳', '🧔', '👵', '👴', '🦸', '🦹', '🧙', '🧚', '🐱', '🐶', '🐻', '🦊', '🦁', '🐼', '🐨', '🐸', '🦄', '🌟'];
+
+        const currentAvatarType = member.avatar?.type || 'initials';
+        const currentEmoji = member.avatar?.emoji || '';
+        const currentPhotoUrl = member.avatar?.photoUrl || '';
+
         const content = `
             <form id="editMemberForm">
                 <div class="form-group">
                     <label class="form-label">Name</label>
                     <input type="text" class="form-input" id="memberName" value="${member.name}" required>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Avatar Type</label>
+                    <div class="avatar-type-selector">
+                        <button type="button" class="avatar-type-btn ${currentAvatarType === 'initials' ? 'avatar-type-btn--active' : ''}" data-type="initials">
+                            <span class="avatar-type-btn__icon">AB</span>
+                            <span class="avatar-type-btn__label">Initials</span>
+                        </button>
+                        <button type="button" class="avatar-type-btn ${currentAvatarType === 'emoji' ? 'avatar-type-btn--active' : ''}" data-type="emoji">
+                            <span class="avatar-type-btn__icon">😊</span>
+                            <span class="avatar-type-btn__label">Emoji</span>
+                        </button>
+                        <button type="button" class="avatar-type-btn ${currentAvatarType === 'photo' ? 'avatar-type-btn--active' : ''}" data-type="photo">
+                            <span class="avatar-type-btn__icon"><i data-lucide="camera"></i></span>
+                            <span class="avatar-type-btn__label">Photo</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="form-group avatar-emoji-section" style="display: ${currentAvatarType === 'emoji' ? 'block' : 'none'}">
+                    <label class="form-label">Select Emoji</label>
+                    <div class="avatar-emoji-selector">
+                        ${avatarEmojis.map(emoji => `
+                            <button type="button" class="avatar-emoji-btn ${currentEmoji === emoji ? 'avatar-emoji-btn--active' : ''}" data-emoji="${emoji}">
+                                ${emoji}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div class="form-group avatar-photo-section" style="display: ${currentAvatarType === 'photo' ? 'block' : 'none'}">
+                    <label class="form-label">Upload Photo</label>
+                    <div class="avatar-photo-upload">
+                        <div class="avatar-photo-preview" id="avatarPhotoPreview">
+                            ${currentPhotoUrl ? `<img src="${currentPhotoUrl}" alt="Avatar">` : '<i data-lucide="user"></i>'}
+                        </div>
+                        <div class="avatar-photo-actions">
+                            <label class="btn btn--primary btn--sm">
+                                <i data-lucide="upload"></i> Upload
+                                <input type="file" id="avatarPhotoInput" accept="image/*" hidden>
+                            </label>
+                            <button type="button" class="btn btn--ghost btn--sm" id="removePhotoBtn" ${!currentPhotoUrl ? 'disabled' : ''}>
+                                <i data-lucide="trash-2"></i> Remove
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="form-group">
@@ -2354,10 +3202,10 @@ const SettingsPage = (function() {
                     </div>
                 </div>
 
-                ${member.type === 'kid' ? `
+                ${member.type === 'kid' || member.type === 'teen' || member.type === 'toddler' ? `
                     <div class="form-group">
                         <label class="form-label">Age</label>
-                        <input type="number" class="form-input" id="memberAge" min="4" max="17" value="${member.age || 8}">
+                        <input type="number" class="form-input" id="memberAge" min="1" max="17" value="${member.age || 8}">
                     </div>
                 ` : ''}
             </form>
@@ -2373,8 +3221,67 @@ const SettingsPage = (function() {
             lucide.createIcons();
         }
 
-        // Avatar color selection
+        // State variables
+        let selectedType = currentAvatarType;
         let selectedColor = member.avatar?.color;
+        let selectedEmoji = currentEmoji;
+        let selectedPhotoUrl = currentPhotoUrl;
+
+        // Avatar type selection
+        document.querySelectorAll('.avatar-type-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.avatar-type-btn').forEach(b => b.classList.remove('avatar-type-btn--active'));
+                btn.classList.add('avatar-type-btn--active');
+                selectedType = btn.dataset.type;
+
+                // Show/hide relevant sections
+                document.querySelector('.avatar-emoji-section').style.display = selectedType === 'emoji' ? 'block' : 'none';
+                document.querySelector('.avatar-photo-section').style.display = selectedType === 'photo' ? 'block' : 'none';
+            });
+        });
+
+        // Emoji selection
+        document.querySelectorAll('.avatar-emoji-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.avatar-emoji-btn').forEach(b => b.classList.remove('avatar-emoji-btn--active'));
+                btn.classList.add('avatar-emoji-btn--active');
+                selectedEmoji = btn.dataset.emoji;
+            });
+        });
+
+        // Photo upload
+        document.getElementById('avatarPhotoInput')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const validation = AvatarUtils.validateImageFile(file);
+            if (!validation.valid) {
+                Toast.error(validation.error);
+                return;
+            }
+
+            try {
+                selectedPhotoUrl = await AvatarUtils.compressImage(file);
+                const preview = document.getElementById('avatarPhotoPreview');
+                preview.innerHTML = `<img src="${selectedPhotoUrl}" alt="Avatar">`;
+                document.getElementById('removePhotoBtn').disabled = false;
+            } catch (err) {
+                Toast.error('Failed to process image');
+            }
+        });
+
+        // Remove photo
+        document.getElementById('removePhotoBtn')?.addEventListener('click', () => {
+            selectedPhotoUrl = '';
+            const preview = document.getElementById('avatarPhotoPreview');
+            preview.innerHTML = '<i data-lucide="user"></i>';
+            document.getElementById('removePhotoBtn').disabled = true;
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        });
+
+        // Avatar color selection
         document.querySelectorAll('.avatar-color-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.avatar-color-btn').forEach(b => {
@@ -2399,16 +3306,23 @@ const SettingsPage = (function() {
                 return false;
             }
 
+            if (selectedType === 'emoji' && !selectedEmoji) {
+                Toast.error('Please select an emoji');
+                return false;
+            }
+
             const updates = {
                 name,
                 avatar: {
-                    ...member.avatar,
+                    type: selectedType,
                     color: selectedColor,
-                    initials: Storage.generateInitials(name)
+                    initials: Storage.generateInitials(name),
+                    emoji: selectedType === 'emoji' ? selectedEmoji : null,
+                    photoUrl: selectedType === 'photo' ? selectedPhotoUrl : null
                 }
             };
 
-            if (member.type === 'kid') {
+            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
                 updates.age = parseInt(age) || 8;
             }
 

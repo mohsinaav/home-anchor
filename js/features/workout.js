@@ -93,32 +93,62 @@ const Workout = (function() {
     }
 
     /**
-     * Show celebration animation
+     * Show celebration animation (habit-style)
      */
-    function showCelebration(type = 'daily') {
-        const message = type === 'weekly'
-            ? '🎉 Weekly Goal Achieved!'
-            : '💪 Great Workout!';
-
-        // Create celebration overlay
+    function showCelebration(type = 'daily', workoutData = null) {
         const overlay = document.createElement('div');
         overlay.className = 'workout-celebration';
+
+        const isWeeklyGoal = type === 'weekly';
+        const message = isWeeklyGoal ? 'Weekly Goal!' : (workoutData?.type || 'Great Workout!');
+        const streakText = workoutData?.streak > 1 ? `${workoutData.streak} day streak` : 'Keep it up!';
+        const workoutColor = workoutData?.color || '#10B981'; // Default green for workout
+
+        // Generate confetti particles (50 like habits)
+        const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8D8EA'];
+        let confettiHTML = '';
+        for (let i = 0; i < 50; i++) {
+            const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            const left = Math.random() * 100;
+            const delay = Math.random() * 0.5;
+            const size = Math.random() * 8 + 4;
+            const rotation = Math.random() * 360;
+            confettiHTML += `<div class="workout-celebration__confetti-particle" style="--confetti-color: ${color}; --confetti-left: ${left}%; --confetti-delay: ${delay}s; --confetti-size: ${size}px; --confetti-rotation: ${rotation}deg;"></div>`;
+        }
+
         overlay.innerHTML = `
+            <div class="workout-celebration__confetti-container">${confettiHTML}</div>
             <div class="workout-celebration__content">
-                <div class="workout-celebration__confetti">
-                    ${Array(12).fill(0).map(() => '<span></span>').join('')}
+                <div class="workout-celebration__ring" style="--ring-color: ${workoutColor}">
+                    <div class="workout-celebration__checkmark">
+                        <svg viewBox="0 0 52 52">
+                            <circle class="workout-celebration__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="workout-celebration__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
                 </div>
-                <div class="workout-celebration__message">${message}</div>
+                <div class="workout-celebration__text">${message}</div>
+                <div class="workout-celebration__streak">
+                    <span class="workout-celebration__icon">💪</span>
+                    <span>${streakText}</span>
+                </div>
+                ${isWeeklyGoal ? '<div class="workout-celebration__trophy">🏆</div>' : ''}
             </div>
         `;
 
         document.body.appendChild(overlay);
 
-        // Remove after animation
+        // Click to dismiss early
+        overlay.addEventListener('click', () => {
+            overlay.classList.add('workout-celebration--fade');
+            setTimeout(() => overlay.remove(), 300);
+        });
+
+        // Auto-remove after animation
         setTimeout(() => {
             overlay.classList.add('workout-celebration--fade');
             setTimeout(() => overlay.remove(), 300);
-        }, 1500);
+        }, isWeeklyGoal ? 2500 : 1800);
     }
 
     /**
@@ -377,6 +407,119 @@ const Workout = (function() {
     }
 
     /**
+     * Perform the actual workout logging with celebration
+     */
+    function performWorkoutLog(memberId, routineId, container) {
+        // Check weekly goal before logging
+        const beforeData = getWidgetData(memberId);
+        const sundayStart = new Date();
+        sundayStart.setDate(sundayStart.getDate() - sundayStart.getDay());
+        sundayStart.setHours(0, 0, 0, 0);
+        const beforeWeekLogs = getWeeklyLogs(beforeData.log, sundayStart);
+        const beforeDaysWithWorkouts = new Set(beforeWeekLogs.map(l => l.date)).size;
+        const beforeWeeklyGoalMet = beforeDaysWithWorkouts >= beforeData.weeklyGoal;
+
+        logWorkout(memberId, routineId, DateUtils.today());
+
+        // Check if weekly goal just completed
+        const afterData = getWidgetData(memberId);
+        const weekLogs = getWeeklyLogs(afterData.log, sundayStart);
+        const daysWithWorkouts = new Set(weekLogs.map(l => l.date)).size;
+        const weeklyGoalMet = daysWithWorkouts >= afterData.weeklyGoal;
+
+        // Show celebration for every workout logged
+        const routine = afterData.routines.find(r => r.id === routineId);
+        const workoutData = {
+            type: routine?.name || 'Workout Complete!',
+            streak: daysWithWorkouts,
+            color: '#10B981' // Green for workout
+        };
+
+        // Show weekly celebration only when goal is JUST reached
+        if (weeklyGoalMet && !beforeWeeklyGoalMet) {
+            showCelebration('weekly', workoutData);
+        } else {
+            showCelebration('daily', workoutData);
+        }
+
+        renderWidget(container, memberId);
+    }
+
+    /**
+     * Perform workout logging for full page view (with date parameter and page re-render)
+     */
+    function performWorkoutLogForPage(memberId, routineId, date, container, member, weekStart) {
+        // Check weekly goal before logging
+        const beforeData = getWidgetData(memberId);
+        const sundayStart = new Date();
+        sundayStart.setDate(sundayStart.getDate() - sundayStart.getDay());
+        sundayStart.setHours(0, 0, 0, 0);
+        const beforeWeekLogs = getWeeklyLogs(beforeData.log, sundayStart);
+        const beforeDaysWithWorkouts = new Set(beforeWeekLogs.map(l => l.date)).size;
+        const beforeWeeklyGoalMet = beforeDaysWithWorkouts >= beforeData.weeklyGoal;
+
+        logWorkout(memberId, routineId, date);
+
+        // Check if weekly goal just completed
+        const afterData = getWidgetData(memberId);
+        const weekLogs = getWeeklyLogs(afterData.log, sundayStart);
+        const daysWithWorkouts = new Set(weekLogs.map(l => l.date)).size;
+        const weeklyGoalMet = daysWithWorkouts >= afterData.weeklyGoal;
+
+        // Show celebration for every workout logged
+        const routine = afterData.routines.find(r => r.id === routineId);
+        const workoutData = {
+            type: routine?.name || 'Workout Complete!',
+            streak: daysWithWorkouts,
+            color: '#10B981' // Green for workout
+        };
+
+        // Show weekly celebration only when goal is JUST reached
+        if (weeklyGoalMet && !beforeWeeklyGoalMet) {
+            showCelebration('weekly', workoutData);
+        } else {
+            showCelebration('daily', workoutData);
+        }
+
+        renderHistoryPage(container, memberId, member, weekStart);
+    }
+
+    /**
+     * Show celebration animation after workout log (for suggestion done buttons)
+     */
+    function performWorkoutCelebration(memberId, date) {
+        const afterData = getWidgetData(memberId);
+        const sundayStart = new Date();
+        sundayStart.setDate(sundayStart.getDate() - sundayStart.getDay());
+        sundayStart.setHours(0, 0, 0, 0);
+
+        const weekLogs = getWeeklyLogs(afterData.log, sundayStart);
+        const daysWithWorkouts = new Set(weekLogs.map(l => l.date)).size;
+        const weeklyGoalMet = daysWithWorkouts >= afterData.weeklyGoal;
+
+        // Get the most recent workout for that date to show the name
+        const dateWorkouts = afterData.log.filter(l => l.date === date);
+        const latestWorkout = dateWorkouts[dateWorkouts.length - 1];
+        const routine = latestWorkout ? afterData.routines.find(r => r.id === latestWorkout.routineId) : null;
+
+        const workoutData = {
+            type: routine?.name || 'Workout Complete!',
+            streak: daysWithWorkouts,
+            color: '#10B981'
+        };
+
+        // Check if weekly goal was just met with this workout
+        const beforeDaysWithWorkouts = daysWithWorkouts - (dateWorkouts.length === 1 ? 1 : 0);
+        const wasWeeklyGoalMet = beforeDaysWithWorkouts >= afterData.weeklyGoal;
+
+        if (weeklyGoalMet && !wasWeeklyGoalMet) {
+            showCelebration('weekly', workoutData);
+        } else {
+            showCelebration('daily', workoutData);
+        }
+    }
+
+    /**
      * Bind widget events
      */
     function bindWidgetEvents(container, memberId) {
@@ -388,32 +531,32 @@ const Workout = (function() {
                 e.preventDefault();
                 e.stopPropagation();
                 const routineId = btn.dataset.routineId;
+                const today = DateUtils.today();
 
-                // Check if this will complete daily or weekly goal
-                const beforeLogs = widgetData.log.filter(l => l.date === DateUtils.today());
-                const wasFirstWorkout = beforeLogs.length === 0;
+                // Check if this same routine was already logged today
+                const currentData = getWidgetData(memberId);
+                const routine = currentData.routines.find(r => r.id === routineId);
+                const alreadyLoggedToday = currentData.log.some(l =>
+                    l.date === today && l.routineId === routineId
+                );
 
-                logWorkout(memberId, routineId, DateUtils.today());
+                // If already logged today, ask for confirmation
+                if (alreadyLoggedToday) {
+                    const routineName = routine?.name || 'this workout';
+                    Modal.open({
+                        title: 'Log Again?',
+                        content: `<p>You already logged <strong>${routineName}</strong> today. Do you want to log it again?</p>`,
+                        footer: Modal.createFooter('Cancel', 'Yes, Log Again')
+                    });
 
-                // Check if weekly goal just completed
-                const afterData = getWidgetData(memberId);
-                const sundayStart = new Date();
-                sundayStart.setDate(sundayStart.getDate() - sundayStart.getDay());
-                sundayStart.setHours(0, 0, 0, 0);
-                const weekLogs = getWeeklyLogs(afterData.log, sundayStart);
-                const daysWithWorkouts = new Set(weekLogs.map(l => l.date)).size;
-                const weeklyGoalMet = daysWithWorkouts >= afterData.weeklyGoal;
-
-                // Show celebration
-                if (wasFirstWorkout) {
-                    if (weeklyGoalMet && daysWithWorkouts === afterData.weeklyGoal) {
-                        showCelebration('weekly');
-                    } else {
-                        showCelebration('daily');
-                    }
+                    Modal.bindFooterEvents(() => {
+                        performWorkoutLog(memberId, routineId, container);
+                        return true;
+                    });
+                } else {
+                    // First time logging this routine today - log immediately
+                    performWorkoutLog(memberId, routineId, container);
                 }
-
-                renderWidget(container, memberId);
             });
         });
 
@@ -934,7 +1077,7 @@ const Workout = (function() {
     /**
      * Render the calendar heatmap tab (GitHub-style activity calendar)
      */
-    function renderCalendarHeatmap(memberId, logs, stepsLog, calendarView = 'year', viewMonth = null, viewYear = null) {
+    function renderCalendarHeatmap(memberId, logs, stepsLog, calendarView = 'month', viewMonth = null, viewYear = null) {
         const today = new Date();
         const currentMonth = viewMonth !== null ? viewMonth : today.getMonth();
         const currentYear = viewYear !== null ? viewYear : today.getFullYear();
@@ -1219,7 +1362,8 @@ const Workout = (function() {
         const data = getMeasurementsData(memberId);
         const { settings, log } = data;
         const sortedLog = [...(log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const enabledMetrics = MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id));
+        const allMetrics = getAllMetrics(settings);
+        const enabledMetrics = allMetrics.filter(m => settings.enabledMetrics.includes(m.id));
 
         // Calculate trends for each metric
         const getMetricTrend = (metricId) => {
@@ -1228,8 +1372,10 @@ const Workout = (function() {
             const latest = entries[0].values[metricId];
             const earliest = entries[entries.length - 1].values[metricId];
             const diff = latest - earliest;
+            // Get the metric for conversion
+            const metric = allMetrics.find(m => m.id === metricId);
             return {
-                diff: convertForDisplay(diff, metricId, settings.unit),
+                diff: convertForDisplay(diff, metricId, settings.unit, metric),
                 direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same',
                 entries: entries.length
             };
@@ -1249,6 +1395,9 @@ const Workout = (function() {
                             <button class="measurements-unit-btn ${settings.unit === 'imperial' ? 'measurements-unit-btn--active' : ''}"
                                     data-unit="imperial">Imperial</button>
                         </div>
+                        <button class="btn btn--ghost btn--sm" id="bodyTabSettingsBtn">
+                            <i data-lucide="settings"></i>
+                        </button>
                         <button class="btn btn--primary btn--sm" id="bodyTabLogBtn">
                             <i data-lucide="plus"></i>
                             Log
@@ -1260,9 +1409,9 @@ const Workout = (function() {
                     <div class="workout-body-tab__summary">
                         ${enabledMetrics.map(metric => {
                             const latestEntry = sortedLog.find(e => e.values[metric.id] !== undefined);
-                            const latestValue = latestEntry ? convertForDisplay(latestEntry.values[metric.id], metric.id, settings.unit) : null;
+                            const latestValue = latestEntry ? convertForDisplay(latestEntry.values[metric.id], metric.id, settings.unit, metric) : null;
                             const trend = getMetricTrend(metric.id);
-                            const unit = metric.unit[settings.unit];
+                            const unit = metric.unit[settings.unit] || metric.unit.metric;
 
                             return `
                                 <div class="workout-body-card">
@@ -1325,8 +1474,8 @@ const Workout = (function() {
                                     <div class="workout-body-history-item__values">
                                         ${enabledMetrics.map(m => {
                                             if (entry.values[m.id] === undefined) return '';
-                                            const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
-                                            return `<span><strong>${m.name}:</strong> ${displayVal} ${m.unit[settings.unit]}</span>`;
+                                            const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit, m), m.id);
+                                            return `<span><strong>${m.name}:</strong> ${displayVal} ${m.unit[settings.unit] || m.unit.metric}</span>`;
                                         }).filter(Boolean).join('')}
                                     </div>
                                     <button class="btn btn--icon btn--ghost btn--sm workout-body-history-item__delete" data-delete-entry="${entry.id}">
@@ -1354,7 +1503,7 @@ const Workout = (function() {
     /**
      * Render the history page with weekly view
      */
-    function renderHistoryPage(container, memberId, member, currentWeekDate, activeTab = 'history', calendarView = 'year', calendarMonth = null, calendarYear = null) {
+    function renderHistoryPage(container, memberId, member, currentWeekDate, activeTab = 'history', calendarView = 'month', calendarMonth = null, calendarYear = null) {
         const widgetData = getWidgetData(memberId);
         const logs = widgetData.log;
         const routines = widgetData.routines;
@@ -1652,8 +1801,29 @@ const Workout = (function() {
             btn.addEventListener('click', () => {
                 const routineId = btn.dataset.routineId;
                 const date = btn.dataset.date;
-                logWorkout(memberId, routineId, date);
-                renderHistoryPage(container, memberId, member, weekStart);
+
+                // Check if this same routine was already logged for this date
+                const currentData = getWidgetData(memberId);
+                const routine = currentData.routines.find(r => r.id === routineId);
+                const alreadyLoggedForDate = currentData.log.some(l =>
+                    l.date === date && l.routineId === routineId
+                );
+
+                if (alreadyLoggedForDate) {
+                    const routineName = routine?.name || 'this workout';
+                    Modal.open({
+                        title: 'Log Again?',
+                        content: `<p>You already logged <strong>${routineName}</strong> on this day. Do you want to log it again?</p>`,
+                        footer: Modal.createFooter('Cancel', 'Yes, Log Again')
+                    });
+
+                    Modal.bindFooterEvents(() => {
+                        performWorkoutLogForPage(memberId, routineId, date, container, member, weekStart);
+                        return true;
+                    });
+                } else {
+                    performWorkoutLogForPage(memberId, routineId, date, container, member, weekStart);
+                }
             });
         });
 
@@ -1685,8 +1855,32 @@ const Workout = (function() {
                 const routineId = btn.dataset.routineId;
                 const date = btn.dataset.date;
                 if (routineId && date) {
-                    markSuggestionDone(memberId, routineId, date);
-                    renderHistoryPage(container, memberId, member, weekStart);
+                    // Check if this same routine was already logged for this date
+                    const currentData = getWidgetData(memberId);
+                    const routine = currentData.routines.find(r => r.id === routineId);
+                    const alreadyLoggedForDate = currentData.log.some(l =>
+                        l.date === date && l.routineId === routineId
+                    );
+
+                    if (alreadyLoggedForDate) {
+                        const routineName = routine?.name || 'this workout';
+                        Modal.open({
+                            title: 'Log Again?',
+                            content: `<p>You already logged <strong>${routineName}</strong> on this day. Do you want to log it again?</p>`,
+                            footer: Modal.createFooter('Cancel', 'Yes, Log Again')
+                        });
+
+                        Modal.bindFooterEvents(() => {
+                            markSuggestionDone(memberId, routineId, date);
+                            performWorkoutCelebration(memberId, date);
+                            renderHistoryPage(container, memberId, member, weekStart);
+                            return true;
+                        });
+                    } else {
+                        markSuggestionDone(memberId, routineId, date);
+                        performWorkoutCelebration(memberId, date);
+                        renderHistoryPage(container, memberId, member, weekStart);
+                    }
                 }
             });
         });
@@ -1766,6 +1960,13 @@ const Workout = (function() {
             });
         });
 
+        // Body tab - Settings/Customize button
+        container.querySelector('#bodyTabSettingsBtn')?.addEventListener('click', () => {
+            showMeasurementSettingsModal(memberId, () => {
+                renderHistoryPage(container, memberId, member, weekStart, 'body');
+            });
+        });
+
         // Body tab - Delete entry buttons
         container.querySelectorAll('.workout-body-history-item__delete').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1784,7 +1985,8 @@ const Workout = (function() {
                 const metricId = btn.dataset.metric;
                 const data = getMeasurementsData(memberId);
                 const sortedLog = [...(data.log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
-                const metric = MEASUREMENT_METRICS.find(m => m.id === metricId);
+                const allMetrics = getAllMetrics(data.settings);
+                const metric = allMetrics.find(m => m.id === metricId);
 
                 if (metric) {
                     // Update active state
@@ -1989,13 +2191,71 @@ const Workout = (function() {
         document.querySelectorAll('.add-workout-modal__routine').forEach(btn => {
             btn.addEventListener('click', () => {
                 const routineId = btn.dataset.routineId;
-                logWorkout(memberId, routineId, date);
-                Modal.close();
-                // Refresh the appropriate view
-                if (viewMode === 'monthly') {
-                    renderMonthlyHistoryPage(pageContainer, memberId, member, viewDateOrWeekStart);
+
+                // Check if this same routine was already logged for this date
+                const currentData = getWidgetData(memberId);
+                const routine = currentData.routines.find(r => r.id === routineId);
+                const alreadyLoggedForDate = currentData.log.some(l =>
+                    l.date === date && l.routineId === routineId
+                );
+
+                const doLog = () => {
+                    // Check weekly goal before logging
+                    const beforeData = getWidgetData(memberId);
+                    const sundayStart = new Date();
+                    sundayStart.setDate(sundayStart.getDate() - sundayStart.getDay());
+                    sundayStart.setHours(0, 0, 0, 0);
+                    const beforeWeekLogs = getWeeklyLogs(beforeData.log, sundayStart);
+                    const beforeDaysWithWorkouts = new Set(beforeWeekLogs.map(l => l.date)).size;
+                    const beforeWeeklyGoalMet = beforeDaysWithWorkouts >= beforeData.weeklyGoal;
+
+                    logWorkout(memberId, routineId, date);
+                    Modal.close();
+
+                    // Check if weekly goal just completed
+                    const afterData = getWidgetData(memberId);
+                    const weekLogs = getWeeklyLogs(afterData.log, sundayStart);
+                    const daysWithWorkouts = new Set(weekLogs.map(l => l.date)).size;
+                    const weeklyGoalMet = daysWithWorkouts >= afterData.weeklyGoal;
+
+                    // Show celebration
+                    const workoutData = {
+                        type: routine?.name || 'Workout Complete!',
+                        streak: daysWithWorkouts,
+                        color: '#10B981'
+                    };
+
+                    if (weeklyGoalMet && !beforeWeeklyGoalMet) {
+                        showCelebration('weekly', workoutData);
+                    } else {
+                        showCelebration('daily', workoutData);
+                    }
+
+                    // Refresh the appropriate view
+                    if (viewMode === 'monthly') {
+                        renderMonthlyHistoryPage(pageContainer, memberId, member, viewDateOrWeekStart);
+                    } else {
+                        renderHistoryPage(pageContainer, memberId, member, viewDateOrWeekStart);
+                    }
+                };
+
+                if (alreadyLoggedForDate) {
+                    const routineName = routine?.name || 'this workout';
+                    Modal.close(); // Close the add workout modal first
+                    setTimeout(() => {
+                        Modal.open({
+                            title: 'Log Again?',
+                            content: `<p>You already logged <strong>${routineName}</strong> on this day. Do you want to log it again?</p>`,
+                            footer: Modal.createFooter('Cancel', 'Yes, Log Again')
+                        });
+
+                        Modal.bindFooterEvents(() => {
+                            doLog();
+                            return true;
+                        });
+                    }, 100);
                 } else {
-                    renderHistoryPage(pageContainer, memberId, member, viewDateOrWeekStart);
+                    doLog();
                 }
             });
         });
@@ -2708,19 +2968,48 @@ const Workout = (function() {
      * @param {number} value - The stored value (in metric units)
      * @param {string} metricId - The metric ID (weight, waist, etc.)
      * @param {string} unitSystem - 'metric' or 'imperial'
+     * @param {boolean|object} metricOrIsCustom - Either boolean (legacy) or metric object with conversionType
      * @returns {number} The converted value
      */
-    function convertForDisplay(value, metricId, unitSystem) {
+    function convertForDisplay(value, metricId, unitSystem, metricOrIsCustom = false) {
         if (value === null || value === undefined || isNaN(value)) return null;
         if (unitSystem === 'metric') return value;
 
-        // Imperial conversion
+        // Determine conversion type
+        let conversionType = null;
+
+        if (typeof metricOrIsCustom === 'object' && metricOrIsCustom !== null) {
+            // New style: metric object passed with conversionType
+            conversionType = metricOrIsCustom.conversionType || null;
+        } else if (metricOrIsCustom === true) {
+            // Legacy: isCustomMetric = true means no conversion
+            return value;
+        }
+
+        // For custom metrics with explicit conversionType
+        if (conversionType) {
+            if (conversionType === 'weight') {
+                return CONVERSION.kgToLbs(value);
+            } else if (conversionType === 'length') {
+                return CONVERSION.cmToIn(value);
+            } else {
+                return value; // 'none' or 'percentage'
+            }
+        }
+
+        // Check if it's a built-in metric
+        const builtInMetric = MEASUREMENT_METRICS.find(m => m.id === metricId);
+        if (!builtInMetric) {
+            return value; // Unknown metric, no conversion
+        }
+
+        // Imperial conversion for built-in metrics
         if (metricId === 'weight') {
             return CONVERSION.kgToLbs(value);
         } else if (metricId === 'bodyfat') {
             return value; // Percentage stays the same
         } else {
-            // All other measurements are length (cm to inches)
+            // All other built-in measurements are length (cm to inches)
             return CONVERSION.cmToIn(value);
         }
     }
@@ -2730,13 +3019,42 @@ const Workout = (function() {
      * @param {number} value - The user-entered value
      * @param {string} metricId - The metric ID (weight, waist, etc.)
      * @param {string} unitSystem - 'metric' or 'imperial'
+     * @param {boolean|object} metricOrIsCustom - Either boolean (legacy) or metric object with conversionType
      * @returns {number} The value in metric units
      */
-    function convertToMetric(value, metricId, unitSystem) {
+    function convertToMetric(value, metricId, unitSystem, metricOrIsCustom = false) {
         if (value === null || value === undefined || isNaN(value)) return null;
         if (unitSystem === 'metric') return value;
 
-        // Convert from imperial to metric for storage
+        // Determine conversion type
+        let conversionType = null;
+
+        if (typeof metricOrIsCustom === 'object' && metricOrIsCustom !== null) {
+            // New style: metric object passed with conversionType
+            conversionType = metricOrIsCustom.conversionType || null;
+        } else if (metricOrIsCustom === true) {
+            // Legacy: isCustomMetric = true means no conversion
+            return value;
+        }
+
+        // For custom metrics with explicit conversionType
+        if (conversionType) {
+            if (conversionType === 'weight') {
+                return CONVERSION.lbsToKg(value);
+            } else if (conversionType === 'length') {
+                return CONVERSION.inToCm(value);
+            } else {
+                return value; // 'none' or 'percentage'
+            }
+        }
+
+        // Check if it's a built-in metric
+        const builtInMetric = MEASUREMENT_METRICS.find(m => m.id === metricId);
+        if (!builtInMetric) {
+            return value; // Unknown metric, no conversion
+        }
+
+        // Convert from imperial to metric for storage (built-in metrics only)
         if (metricId === 'weight') {
             return CONVERSION.lbsToKg(value);
         } else if (metricId === 'bodyfat') {
@@ -2787,8 +3105,52 @@ const Workout = (function() {
         return {
             unit: 'metric',
             enabledMetrics: ['weight', 'waist', 'chest'],
-            goals: {}
+            goals: {},
+            customMetrics: [] // User-defined custom metrics
         };
+    }
+
+    /**
+     * Get all available metrics (built-in + custom)
+     */
+    function getAllMetrics(settings) {
+        const customMetrics = (settings.customMetrics || []).map(cm => {
+            // Determine units based on measurement type
+            let unit;
+            let conversionType = 'none'; // Used by conversion functions
+
+            switch (cm.type) {
+                case 'length':
+                    unit = { metric: 'cm', imperial: 'in' };
+                    conversionType = 'length';
+                    break;
+                case 'weight':
+                    unit = { metric: 'kg', imperial: 'lbs' };
+                    conversionType = 'weight';
+                    break;
+                case 'percentage':
+                    unit = { metric: '%', imperial: '%' };
+                    conversionType = 'none';
+                    break;
+                case 'custom':
+                default:
+                    // Legacy support: if no type but has unitLabel, use it
+                    const label = cm.unitLabel || '';
+                    unit = { metric: label, imperial: label };
+                    conversionType = 'none';
+                    break;
+            }
+
+            return {
+                id: cm.id,
+                name: cm.name,
+                unit,
+                icon: 'ruler',
+                isCustom: true,
+                conversionType // 'length', 'weight', or 'none'
+            };
+        });
+        return [...MEASUREMENT_METRICS, ...customMetrics];
     }
 
     /**
@@ -2839,8 +3201,8 @@ const Workout = (function() {
             }) // oldest to newest for chart
             .map(entry => ({
                 date: entry.date,
-                // Convert stored value to display unit
-                value: convertForDisplay(entry.values[metric.id], metric.id, unitSystem)
+                // Convert stored value to display unit (custom metrics skip conversion)
+                value: convertForDisplay(entry.values[metric.id], metric.id, unitSystem, metric)
             }));
 
         if (chartData.length < 2) return '<p class="text-muted text-center">Not enough data in last 30 days</p>';
@@ -2916,7 +3278,8 @@ const Workout = (function() {
         const { settings } = data;
         // Sort log by date descending (most recent date first)
         const log = [...(data.log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const enabledMetrics = MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id));
+        const allMetrics = getAllMetrics(settings);
+        const enabledMetrics = allMetrics.filter(m => settings.enabledMetrics.includes(m.id));
         const latestEntry = log[0] || null;
         const previousEntry = log[1] || null;
 
@@ -2927,9 +3290,12 @@ const Workout = (function() {
             const prevStored = previousEntry.values[metricId];
             if (currentStored === undefined || prevStored === undefined) return null;
 
+            // Get the metric for conversion
+            const metric = allMetrics.find(m => m.id === metricId);
+
             // Convert both values for proper comparison in display unit
-            const current = convertForDisplay(currentStored, metricId, settings.unit);
-            const prev = convertForDisplay(prevStored, metricId, settings.unit);
+            const current = convertForDisplay(currentStored, metricId, settings.unit, metric);
+            const prev = convertForDisplay(prevStored, metricId, settings.unit, metric);
             const diff = current - prev;
             return { diff, direction: diff > 0 ? 'up' : diff < 0 ? 'down' : 'same' };
         };
@@ -2960,12 +3326,12 @@ const Workout = (function() {
                         <div class="measurements-latest__grid">
                             ${enabledMetrics.map(metric => {
                                 const storedValue = latestEntry.values[metric.id];
-                                const displayValue = convertForDisplay(storedValue, metric.id, settings.unit);
+                                const displayValue = convertForDisplay(storedValue, metric.id, settings.unit, metric);
                                 const change = getChange(metric.id);
-                                const unit = metric.unit[settings.unit];
+                                const unit = metric.unit[settings.unit] || metric.unit.metric;
                                 const storedGoal = settings.goals[metric.id];
                                 // Convert goal for display if stored in metric
-                                const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit), metric.id) : null;
+                                const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit, metric), metric.id) : null;
 
                                 return `
                                     <div class="measurements-metric-card">
@@ -3080,7 +3446,8 @@ const Workout = (function() {
                 const metricId = btn.dataset.metric;
                 const data = getMeasurementsData(memberId);
                 const log = [...(data.log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
-                const metric = MEASUREMENT_METRICS.find(m => m.id === metricId);
+                const allMetrics = getAllMetrics(data.settings);
+                const metric = allMetrics.find(m => m.id === metricId);
 
                 if (metric) {
                     // Update active state
@@ -3122,7 +3489,8 @@ const Workout = (function() {
         const data = getMeasurementsData(memberId);
         const { settings } = data;
         const log = [...(data.log || [])].sort((a, b) => new Date(b.date) - new Date(a.date));
-        const enabledMetrics = MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id));
+        const allMetrics = getAllMetrics(settings);
+        const enabledMetrics = allMetrics.filter(m => settings.enabledMetrics.includes(m.id));
 
         const content = `
             <div class="measurements-full-history">
@@ -3135,7 +3503,7 @@ const Workout = (function() {
                             <span class="measurements-history__values">
                                 ${enabledMetrics.map(m => {
                                     if (entry.values[m.id] === undefined) return '';
-                                    const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit), m.id);
+                                    const displayVal = formatDisplayValue(convertForDisplay(entry.values[m.id], m.id, settings.unit, m), m.id);
                                     return `${m.name}: ${displayVal}`;
                                 }).filter(Boolean).join(' · ')}
                             </span>
@@ -3185,7 +3553,8 @@ const Workout = (function() {
     function showLogMeasurementsModal(memberId) {
         const data = getMeasurementsData(memberId);
         const { settings, log } = data;
-        const enabledMetrics = MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id));
+        const allMetrics = getAllMetrics(settings);
+        const enabledMetrics = allMetrics.filter(m => settings.enabledMetrics.includes(m.id));
         const latestEntry = log[0] || null;
         const today = DateUtils.today();
 
@@ -3198,11 +3567,11 @@ const Workout = (function() {
 
                 <div class="measurements-log-form__fields">
                     ${enabledMetrics.map(metric => {
-                        const unit = metric.unit[settings.unit];
-                        // Convert last value to display unit for placeholder
+                        const unit = metric.unit[settings.unit] || metric.unit.metric;
+                        // Convert last value to display unit for placeholder (custom metrics skip conversion)
                         const storedLastValue = latestEntry?.values[metric.id];
                         const displayLastValue = storedLastValue !== undefined
-                            ? formatDisplayValue(convertForDisplay(storedLastValue, metric.id, settings.unit), metric.id)
+                            ? formatDisplayValue(convertForDisplay(storedLastValue, metric.id, settings.unit, metric), metric.id)
                             : '';
 
                         return `
@@ -3248,8 +3617,8 @@ const Workout = (function() {
                 const input = document.getElementById(`metric-${metric.id}`);
                 if (input && input.value) {
                     const enteredValue = parseFloat(input.value);
-                    // Convert to metric for storage (if user entered in imperial)
-                    values[metric.id] = convertToMetric(enteredValue, metric.id, settings.unit);
+                    // Convert to metric for storage (handles both built-in and custom metrics based on conversionType)
+                    values[metric.id] = convertToMetric(enteredValue, metric.id, settings.unit, metric);
                     hasValues = true;
                 }
             });
@@ -3305,6 +3674,8 @@ const Workout = (function() {
     function showMeasurementSettingsModal(memberId) {
         const data = getMeasurementsData(memberId);
         const { settings } = data;
+        const customMetrics = settings.customMetrics || [];
+        const allMetrics = getAllMetrics(settings);
 
         const content = `
             <div class="measurements-settings">
@@ -3324,13 +3695,43 @@ const Workout = (function() {
                     `).join('')}
                 </div>
 
+                ${customMetrics.length > 0 ? `
+                    <h4 class="measurements-settings__title" style="margin-top: 20px;">Custom Metrics</h4>
+                    <div class="measurements-settings__list" id="customMetricsList">
+                        ${customMetrics.map(metric => `
+                            <label class="measurements-settings__item measurements-settings__item--custom">
+                                <input type="checkbox"
+                                       class="measurements-settings__checkbox"
+                                       data-metric="${metric.id}"
+                                       data-custom="true"
+                                       ${settings.enabledMetrics.includes(metric.id) ? 'checked' : ''}>
+                                <span class="measurements-settings__label">
+                                    <i data-lucide="ruler"></i>
+                                    ${metric.name}
+                                    <span class="measurements-settings__unit">(${metric.unitLabel})</span>
+                                </span>
+                                <button class="btn btn--icon btn--ghost btn--sm measurements-settings__delete" data-delete-custom="${metric.id}" title="Delete">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </label>
+                        `).join('')}
+                    </div>
+                ` : ''}
+
+                <div class="measurements-settings__add-custom" style="margin-top: 16px;">
+                    <button class="btn btn--secondary btn--sm" id="addCustomMetricBtn">
+                        <i data-lucide="plus"></i>
+                        Add Custom Metric
+                    </button>
+                </div>
+
                 <h4 class="measurements-settings__title" style="margin-top: 20px;">Goals (Optional)</h4>
                 <div class="measurements-settings__goals">
-                    ${MEASUREMENT_METRICS.filter(m => settings.enabledMetrics.includes(m.id)).map(metric => {
-                        const unit = metric.unit[settings.unit];
-                        // Convert stored goal (in metric) to display unit
+                    ${allMetrics.filter(m => settings.enabledMetrics.includes(m.id)).map(metric => {
+                        const unit = metric.unit[settings.unit] || metric.unit.metric;
+                        // Convert stored goal (in metric) to display unit (custom metrics skip conversion)
                         const storedGoal = settings.goals[metric.id];
-                        const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit), metric.id) : '';
+                        const displayGoal = storedGoal ? formatDisplayValue(convertForDisplay(storedGoal, metric.id, settings.unit, metric), metric.id) : '';
                         return `
                             <div class="form-group form-group--inline">
                                 <label class="form-label">${metric.name}</label>
@@ -3358,6 +3759,34 @@ const Workout = (function() {
             lucide.createIcons();
         }
 
+        // Add custom metric button
+        document.getElementById('addCustomMetricBtn')?.addEventListener('click', () => {
+            Modal.close();
+            setTimeout(() => showAddCustomMetricModal(memberId), 250);
+        });
+
+        // Delete custom metric buttons
+        document.querySelectorAll('[data-delete-custom]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const metricId = btn.dataset.deleteCustom;
+                const metricName = customMetrics.find(m => m.id === metricId)?.name || 'this metric';
+
+                if (confirm(`Delete custom metric "${metricName}"? Any logged data for this metric will be preserved but hidden.`)) {
+                    // Remove from customMetrics
+                    data.settings.customMetrics = customMetrics.filter(m => m.id !== metricId);
+                    // Remove from enabledMetrics
+                    data.settings.enabledMetrics = settings.enabledMetrics.filter(id => id !== metricId);
+                    saveMeasurementsData(memberId, data);
+                    Toast.success('Custom metric deleted');
+                    // Re-open the modal to refresh
+                    Modal.close();
+                    setTimeout(() => showMeasurementSettingsModal(memberId), 250);
+                }
+            });
+        });
+
         Modal.bindFooterEvents(() => {
             const enabledMetrics = [];
             const goals = {};
@@ -3373,13 +3802,13 @@ const Workout = (function() {
                 return false;
             }
 
-            // Get goals and convert to metric for storage
-            MEASUREMENT_METRICS.forEach(metric => {
+            // Get goals - handle both built-in and custom metrics
+            allMetrics.forEach(metric => {
                 const goalInput = document.getElementById(`goal-${metric.id}`);
                 if (goalInput && goalInput.value) {
                     const enteredGoal = parseFloat(goalInput.value);
-                    // Convert to metric for storage
-                    goals[metric.id] = convertToMetric(enteredGoal, metric.id, settings.unit);
+                    // Convert to metric for storage (handles both built-in and custom metrics based on conversionType)
+                    goals[metric.id] = convertToMetric(enteredGoal, metric.id, settings.unit, metric);
                 }
             });
 
@@ -3389,6 +3818,106 @@ const Workout = (function() {
 
             Toast.success('Settings saved!');
             setTimeout(() => showMeasurementsModal(memberId), 250);
+
+            return true;
+        });
+    }
+
+    /**
+     * Show modal to add a custom measurement metric
+     */
+    function showAddCustomMetricModal(memberId) {
+        const content = `
+            <div class="add-custom-metric">
+                <div class="form-group">
+                    <label class="form-label">Metric Name</label>
+                    <input type="text" class="form-input" id="customMetricName" placeholder="e.g., Calves, Forearms, Blood Pressure">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Measurement Type</label>
+                    <select class="form-input" id="customMetricType">
+                        <option value="length">Length (cm ↔ inches)</option>
+                        <option value="weight">Weight (kg ↔ lbs)</option>
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="custom">Custom unit...</option>
+                    </select>
+                </div>
+                <div class="form-group" id="customUnitGroup" style="display: none;">
+                    <label class="form-label">Custom Unit Label</label>
+                    <input type="text" class="form-input" id="customMetricUnit" placeholder="e.g., mmHg, bpm, reps">
+                </div>
+                <p class="text-muted add-custom-metric__hint" id="typeHint">
+                    Will convert between cm and inches when switching units.
+                </p>
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Add Custom Metric',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add Metric')
+        });
+
+        // Focus on name input
+        setTimeout(() => document.getElementById('customMetricName')?.focus(), 100);
+
+        // Handle type selection change
+        const typeSelect = document.getElementById('customMetricType');
+        const customUnitGroup = document.getElementById('customUnitGroup');
+        const typeHint = document.getElementById('typeHint');
+
+        const hints = {
+            length: 'Will convert between cm and inches when switching units.',
+            weight: 'Will convert between kg and lbs when switching units.',
+            percentage: 'Percentage values stay the same regardless of unit system.',
+            custom: 'Custom units are stored as-is without conversion.'
+        };
+
+        typeSelect?.addEventListener('change', () => {
+            const type = typeSelect.value;
+            customUnitGroup.style.display = type === 'custom' ? 'block' : 'none';
+            typeHint.textContent = hints[type];
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('customMetricName')?.value?.trim();
+            const type = document.getElementById('customMetricType')?.value || 'custom';
+            const customUnit = document.getElementById('customMetricUnit')?.value?.trim() || '';
+
+            if (!name) {
+                Toast.error('Please enter a metric name');
+                return false;
+            }
+
+            if (type === 'custom' && !customUnit) {
+                Toast.error('Please enter a custom unit label');
+                return false;
+            }
+
+            // Generate unique ID
+            const id = `custom-${name.toLowerCase().replace(/\s+/g, '-')}-${Date.now()}`;
+
+            const data = getMeasurementsData(memberId);
+            if (!data.settings.customMetrics) {
+                data.settings.customMetrics = [];
+            }
+
+            // Add new custom metric with type information
+            data.settings.customMetrics.push({
+                id,
+                name,
+                type, // 'length', 'weight', 'percentage', or 'custom'
+                unitLabel: customUnit // Only used for 'custom' type
+            });
+
+            // Auto-enable the new metric
+            data.settings.enabledMetrics.push(id);
+
+            saveMeasurementsData(memberId, data);
+            Toast.success(`Added "${name}" to your metrics!`);
+
+            // Go back to settings modal
+            setTimeout(() => showMeasurementSettingsModal(memberId), 250);
 
             return true;
         });

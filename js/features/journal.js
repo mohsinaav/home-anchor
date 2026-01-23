@@ -512,79 +512,90 @@ const Journal = (function() {
         `;
     }
 
+    // Track current calendar month for history view
+    let historyCalendarDate = new Date();
+
     /**
-     * Render the History tab content
+     * Render the History tab content with monthly calendar view
      */
     function renderHistoryTab(entries) {
-        const pastEntries = entries.filter(e => e.date !== DateUtils.today());
+        const year = historyCalendarDate.getFullYear();
+        const month = historyCalendarDate.getMonth();
 
-        if (pastEntries.length === 0) {
-            return `
-                <div class="journal-history-section">
-                    <div class="journal-history-empty">
-                        <i data-lucide="notebook-pen"></i>
-                        <p>No past entries yet</p>
-                        <span>Start writing today to build your journal history</span>
+        // Build map of entries by date for current month
+        const monthEntries = {};
+        entries.forEach(entry => {
+            const entryDate = DateUtils.parseLocalDate ? DateUtils.parseLocalDate(entry.date) : new Date(entry.date);
+            if (entryDate.getFullYear() === year && entryDate.getMonth() === month) {
+                if (!monthEntries[entry.date]) monthEntries[entry.date] = [];
+                monthEntries[entry.date].push(entry);
+            }
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthName = historyCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const today = DateUtils.today();
+
+        // Count entries this month
+        const entriesThisMonth = Object.keys(monthEntries).length;
+
+        let calendarHtml = `
+            <div class="journal-history-section">
+                <div class="journal-calendar">
+                    <div class="journal-calendar__header">
+                        <button class="btn btn--ghost btn--sm" data-calendar-nav="prev">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="journal-calendar__month">${monthName}</span>
+                        <button class="btn btn--ghost btn--sm" data-calendar-nav="next">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
                     </div>
+                    <div class="journal-calendar__summary">
+                        <span>${entriesThisMonth} ${entriesThisMonth === 1 ? 'entry' : 'entries'} this month</span>
+                    </div>
+                    <div class="journal-calendar__weekdays">
+                        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+                    <div class="journal-calendar__days">
+        `;
+
+        // Empty cells for days before first day
+        for (let i = 0; i < firstDay; i++) {
+            calendarHtml += `<div class="journal-calendar__day journal-calendar__day--empty"></div>`;
+        }
+
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayEntries = monthEntries[dateStr] || [];
+            const isToday = dateStr === today;
+            const hasMood = dayEntries.length > 0 ? getMoodById(dayEntries[0].mood) : null;
+
+            calendarHtml += `
+                <div class="journal-calendar__day ${isToday ? 'journal-calendar__day--today' : ''} ${dayEntries.length > 0 ? 'journal-calendar__day--has-entry' : ''}"
+                    data-date="${dateStr}"
+                    ${hasMood ? `style="--day-mood-color: ${hasMood.color}"` : ''}>
+                    <span class="journal-calendar__day-num">${day}</span>
+                    ${hasMood ? `<span class="journal-calendar__day-mood">${hasMood.emoji}</span>` : ''}
                 </div>
             `;
         }
 
-        // Group entries by month
-        const groupedEntries = {};
-        pastEntries.forEach(entry => {
-            const date = DateUtils.parseLocalDate ? DateUtils.parseLocalDate(entry.date) : new Date(entry.date);
-            const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-            const monthLabel = `${DateUtils.getMonthName ? DateUtils.getMonthName(date) : date.toLocaleDateString('en-US', { month: 'long' })} ${date.getFullYear()}`;
-
-            if (!groupedEntries[monthKey]) {
-                groupedEntries[monthKey] = {
-                    label: monthLabel,
-                    entries: []
-                };
-            }
-            groupedEntries[monthKey].entries.push(entry);
-        });
-
-        return `
-            <div class="journal-history-section">
-                ${Object.keys(groupedEntries)
-                    .sort((a, b) => b.localeCompare(a))
-                    .map(monthKey => {
-                        const group = groupedEntries[monthKey];
-                        return `
-                            <div class="journal-month-group">
-                                <h3 class="journal-month-group__title">${group.label}</h3>
-                                <div class="journal-history__list">
-                                    ${group.entries.map(entry => {
-                                        const mood = getMoodById(entry.mood);
-                                        return `
-                                            <div class="journal-history__entry" data-entry-id="${entry.id}">
-                                                <div class="journal-history__entry-header">
-                                                    <span class="journal-history__entry-date">
-                                                        ${DateUtils.formatWithDay(entry.date)}
-                                                    </span>
-                                                    ${mood ? `
-                                                        <span class="journal-history__entry-mood"
-                                                              style="--mood-color: ${mood.color}">
-                                                            ${mood.emoji}
-                                                        </span>
-                                                    ` : ''}
-                                                </div>
-                                                <div class="journal-history__entry-preview">
-                                                    ${entry.content && entry.content.length > 150
-                                                        ? entry.content.substring(0, 150) + '...'
-                                                        : entry.content || '(No content)'}
-                                                </div>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+        calendarHtml += `
+                    </div>
+                </div>
+                <div class="journal-calendar__selected" id="journalCalendarSelected">
+                    <p class="journal-calendar__selected-hint">
+                        <i data-lucide="mouse-pointer-click"></i>
+                        Tap a day to view your journal entry
+                    </p>
+                </div>
             </div>
         `;
+
+        return calendarHtml;
     }
 
     /**
@@ -772,16 +783,120 @@ const Journal = (function() {
         }
 
         if (activeTab === 'history') {
-            // View past entry
-            container.querySelectorAll('.journal-history__entry').forEach(card => {
-                card.addEventListener('click', () => {
-                    const entryId = card.dataset.entryId;
-                    const widgetData = getWidgetData(memberId);
-                    const entry = widgetData.entries.find(e => e.id === entryId);
-                    if (entry) {
-                        showEntryModal(memberId, entry, () => {
-                            renderJournalPage(container, memberId, member, 'history');
-                        });
+            const widgetData = getWidgetData(memberId);
+
+            // Calendar navigation
+            container.querySelectorAll('[data-calendar-nav]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const direction = btn.dataset.calendarNav;
+                    if (direction === 'prev') {
+                        historyCalendarDate.setMonth(historyCalendarDate.getMonth() - 1);
+                    } else {
+                        historyCalendarDate.setMonth(historyCalendarDate.getMonth() + 1);
+                    }
+                    renderJournalPage(container, memberId, member, 'history');
+                });
+            });
+
+            // Calendar day click
+            container.querySelectorAll('.journal-calendar__day[data-date]').forEach(day => {
+                day.addEventListener('click', () => {
+                    const date = day.dataset.date;
+                    const dayEntries = widgetData.entries.filter(e => e.date === date);
+                    const selectedDiv = container.querySelector('#journalCalendarSelected');
+
+                    if (selectedDiv) {
+                        if (dayEntries.length === 0) {
+                            selectedDiv.innerHTML = `
+                                <p class="journal-calendar__selected-date">
+                                    ${DateUtils.formatWithDay(date)}
+                                </p>
+                                <p class="journal-calendar__selected-empty">No entry for this day</p>
+                            `;
+                        } else {
+                            selectedDiv.innerHTML = dayEntries.map(entry => {
+                                const mood = getMoodById(entry.mood);
+                                return `
+                                    <div class="journal-calendar__entry" data-entry-id="${entry.id}">
+                                        <div class="journal-calendar__entry-paper">
+                                            <div class="journal-calendar__entry-header">
+                                                <span class="journal-calendar__entry-date">
+                                                    ${DateUtils.formatWithDay(entry.date)}
+                                                </span>
+                                                ${mood ? `
+                                                    <span class="journal-calendar__entry-mood" style="--mood-color: ${mood.color}">
+                                                        ${mood.emoji} ${mood.label}
+                                                    </span>
+                                                ` : ''}
+                                            </div>
+                                            ${entry.content ? `
+                                                <div class="journal-calendar__entry-content">
+                                                    ${entry.content.replace(/\n/g, '<br>')}
+                                                </div>
+                                            ` : ''}
+                                            ${entry.gratitude && entry.gratitude.length > 0 ? `
+                                                <div class="journal-calendar__entry-gratitude">
+                                                    <span class="journal-calendar__entry-gratitude-label">
+                                                        <i data-lucide="heart"></i> Gratitude
+                                                    </span>
+                                                    ${entry.gratitude.map(g => `<span class="journal-calendar__entry-gratitude-item">${g}</span>`).join('')}
+                                                </div>
+                                            ` : ''}
+                                            <div class="journal-calendar__entry-actions">
+                                                <button class="btn btn--ghost btn--sm" data-edit-entry="${entry.id}">
+                                                    <i data-lucide="edit-2"></i> Edit
+                                                </button>
+                                                <button class="btn btn--ghost btn--sm btn--danger" data-delete-entry="${entry.id}">
+                                                    <i data-lucide="trash-2"></i> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons();
+                            }
+
+                            // Bind edit/delete events for displayed entries
+                            selectedDiv.querySelectorAll('[data-edit-entry]').forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                    const entryId = btn.dataset.editEntry;
+                                    const entry = widgetData.entries.find(e => e.id === entryId);
+                                    if (entry) {
+                                        showEditModal(memberId, entry, () => {
+                                            renderJournalPage(container, memberId, member, 'history');
+                                        });
+                                    }
+                                });
+                            });
+
+                            selectedDiv.querySelectorAll('[data-delete-entry]').forEach(btn => {
+                                btn.addEventListener('click', async () => {
+                                    const entryId = btn.dataset.deleteEntry;
+                                    const confirmed = confirm('Are you sure you want to delete this entry?');
+                                    if (confirmed) {
+                                        const data = getWidgetData(memberId);
+                                        data.entries = data.entries.filter(e => e.id !== entryId);
+                                        saveWidgetData(memberId, data);
+                                        Toast.success('Entry deleted');
+                                        renderJournalPage(container, memberId, member, 'history');
+                                    }
+                                });
+                            });
+                        }
+                    }
+
+                    // Highlight selected day
+                    container.querySelectorAll('.journal-calendar__day').forEach(d => d.classList.remove('journal-calendar__day--selected'));
+                    day.classList.add('journal-calendar__day--selected');
+
+                    // Scroll to entry
+                    if (selectedDiv) {
+                        setTimeout(() => {
+                            selectedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
                     }
                 });
             });

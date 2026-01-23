@@ -261,30 +261,55 @@ const Habits = (function() {
         const overlay = document.createElement('div');
         overlay.className = 'habit-celebration';
 
-        const message = isAllDone ? 'All habits done!' : `${habit.name} ✓`;
-        const streakText = habit.streak > 1 ? `${habit.streak} day streak!` : '';
+        const message = isAllDone ? 'All Done!' : habit.name;
+        const streakText = habit.streak > 1 ? `${habit.streak} day streak` : 'Keep it up!';
+        const habitColor = CATEGORIES[habit.category]?.color || '#6366F1';
+
+        // Generate confetti particles
+        const confettiColors = ['#FF6B6B', '#4ECDC4', '#FFE66D', '#95E1D3', '#F38181', '#AA96DA', '#FCBAD3', '#A8D8EA'];
+        let confettiHTML = '';
+        for (let i = 0; i < 50; i++) {
+            const color = confettiColors[Math.floor(Math.random() * confettiColors.length)];
+            const left = Math.random() * 100;
+            const delay = Math.random() * 0.5;
+            const size = Math.random() * 8 + 4;
+            const rotation = Math.random() * 360;
+            confettiHTML += `<div class="habit-celebration__confetti" style="--confetti-color: ${color}; --confetti-left: ${left}%; --confetti-delay: ${delay}s; --confetti-size: ${size}px; --confetti-rotation: ${rotation}deg;"></div>`;
+        }
 
         overlay.innerHTML = `
+            <div class="habit-celebration__confetti-container">${confettiHTML}</div>
             <div class="habit-celebration__content">
-                <div class="habit-celebration__icon" style="--habit-color: ${CATEGORIES[habit.category]?.color || '#6366F1'}">
-                    <i data-lucide="${isAllDone ? 'trophy' : 'check-circle-2'}"></i>
+                <div class="habit-celebration__ring" style="--ring-color: ${habitColor}">
+                    <div class="habit-celebration__checkmark">
+                        <svg viewBox="0 0 52 52">
+                            <circle class="habit-celebration__circle" cx="26" cy="26" r="25" fill="none"/>
+                            <path class="habit-celebration__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                        </svg>
+                    </div>
                 </div>
                 <div class="habit-celebration__text">${message}</div>
-                ${streakText ? `<div class="habit-celebration__streak"><i data-lucide="flame"></i> ${streakText}</div>` : ''}
+                <div class="habit-celebration__streak">
+                    <span class="habit-celebration__flame">🔥</span>
+                    <span>${streakText}</span>
+                </div>
+                ${isAllDone ? '<div class="habit-celebration__trophy">🏆</div>' : ''}
             </div>
         `;
 
         document.body.appendChild(overlay);
 
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons({ nodes: [overlay] });
-        }
+        // Click to dismiss early
+        overlay.addEventListener('click', () => {
+            overlay.classList.add('habit-celebration--fade');
+            setTimeout(() => overlay.remove(), 300);
+        });
 
         // Auto-remove after animation
         setTimeout(() => {
             overlay.classList.add('habit-celebration--fade');
             setTimeout(() => overlay.remove(), 300);
-        }, 1200);
+        }, isAllDone ? 2500 : 1800);
     }
 
     /**

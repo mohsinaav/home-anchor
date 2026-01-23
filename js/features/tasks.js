@@ -72,6 +72,75 @@ const Tasks = (function() {
     }
 
     /**
+     * Show inline input to add a subtask
+     */
+    function showAddSubtaskInput(container, memberId, taskId, widgetData, isFullPage = false) {
+        const task = widgetData.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        // Expand the task to show subtasks
+        expandedTasks.add(taskId);
+
+        // Find or create subtasks container
+        const taskContainer = container.querySelector(`[data-task-id="${taskId}"]`);
+        if (!taskContainer) return;
+
+        let subtasksContainer = taskContainer.querySelector(`[data-subtasks-for="${taskId}"]`);
+
+        // Create subtasks container if it doesn't exist
+        if (!subtasksContainer) {
+            subtasksContainer = document.createElement('div');
+            subtasksContainer.className = isFullPage ? 'task-page-item__subtasks' : 'task-item__subtasks';
+            subtasksContainer.dataset.subtasksFor = taskId;
+            taskContainer.appendChild(subtasksContainer);
+        }
+
+        // Check if input already exists
+        if (subtasksContainer.querySelector('.task-item__subtask--add-new, .task-page-subtask--add-new')) {
+            subtasksContainer.querySelector('input')?.focus();
+            return;
+        }
+
+        // Create the input row
+        const inputRow = document.createElement('div');
+        inputRow.className = isFullPage ? 'task-page-subtask task-page-subtask--add-new' : 'task-item__subtask task-item__subtask--add-new';
+        inputRow.innerHTML = `
+            <input type="text" class="${isFullPage ? 'task-page-subtask__input' : 'task-item__subtask-input'}" placeholder="Add subtask..." autofocus>
+        `;
+        subtasksContainer.appendChild(inputRow);
+
+        const input = inputRow.querySelector('input');
+        input.focus();
+
+        const saveSubtask = () => {
+            const title = input.value.trim();
+            if (title) {
+                addSubtask(memberId, taskId, title, widgetData);
+                Toast.success('Subtask added!');
+            }
+            // Re-render the widget/page
+            if (isFullPage) {
+                showFullPage(container, memberId);
+            } else {
+                renderWidget(container, memberId);
+            }
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        };
+
+        input.addEventListener('blur', saveSubtask);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                input.blur();
+            } else if (e.key === 'Escape') {
+                inputRow.remove();
+            }
+        });
+    }
+
+    /**
      * Toggle subtask completion
      */
     function toggleSubtask(memberId, taskId, subtaskId, widgetData) {
@@ -82,6 +151,7 @@ const Tasks = (function() {
         if (!subtask) return false;
 
         subtask.completed = !subtask.completed;
+        subtask.completedAt = subtask.completed ? DateUtils.today() : null;
         Storage.setWidgetData(memberId, 'task-list', widgetData);
 
         // Sync with Vision Board if this subtask is linked to a goal step
@@ -370,6 +440,9 @@ const Tasks = (function() {
                             </span>
                         ` : ''}
                     </div>
+                    <button class="btn btn--icon btn--ghost btn--sm task-item__add-subtask" data-add-subtask="${task.id}" title="Add subtask">
+                        <i data-lucide="plus"></i>
+                    </button>
                     <div class="task-item__drag-handle" title="Drag to reorder">
                         <i data-lucide="grip-vertical"></i>
                     </div>
@@ -572,6 +645,17 @@ const Tasks = (function() {
                 if (typeof lucide !== 'undefined') {
                     lucide.createIcons();
                 }
+            });
+        });
+
+        // =========================================================================
+        // ADD SUBTASK BUTTON (plus icon)
+        // =========================================================================
+        container.querySelectorAll('[data-add-subtask]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const taskId = btn.dataset.addSubtask;
+                showAddSubtaskInput(container, memberId, taskId, widgetData);
             });
         });
 
@@ -1448,6 +1532,9 @@ const Tasks = (function() {
                         </div>
                     </div>
                     ${!isCompleted ? `
+                        <button class="btn btn--icon btn--ghost btn--sm task-page-item__add-subtask" data-add-subtask="${task.id}" title="Add subtask">
+                            <i data-lucide="plus"></i>
+                        </button>
                         <div class="task-page-item__drag-handle" title="Drag to reorder">
                             <i data-lucide="grip-vertical"></i>
                         </div>
@@ -1651,6 +1738,17 @@ const Tasks = (function() {
                     expandedTasks.add(taskId);
                 }
                 renderTasksFullPage(container, memberId, member);
+            });
+        });
+
+        // =========================================================================
+        // ADD SUBTASK BUTTON (plus icon)
+        // =========================================================================
+        container.querySelectorAll('[data-add-subtask]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const taskId = btn.dataset.addSubtask;
+                showAddSubtaskInput(container, memberId, taskId, widgetData, true);
             });
         });
 

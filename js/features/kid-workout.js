@@ -381,13 +381,13 @@ const KidWorkout = (function() {
      * Bind widget events
      */
     function bindWidgetEvents(container, memberId) {
-        // Activity chip clicks - toggle completion
-        container.querySelectorAll('.kid-workout-chip').forEach(chip => {
-            chip.addEventListener('click', () => {
-                const activityId = chip.dataset.activityId;
+        // Activity card clicks - toggle completion
+        container.querySelectorAll('.kid-workout-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const activityId = card.dataset.activityId;
                 const data = getWidgetData(memberId);
                 const activity = data.activities.find(a => a.id === activityId);
-                const isCompleted = chip.classList.contains('kid-workout-chip--completed');
+                const isCompleted = card.classList.contains('kid-workout-card--completed');
 
                 if (!isCompleted) {
                     // Log the activity

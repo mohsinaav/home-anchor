@@ -47,6 +47,9 @@ const KidJournal = (function() {
         '👍', '👏', '🙌', '🤝', '✌️', '🤞', '👋', '🥳', '🎈', '🎁'
     ];
 
+    // Track current calendar month for teen history view
+    let teenHistoryCalendarDate = new Date();
+
     /**
      * Get widget data with defaults
      */
@@ -722,6 +725,35 @@ const KidJournal = (function() {
             : null;
         const mostCommonMoodObj = mostCommonMood ? getMoodById(mostCommonMood) : null;
 
+        // Calculate best streak
+        let bestStreak = 0;
+        let currentStreakCalc = 0;
+        const uniqueDates = [...new Set(entries.map(e => getEntryDate(e)))].sort();
+        for (let i = 0; i < uniqueDates.length; i++) {
+            if (i === 0) {
+                currentStreakCalc = 1;
+            } else {
+                const prevDate = new Date(uniqueDates[i - 1] + 'T00:00:00');
+                const currDate = new Date(uniqueDates[i] + 'T00:00:00');
+                const diffDays = Math.round((currDate - prevDate) / (1000 * 60 * 60 * 24));
+                if (diffDays === 1) {
+                    currentStreakCalc++;
+                } else {
+                    currentStreakCalc = 1;
+                }
+            }
+            bestStreak = Math.max(bestStreak, currentStreakCalc);
+        }
+
+        // Calculate this month's entries
+        const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        const monthEntries = entries.filter(e => {
+            const entryDate = new Date(getEntryDate(e) + 'T00:00:00');
+            return entryDate >= monthStart;
+        });
+        const monthDaysWithEntries = new Set(monthEntries.map(e => getEntryDate(e))).size;
+
         // Check if user can set password
         const showPasswordOption = canSetPassword(memberId);
         const hasPassword = !!getJournalPassword(memberId);
@@ -732,21 +764,24 @@ const KidJournal = (function() {
         const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
         const colors = useKidTheme ? KidTheme.getColors('kid-journal') : { gradient: 'linear-gradient(135deg, #FCE7F3 0%, #FBCFE8 50%, #F9A8D4 100%)' };
 
-        // Define tabs - Write tab first for kids
+        // Define tabs - Write, History, Stats to match adult/teen journals
         const tabs = [
             { id: 'write', label: 'Write', icon: 'pen-line', emoji: '✏️' },
-            { id: 'list', label: 'Entries', icon: 'list', emoji: '📝' },
-            { id: 'calendar', label: 'Calendar', icon: 'calendar', emoji: '📅' }
+            { id: 'history', label: 'History', icon: 'calendar', emoji: '📅' },
+            { id: 'stats', label: 'Stats', icon: 'bar-chart-2', emoji: '📊' }
         ];
 
         // Render tab content
         let tabContent;
         if (currentView === 'write') {
             tabContent = renderWriteTab(memberId, member, widgetData);
-        } else if (currentView === 'calendar') {
+        } else if (currentView === 'history') {
             tabContent = renderCalendarView(entries, memberId);
+        } else if (currentView === 'stats') {
+            tabContent = renderKidStatsTab(entries, streak, bestStreak, monthDaysWithEntries, isYoungKid);
         } else {
-            tabContent = renderListView(entries, memberId);
+            // Default to write for backward compatibility
+            tabContent = renderWriteTab(memberId, member, widgetData);
         }
 
         container.innerHTML = `
@@ -1166,80 +1201,87 @@ const KidJournal = (function() {
     }
 
     /**
-     * Render Teen History Tab
+     * Render Teen History Tab with calendar view
      */
     function renderTeenHistoryTab(entries) {
-        const pastEntries = entries.filter(e => getEntryDate(e) !== getToday());
+        const year = teenHistoryCalendarDate.getFullYear();
+        const month = teenHistoryCalendarDate.getMonth();
 
-        if (pastEntries.length === 0) {
-            return `
-                <div class="teen-journal-history-section">
-                    <div class="teen-journal-history-empty">
-                        <i data-lucide="notebook-pen"></i>
-                        <p>No past entries yet</p>
-                        <span>Start writing today to build your journal history</span>
+        // Build map of entries by date for current month
+        const monthEntries = {};
+        entries.forEach(entry => {
+            const entryDate = getEntryDate(entry);
+            const [entryYear, entryMonth] = entryDate.split('-').map(Number);
+            if (entryYear === year && (entryMonth - 1) === month) {
+                if (!monthEntries[entryDate]) monthEntries[entryDate] = [];
+                monthEntries[entryDate].push(entry);
+            }
+        });
+
+        const firstDay = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const monthName = teenHistoryCalendarDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const today = getToday();
+
+        // Count entries this month
+        const entriesThisMonth = Object.keys(monthEntries).length;
+
+        let calendarHtml = `
+            <div class="teen-journal-history-section">
+                <div class="teen-journal-calendar">
+                    <div class="teen-journal-calendar__header">
+                        <button class="btn btn--ghost btn--sm" data-teen-calendar-nav="prev">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
+                        <span class="teen-journal-calendar__month">${monthName}</span>
+                        <button class="btn btn--ghost btn--sm" data-teen-calendar-nav="next">
+                            <i data-lucide="chevron-right"></i>
+                        </button>
                     </div>
+                    <div class="teen-journal-calendar__summary">
+                        <span>${entriesThisMonth} ${entriesThisMonth === 1 ? 'entry' : 'entries'} this month</span>
+                    </div>
+                    <div class="teen-journal-calendar__weekdays">
+                        <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+                    <div class="teen-journal-calendar__days">
+        `;
+
+        // Empty cells for days before first day
+        for (let i = 0; i < firstDay; i++) {
+            calendarHtml += `<div class="teen-journal-calendar__day teen-journal-calendar__day--empty"></div>`;
+        }
+
+        // Days of the month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const dayEntries = monthEntries[dateStr] || [];
+            const isToday = dateStr === today;
+            const hasMood = dayEntries.length > 0 ? getMoodById(dayEntries[0].mood) : null;
+
+            calendarHtml += `
+                <div class="teen-journal-calendar__day ${isToday ? 'teen-journal-calendar__day--today' : ''} ${dayEntries.length > 0 ? 'teen-journal-calendar__day--has-entry' : ''}"
+                    data-date="${dateStr}"
+                    ${hasMood ? `style="--day-mood-color: ${hasMood.color}"` : ''}>
+                    <span class="teen-journal-calendar__day-num">${day}</span>
+                    ${hasMood ? `<span class="teen-journal-calendar__day-mood">${hasMood.emoji}</span>` : ''}
                 </div>
             `;
         }
 
-        // Group entries by month
-        const groupedEntries = {};
-        pastEntries.forEach(entry => {
-            const date = getEntryDate(entry);
-            const [year, month] = date.split('-').map(Number);
-            const monthKey = `${year}-${String(month).padStart(2, '0')}`;
-            const dateObj = new Date(date + 'T00:00:00');
-            const monthLabel = `${dateObj.toLocaleDateString('en-US', { month: 'long' })} ${year}`;
-
-            if (!groupedEntries[monthKey]) {
-                groupedEntries[monthKey] = {
-                    label: monthLabel,
-                    entries: []
-                };
-            }
-            groupedEntries[monthKey].entries.push(entry);
-        });
-
-        return `
-            <div class="teen-journal-history-section">
-                ${Object.keys(groupedEntries)
-                    .sort((a, b) => b.localeCompare(a))
-                    .map(monthKey => {
-                        const group = groupedEntries[monthKey];
-                        return `
-                            <div class="teen-journal-month-group">
-                                <h3 class="teen-journal-month-group__title">${group.label}</h3>
-                                <div class="teen-journal-history__list">
-                                    ${group.entries.map(entry => {
-                                        const mood = getMoodById(entry.mood);
-                                        return `
-                                            <div class="teen-journal-history__entry" data-entry-id="${entry.id}">
-                                                <div class="teen-journal-history__entry-header">
-                                                    <span class="teen-journal-history__entry-date">
-                                                        ${formatDate(getEntryDate(entry))}
-                                                    </span>
-                                                    ${mood ? `
-                                                        <span class="teen-journal-history__entry-mood"
-                                                              style="--mood-color: ${mood.color}">
-                                                            ${mood.emoji}
-                                                        </span>
-                                                    ` : ''}
-                                                </div>
-                                                <div class="teen-journal-history__entry-preview">
-                                                    ${entry.content && entry.content.length > 150
-                                                        ? entry.content.substring(0, 150) + '...'
-                                                        : entry.content || '(No content)'}
-                                                </div>
-                                            </div>
-                                        `;
-                                    }).join('')}
-                                </div>
-                            </div>
-                        `;
-                    }).join('')}
+        calendarHtml += `
+                    </div>
+                </div>
+                <div class="teen-journal-calendar__selected" id="teenCalendarSelected">
+                    <p class="teen-journal-calendar__selected-hint">
+                        <i data-lucide="mouse-pointer-click"></i>
+                        Tap a day to view your journal entry
+                    </p>
+                </div>
             </div>
         `;
+
+        return calendarHtml;
     }
 
     /**
@@ -1486,15 +1528,113 @@ const KidJournal = (function() {
         }
 
         if (activeTab === 'history') {
-            // View past entry
-            container.querySelectorAll('.teen-journal-history__entry').forEach(card => {
-                card.addEventListener('click', () => {
-                    const entryId = card.dataset.entryId;
-                    const entry = widgetData.entries.find(e => e.id === entryId);
-                    if (entry) {
-                        showTeenEntryModal(memberId, entry, () => {
-                            renderTeenFullPage(container, memberId, member, 'history');
-                        });
+            // Calendar navigation
+            container.querySelectorAll('[data-teen-calendar-nav]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const direction = btn.dataset.teenCalendarNav;
+                    if (direction === 'prev') {
+                        teenHistoryCalendarDate.setMonth(teenHistoryCalendarDate.getMonth() - 1);
+                    } else {
+                        teenHistoryCalendarDate.setMonth(teenHistoryCalendarDate.getMonth() + 1);
+                    }
+                    renderTeenFullPage(container, memberId, member, 'history');
+                });
+            });
+
+            // Calendar day click
+            container.querySelectorAll('.teen-journal-calendar__day[data-date]').forEach(day => {
+                day.addEventListener('click', () => {
+                    const date = day.dataset.date;
+                    const dayEntries = widgetData.entries.filter(e => getEntryDate(e) === date);
+                    const selectedDiv = container.querySelector('#teenCalendarSelected');
+
+                    if (selectedDiv) {
+                        if (dayEntries.length === 0) {
+                            selectedDiv.innerHTML = `
+                                <p class="teen-journal-calendar__selected-date">
+                                    ${formatDate(date)}
+                                </p>
+                                <p class="teen-journal-calendar__selected-empty">No entry for this day</p>
+                            `;
+                        } else {
+                            selectedDiv.innerHTML = dayEntries.map(entry => {
+                                const mood = getMoodById(entry.mood);
+                                return `
+                                    <div class="teen-journal-calendar__entry" data-entry-id="${entry.id}">
+                                        <div class="teen-journal-calendar__entry-paper">
+                                            <div class="teen-journal-calendar__entry-header">
+                                                <span class="teen-journal-calendar__entry-date">
+                                                    ${formatDate(getEntryDate(entry))}
+                                                </span>
+                                                ${mood ? `
+                                                    <span class="teen-journal-calendar__entry-mood" style="--mood-color: ${mood.color}">
+                                                        ${mood.emoji} ${mood.name}
+                                                    </span>
+                                                ` : ''}
+                                            </div>
+                                            ${entry.content ? `
+                                                <div class="teen-journal-calendar__entry-content">
+                                                    ${entry.content.replace(/\n/g, '<br>')}
+                                                </div>
+                                            ` : ''}
+                                            ${entry.stickers && entry.stickers.length > 0 ? `
+                                                <div class="teen-journal-calendar__entry-stickers">
+                                                    ${entry.stickers.join(' ')}
+                                                </div>
+                                            ` : ''}
+                                            <div class="teen-journal-calendar__entry-actions">
+                                                <button class="btn btn--ghost btn--sm" data-edit-entry="${entry.id}">
+                                                    <i data-lucide="edit-2"></i> Edit
+                                                </button>
+                                                <button class="btn btn--ghost btn--sm btn--danger" data-delete-entry="${entry.id}">
+                                                    <i data-lucide="trash-2"></i> Delete
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('');
+
+                            if (typeof lucide !== 'undefined') {
+                                lucide.createIcons();
+                            }
+
+                            // Bind edit/delete events for displayed entries
+                            selectedDiv.querySelectorAll('[data-edit-entry]').forEach(btn => {
+                                btn.addEventListener('click', () => {
+                                    const entryId = btn.dataset.editEntry;
+                                    showEditEntryModal(memberId, entryId, () => {
+                                        renderTeenFullPage(container, memberId, member, 'history');
+                                    });
+                                });
+                            });
+
+                            selectedDiv.querySelectorAll('[data-delete-entry]').forEach(btn => {
+                                btn.addEventListener('click', async () => {
+                                    const entryId = btn.dataset.deleteEntry;
+                                    const verified = await PIN.verify();
+                                    if (verified) {
+                                        if (confirm('Delete this journal entry?')) {
+                                            widgetData.entries = widgetData.entries.filter(e => e.id !== entryId);
+                                            saveWidgetData(memberId, widgetData);
+                                            Toast.success('Entry deleted');
+                                            renderTeenFullPage(container, memberId, member, 'history');
+                                        }
+                                    }
+                                });
+                            });
+                        }
+                    }
+
+                    // Highlight selected day
+                    container.querySelectorAll('.teen-journal-calendar__day').forEach(d => d.classList.remove('teen-journal-calendar__day--selected'));
+                    day.classList.add('teen-journal-calendar__day--selected');
+
+                    // Scroll to entry
+                    if (selectedDiv) {
+                        setTimeout(() => {
+                            selectedDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }, 50);
                     }
                 });
             });
@@ -1801,6 +1941,120 @@ const KidJournal = (function() {
         `;
 
         return calendarHtml;
+    }
+
+    /**
+     * Render Kid Stats Tab
+     */
+    function renderKidStatsTab(entries, streak, bestStreak, monthDaysWithEntries, isYoungKid) {
+        // Count mood distribution
+        const moodCounts = {};
+        entries.forEach(entry => {
+            if (entry.mood) {
+                moodCounts[entry.mood] = (moodCounts[entry.mood] || 0) + 1;
+            }
+        });
+
+        // Find most common mood
+        let mostCommonMood = null;
+        let maxCount = 0;
+        Object.keys(moodCounts).forEach(moodId => {
+            if (moodCounts[moodId] > maxCount) {
+                maxCount = moodCounts[moodId];
+                mostCommonMood = moodId;
+            }
+        });
+
+        // Calculate this month's progress
+        const daysInMonth = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+        const monthProgress = Math.round((monthDaysWithEntries / daysInMonth) * 100);
+
+        return `
+            <div class="kid-journal-stats-section">
+                <div class="kid-journal-stats-grid">
+                    <div class="kid-journal-stat-card kid-journal-stat-card--flame">
+                        <div class="kid-journal-stat-card__icon">
+                            ${isYoungKid ? '🔥' : '<i data-lucide="flame"></i>'}
+                        </div>
+                        <div class="kid-journal-stat-card__info">
+                            <span class="kid-journal-stat-card__value">${streak}</span>
+                            <span class="kid-journal-stat-card__label">${isYoungKid ? 'Day Streak!' : 'Current Streak'}</span>
+                        </div>
+                    </div>
+                    <div class="kid-journal-stat-card kid-journal-stat-card--trophy">
+                        <div class="kid-journal-stat-card__icon">
+                            ${isYoungKid ? '🏆' : '<i data-lucide="trophy"></i>'}
+                        </div>
+                        <div class="kid-journal-stat-card__info">
+                            <span class="kid-journal-stat-card__value">${bestStreak}</span>
+                            <span class="kid-journal-stat-card__label">${isYoungKid ? 'Best Streak!' : 'Best Streak'}</span>
+                        </div>
+                    </div>
+                    <div class="kid-journal-stat-card kid-journal-stat-card--book">
+                        <div class="kid-journal-stat-card__icon">
+                            ${isYoungKid ? '📝' : '<i data-lucide="book-heart"></i>'}
+                        </div>
+                        <div class="kid-journal-stat-card__info">
+                            <span class="kid-journal-stat-card__value">${entries.length}</span>
+                            <span class="kid-journal-stat-card__label">${isYoungKid ? 'Total Entries!' : 'Total Entries'}</span>
+                        </div>
+                    </div>
+                    <div class="kid-journal-stat-card kid-journal-stat-card--calendar">
+                        <div class="kid-journal-stat-card__icon">
+                            ${isYoungKid ? '📅' : '<i data-lucide="calendar-check"></i>'}
+                        </div>
+                        <div class="kid-journal-stat-card__info">
+                            <span class="kid-journal-stat-card__value">${monthDaysWithEntries}</span>
+                            <span class="kid-journal-stat-card__label">${isYoungKid ? 'This Month!' : 'This Month'}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="kid-journal-month-card">
+                    <div class="kid-journal-month-card__header">
+                        ${isYoungKid ? '📅' : '<i data-lucide="calendar"></i>'}
+                        <span>${new Date().toLocaleDateString('en-US', { month: 'long' })} Progress</span>
+                    </div>
+                    <div class="kid-journal-month-card__content">
+                        <div class="kid-journal-month-card__progress">
+                            <div class="kid-journal-month-card__bar">
+                                <div class="kid-journal-month-card__fill" style="width: ${monthProgress}%"></div>
+                            </div>
+                            <span class="kid-journal-month-card__text">${monthDaysWithEntries} of ${daysInMonth} days (${monthProgress}%)</span>
+                        </div>
+                    </div>
+                </div>
+
+                ${entries.length > 0 ? `
+                    <div class="kid-journal-mood-card">
+                        <div class="kid-journal-mood-card__header">
+                            ${isYoungKid ? '😊' : '<i data-lucide="smile"></i>'}
+                            <span>${isYoungKid ? 'My Moods!' : 'Mood Tracker'}</span>
+                        </div>
+                        <div class="kid-journal-mood-card__content">
+                            <div class="kid-journal-mood-card__grid">
+                                ${MOODS.map(mood => `
+                                    <div class="kid-journal-mood-card__item" style="--mood-color: ${mood.color}">
+                                        <span class="kid-journal-mood-card__emoji">${mood.emoji}</span>
+                                        <span class="kid-journal-mood-card__count">${moodCounts[mood.id] || 0}</span>
+                                        <span class="kid-journal-mood-card__label">${mood.name}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            ${mostCommonMood ? `
+                                <div class="kid-journal-mood-card__most-common">
+                                    <span>${isYoungKid ? 'I feel' : 'Most common mood:'}</span>
+                                    <span class="kid-journal-mood-card__most-common-mood" style="--mood-color: ${getMoodById(mostCommonMood)?.color}">
+                                        ${getMoodById(mostCommonMood)?.emoji} ${getMoodById(mostCommonMood)?.name}
+                                    </span>
+                                    ${isYoungKid ? 'the most!' : ''}
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
     }
 
     /**

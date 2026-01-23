@@ -601,7 +601,7 @@ const Grocery = (function() {
             name: itemName,
             checked: false,
             store: storeId === 'unassigned' ? null : storeId,
-            category: 'other',
+            category: detectCategory(itemName),
             addedAt: new Date().toISOString()
         };
 
@@ -1124,7 +1124,7 @@ const Grocery = (function() {
                                             <div class="grocery-pantry-item" data-pantry-item="${item.name}">
                                                 <span class="grocery-pantry-item__name">${item.name}</span>
                                                 <div class="grocery-pantry-item__actions">
-                                                    <button class="btn btn--icon btn--ghost btn--sm" data-add-from-pantry="${item.name}" title="Add to shopping list">
+                                                    <button class="btn btn--icon btn--ghost btn--sm" data-add-from-pantry="${item.name}" data-pantry-category="${catId}" title="Add to shopping list">
                                                         <i data-lucide="shopping-cart"></i>
                                                     </button>
                                                     <button class="btn btn--icon btn--ghost btn--sm" data-remove-pantry="${item.name}" title="Remove from pantry">
@@ -1331,9 +1331,6 @@ const Grocery = (function() {
                         </div>
                     ` : ''}
                     <div class="grocery-item__actions">
-                        <button class="btn btn--icon btn--ghost btn--sm" data-pantry-toggle="${item.id}" title="${inPantry ? 'Remove from pantry' : 'Add to pantry'}">
-                            <i data-lucide="${inPantry ? 'package-minus' : 'package-plus'}"></i>
-                        </button>
                         <button class="btn btn--icon btn--ghost btn--sm" data-edit-item="${item.id}" data-member-id="${memberId}">
                             <i data-lucide="edit-2"></i>
                         </button>
@@ -1505,7 +1502,7 @@ const Grocery = (function() {
      * Render items grouped by store (task-list style)
      */
     function renderStoreGroupedList(memberId, items, stores) {
-        let html = '';
+        let html = '<div class="grocery-stores-container" id="groceryStoresContainer">';
 
         // Render store sections (always show all stores, even if empty)
         stores.forEach(store => {
@@ -1513,15 +1510,20 @@ const Grocery = (function() {
             const totalItems = storeItems.length;
 
             html += `
-                <div class="grocery-store" data-store-id="${store.id}">
-                    <button class="grocery-store__header" data-toggle-store="${store.id}">
-                        <div class="grocery-store__icon" style="background: ${store.color}20; color: ${store.color}">
-                            <i data-lucide="${store.icon}"></i>
+                <div class="grocery-store" data-store-id="${store.id}" draggable="true">
+                    <div class="grocery-store__header-row">
+                        <div class="grocery-store__drag-handle" title="Drag to reorder">
+                            <i data-lucide="grip-vertical"></i>
                         </div>
-                        <span class="grocery-store__name">${store.name}</span>
-                        <span class="grocery-store__count">${totalItems} item${totalItems !== 1 ? 's' : ''}</span>
-                        <i data-lucide="${store.collapsed ? 'chevron-down' : 'chevron-up'}" class="grocery-store__toggle-icon"></i>
-                    </button>
+                        <button class="grocery-store__header" data-toggle-store="${store.id}">
+                            <div class="grocery-store__icon" style="background: ${store.color}20; color: ${store.color}">
+                                <i data-lucide="${store.icon}"></i>
+                            </div>
+                            <span class="grocery-store__name">${store.name}</span>
+                            <span class="grocery-store__count">${totalItems} item${totalItems !== 1 ? 's' : ''}</span>
+                            <i data-lucide="${store.collapsed ? 'chevron-down' : 'chevron-up'}" class="grocery-store__toggle-icon"></i>
+                        </button>
+                    </div>
 
                     <div class="grocery-store__content" ${store.collapsed ? 'style="display: none;"' : ''}>
                         <!-- Inline input for adding items -->
@@ -1565,6 +1567,9 @@ const Grocery = (function() {
                 </div>
             `;
         });
+
+        // Close the stores container
+        html += '</div>';
 
         // Render unassigned items section
         const unassignedItems = items.filter(item => !item.store);
@@ -1642,7 +1647,7 @@ const Grocery = (function() {
         container.querySelectorAll('[data-quick-add]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const itemName = btn.dataset.quickAdd;
-                addItem(memberId, { name: itemName });
+                addItem(memberId, { name: itemName, category: detectCategory(itemName) });
                 renderGroceryPage(container, memberId, member, activeTab);
                 Toast.success(`Added ${itemName}`);
             });
@@ -1755,7 +1760,8 @@ const Grocery = (function() {
         container.querySelectorAll('[data-add-from-pantry]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const itemName = btn.dataset.addFromPantry;
-                showStoreSelectionModal(memberId, itemName, container, member, activeTab);
+                const itemCategory = btn.dataset.pantryCategory || detectCategory(itemName);
+                showStoreSelectionModal(memberId, itemName, itemCategory, container, member, activeTab);
             });
         });
 
@@ -1786,6 +1792,146 @@ const Grocery = (function() {
                 renderGroceryPage(container, memberId, member, activeTab);
             });
         });
+
+        // Drag and drop for store reordering (List tab)
+        const storesContainer = document.getElementById('groceryStoresContainer');
+        if (storesContainer) {
+            let draggedStore = null;
+
+            // Desktop drag events
+            storesContainer.addEventListener('dragstart', (e) => {
+                const storeEl = e.target.closest('.grocery-store[data-store-id]');
+                if (storeEl) {
+                    draggedStore = storeEl;
+                    storeEl.classList.add('grocery-store--dragging');
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', storeEl.dataset.storeId);
+                }
+            });
+
+            storesContainer.addEventListener('dragend', (e) => {
+                const storeEl = e.target.closest('.grocery-store[data-store-id]');
+                if (storeEl) {
+                    storeEl.classList.remove('grocery-store--dragging');
+                    draggedStore = null;
+
+                    // Save new order
+                    const storeIds = Array.from(storesContainer.querySelectorAll('.grocery-store[data-store-id]'))
+                        .map(el => el.dataset.storeId);
+                    reorderStores(memberId, storeIds);
+                }
+            });
+
+            storesContainer.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+
+                const afterElement = getDragAfterElementForStores(storesContainer, e.clientY);
+                if (draggedStore) {
+                    if (afterElement == null) {
+                        storesContainer.appendChild(draggedStore);
+                    } else {
+                        storesContainer.insertBefore(draggedStore, afterElement);
+                    }
+                }
+            });
+
+            storesContainer.addEventListener('dragenter', (e) => {
+                e.preventDefault();
+            });
+
+            // Touch events for mobile
+            let touchStartY = 0;
+            let touchedStore = null;
+            let placeholder = null;
+
+            container.querySelectorAll('.grocery-store__drag-handle').forEach(handle => {
+                handle.addEventListener('touchstart', (e) => {
+                    const storeEl = handle.closest('.grocery-store[data-store-id]');
+                    if (!storeEl) return;
+
+                    touchedStore = storeEl;
+                    touchStartY = e.touches[0].clientY;
+
+                    // Create placeholder
+                    placeholder = document.createElement('div');
+                    placeholder.className = 'grocery-store--placeholder';
+                    placeholder.style.height = storeEl.offsetHeight + 'px';
+
+                    storeEl.classList.add('grocery-store--dragging');
+                    storeEl.style.position = 'fixed';
+                    storeEl.style.width = storeEl.offsetWidth + 'px';
+                    storeEl.style.left = storeEl.getBoundingClientRect().left + 'px';
+                    storeEl.style.top = storeEl.getBoundingClientRect().top + 'px';
+                    storeEl.style.zIndex = '1000';
+
+                    storeEl.parentNode.insertBefore(placeholder, storeEl);
+
+                    e.preventDefault();
+                }, { passive: false });
+
+                handle.addEventListener('touchmove', (e) => {
+                    if (!touchedStore || !placeholder) return;
+
+                    const touch = e.touches[0];
+                    const deltaY = touch.clientY - touchStartY;
+
+                    touchedStore.style.top = (touchedStore.getBoundingClientRect().top + deltaY) + 'px';
+                    touchStartY = touch.clientY;
+
+                    // Find where to insert placeholder
+                    const afterElement = getDragAfterElementForStores(storesContainer, touch.clientY);
+                    if (afterElement == null) {
+                        storesContainer.appendChild(placeholder);
+                    } else if (afterElement !== placeholder && afterElement !== touchedStore) {
+                        storesContainer.insertBefore(placeholder, afterElement);
+                    }
+
+                    e.preventDefault();
+                }, { passive: false });
+
+                handle.addEventListener('touchend', () => {
+                    if (!touchedStore || !placeholder) return;
+
+                    // Move store to placeholder position
+                    placeholder.parentNode.insertBefore(touchedStore, placeholder);
+                    placeholder.remove();
+
+                    // Reset styles
+                    touchedStore.classList.remove('grocery-store--dragging');
+                    touchedStore.style.position = '';
+                    touchedStore.style.width = '';
+                    touchedStore.style.left = '';
+                    touchedStore.style.top = '';
+                    touchedStore.style.zIndex = '';
+
+                    // Save new order
+                    const storeIds = Array.from(storesContainer.querySelectorAll('.grocery-store[data-store-id]'))
+                        .map(el => el.dataset.storeId);
+                    reorderStores(memberId, storeIds);
+
+                    touchedStore = null;
+                    placeholder = null;
+                });
+
+                handle.addEventListener('touchcancel', () => {
+                    if (touchedStore && placeholder) {
+                        placeholder.parentNode.insertBefore(touchedStore, placeholder);
+                        placeholder.remove();
+
+                        touchedStore.classList.remove('grocery-store--dragging');
+                        touchedStore.style.position = '';
+                        touchedStore.style.width = '';
+                        touchedStore.style.left = '';
+                        touchedStore.style.top = '';
+                        touchedStore.style.zIndex = '';
+
+                        touchedStore = null;
+                        placeholder = null;
+                    }
+                });
+            });
+        }
 
         // Inline input for adding items to stores
         container.querySelectorAll('[data-store-input]').forEach(input => {
@@ -1849,26 +1995,31 @@ const Grocery = (function() {
             }
         });
 
-        // Toggle item checked
+        // Toggle item checked - auto-move to pantry when checked off
         container.querySelectorAll('[data-toggle-item]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const itemId = btn.dataset.toggleItem;
                 const data = getWidgetData(memberId);
                 const item = data.items.find(i => i.id === itemId);
 
-                const result = toggleItemChecked(memberId, itemId);
-
-                // Add to purchase history when checking off
                 if (item && !item.checked) {
+                    // Checking off: add to purchase history, move to pantry, remove from list
                     addToPurchaseHistory(memberId, item.name);
+
+                    // Add to pantry if not already there
+                    if (!isInPantry(memberId, item.name)) {
+                        togglePantryItem(memberId, item.name, item.category);
+                    }
+
+                    // Remove from shopping list
+                    deleteItem(memberId, itemId);
+                    Toast.success(`${item.name} moved to pantry`);
+                } else if (item && item.checked) {
+                    // Unchecking: just toggle the checked state
+                    toggleItemChecked(memberId, itemId);
                 }
 
                 renderGroceryPage(container, memberId, member, activeTab);
-
-                // Show pantry prompt if item was checked off and not already in pantry
-                if (result && result.shouldPromptPantry) {
-                    showAddToPantryPrompt(memberId, result.name, result.category, container, member, activeTab);
-                }
             });
         });
 
@@ -1886,22 +2037,6 @@ const Grocery = (function() {
                 e.stopPropagation();
                 adjustQuantity(memberId, btn.dataset.qtyMinus, -1);
                 renderGroceryPage(container, memberId, member, activeTab);
-            });
-        });
-
-        // Pantry toggle
-        container.querySelectorAll('[data-pantry-toggle]').forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                const itemId = btn.dataset.pantryToggle;
-                const data = getWidgetData(memberId);
-                const item = data.items.find(i => i.id === itemId);
-
-                if (item) {
-                    const added = togglePantryItem(memberId, item.name, item.category);
-                    Toast.success(added ? `${item.name} added to pantry` : `${item.name} removed from pantry`);
-                    renderGroceryPage(container, memberId, member, activeTab);
-                }
             });
         });
 
@@ -2262,7 +2397,7 @@ const Grocery = (function() {
                 checked: false,
                 createdAt: new Date().toISOString()
             };
-            data.items.unshift(newItem);
+            data.items.push(newItem);
         }
 
         saveWidgetData(memberId, data);
@@ -2628,6 +2763,24 @@ const Grocery = (function() {
     }
 
     /**
+     * Get element to insert dragged store card after
+     */
+    function getDragAfterElementForStores(container, y) {
+        const draggableElements = [...container.querySelectorAll('.grocery-store[data-store-id]:not(.grocery-store--dragging)')];
+
+        return draggableElements.reduce((closest, child) => {
+            const box = child.getBoundingClientRect();
+            const offset = y - box.top - box.height / 2;
+
+            if (offset < 0 && offset > closest.offset) {
+                return { offset: offset, element: child };
+            } else {
+                return closest;
+            }
+        }, { offset: Number.NEGATIVE_INFINITY }).element;
+    }
+
+    /**
      * Refresh store management modal
      */
     function refreshStoreManagementModal(memberId, pageContainer, member) {
@@ -2944,17 +3097,17 @@ const Grocery = (function() {
             }
         });
 
-        // Close button
+        // Close button - render page first, then close modal
         document.querySelector('[data-modal-close]')?.addEventListener('click', () => {
-            Modal.close();
             renderGroceryPage(pageContainer, memberId, member, activeTab);
+            Modal.close();
         });
     }
 
     /**
      * Show store selection modal when adding pantry item to shopping list
      */
-    function showStoreSelectionModal(memberId, itemName, pageContainer, member, activeTab = 'pantry') {
+    function showStoreSelectionModal(memberId, itemName, itemCategory, pageContainer, member, activeTab = 'pantry') {
         const stores = getStores(memberId);
 
         const content = `
@@ -2999,7 +3152,7 @@ const Grocery = (function() {
                 const store = stores.find(s => s.id === storeId);
 
                 // Add item to list with selected store (skip pantry warning since we're moving from pantry)
-                addItem(memberId, { name: itemName, store: storeId || null }, { skipPantryWarning: true });
+                addItem(memberId, { name: itemName, store: storeId || null, category: itemCategory }, { skipPantryWarning: true });
 
                 // Auto-remove from pantry
                 togglePantryItem(memberId, itemName);

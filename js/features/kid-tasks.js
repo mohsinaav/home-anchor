@@ -596,9 +596,9 @@ const KidTasks = (function() {
 
         // Define tabs
         const tabs = [
-            { id: 'tasks', label: isYoungKid ? '📋 Tasks' : 'Tasks', icon: 'list-todo', emoji: '📋' },
-            { id: 'history', label: isYoungKid ? '📅 History' : 'History', icon: 'history', emoji: '📅' },
-            { id: 'stats', label: isYoungKid ? '📊 Stats' : 'Stats', icon: 'bar-chart-2', emoji: '📊' }
+            { id: 'tasks', label: 'Tasks', icon: 'list-todo', emoji: '📋' },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📅' },
+            { id: 'stats', label: 'Stats', icon: 'bar-chart-2', emoji: '📊' }
         ];
 
         container.innerHTML = `

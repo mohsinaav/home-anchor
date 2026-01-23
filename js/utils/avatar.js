@@ -195,6 +195,14 @@ const AvatarUtils = (function() {
             `;
         }
 
+        if (avatar.type === 'emoji' && avatar.emoji) {
+            return `
+                <div class="avatar ${sizeClass}" style="background-color: ${avatar.color}">
+                    <span class="avatar__emoji">${avatar.emoji}</span>
+                </div>
+            `;
+        }
+
         const textColor = getContrastColor(avatar.color);
         return `
             <div class="avatar ${sizeClass}" style="background-color: ${avatar.color}">
@@ -219,6 +227,12 @@ const AvatarUtils = (function() {
             img.alt = 'Avatar';
             img.className = 'avatar__img';
             div.appendChild(img);
+        } else if (avatar.type === 'emoji' && avatar.emoji) {
+            div.style.backgroundColor = avatar.color;
+            const span = document.createElement('span');
+            span.className = 'avatar__emoji';
+            span.textContent = avatar.emoji;
+            div.appendChild(span);
         } else {
             div.style.backgroundColor = avatar.color;
             const span = document.createElement('span');

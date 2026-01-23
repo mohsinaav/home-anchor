@@ -136,24 +136,26 @@ const FamilyDashboard = (function() {
         const stats = {
             totalMembers: members.length,
             adults: members.filter(m => m.type === 'adult').length,
-            kids: members.filter(m => m.type === 'kid').length,
+            kids: members.filter(m => m.type === 'kid' || m.type === 'teen').length,
             toddlers: members.filter(m => m.type === 'toddler').length,
             totalPoints: 0,
             tasksCompleted: 0,
+            habitsCompleted: 0,
             eventsToday: Storage.getCalendarEventsForToday().length,
             activeWidgets: 0
         };
 
-        // Calculate points for kids
-        members.filter(m => m.type === 'kid').forEach(member => {
+        const today = DateUtils.today();
+
+        // Calculate points for kids and teens
+        members.filter(m => m.type === 'kid' || m.type === 'teen').forEach(member => {
             const pointsData = Storage.getWidgetData(member.id, 'points');
             stats.totalPoints += pointsData.balance || 0;
         });
 
-        // Count completed tasks today
-        const today = DateUtils.today();
+        // Count completed tasks and habits today
         members.forEach(member => {
-            // Check task-list widget
+            // Check task-list widget (adults)
             const taskData = Storage.getWidgetData(member.id, 'task-list');
             if (taskData.tasks) {
                 stats.tasksCompleted += taskData.tasks.filter(t =>
@@ -161,13 +163,18 @@ const FamilyDashboard = (function() {
                 ).length;
             }
 
-            // Check kid-tasks widget
+            // Check kid-tasks widget (kids/teens)
             const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
             if (kidTaskData.tasks) {
                 stats.tasksCompleted += kidTaskData.tasks.filter(t =>
                     t.completed && t.completedAt?.startsWith(today)
                 ).length;
             }
+
+            // Check habits completed today
+            const habitsData = Storage.getWidgetData(member.id, 'habits');
+            const todayHabits = habitsData.log?.[today] || [];
+            stats.habitsCompleted += todayHabits.length;
 
             // Count active widgets
             stats.activeWidgets += (member.widgets || []).length;
@@ -180,34 +187,41 @@ const FamilyDashboard = (function() {
      * Render stats cards
      */
     function renderStatsCards(stats, members) {
+        // Build member count detail string
+        const memberParts = [];
+        if (stats.adults > 0) memberParts.push(`${stats.adults} adult${stats.adults !== 1 ? 's' : ''}`);
+        if (stats.kids > 0) memberParts.push(`${stats.kids} kid${stats.kids !== 1 ? 's' : ''}`);
+        if (stats.toddlers > 0) memberParts.push(`${stats.toddlers} toddler${stats.toddlers !== 1 ? 's' : ''}`);
+        const memberDetail = memberParts.join(', ') || 'No members yet';
+
         const cards = [
             {
                 icon: 'users',
                 label: 'Family Members',
                 value: stats.totalMembers,
-                detail: `${stats.adults} adults, ${stats.kids} kids, ${stats.toddlers} toddlers`,
+                detail: memberDetail,
                 color: 'blue'
             },
             {
                 icon: 'check-circle',
-                label: 'Tasks Completed Today',
+                label: 'Tasks Today',
                 value: stats.tasksCompleted,
-                detail: 'Across all family members',
+                detail: 'Completed across all members',
                 color: 'green'
             },
             {
-                icon: 'star',
-                label: 'Total Points (Kids)',
-                value: stats.totalPoints,
-                detail: 'Combined point balance',
-                color: 'amber'
+                icon: 'target',
+                label: 'Habits Today',
+                value: stats.habitsCompleted,
+                detail: 'Checked off today',
+                color: 'purple'
             },
             {
-                icon: 'calendar',
-                label: 'Events Today',
-                value: stats.eventsToday,
-                detail: 'Scheduled activities',
-                color: 'purple'
+                icon: 'star',
+                label: 'Total Points',
+                value: stats.totalPoints,
+                detail: 'Kids combined balance',
+                color: 'amber'
             }
         ];
 
@@ -301,12 +315,13 @@ const FamilyDashboard = (function() {
                 label: 'Tasks Today'
             });
 
-            // Rewards redeemed
-            const rewardsData = Storage.getWidgetData(member.id, 'rewards');
+            // Habits completed today
+            const habitsData = Storage.getWidgetData(member.id, 'habits');
+            const todayHabits = habitsData.log?.[today]?.length || 0;
             stats.push({
-                icon: 'gift',
-                value: rewardsData.redemptionHistory?.length || 0,
-                label: 'Rewards'
+                icon: 'target',
+                value: todayHabits,
+                label: 'Habits Today'
             });
         } else if (member.type === 'adult') {
             // Tasks completed today
@@ -320,12 +335,14 @@ const FamilyDashboard = (function() {
                 label: 'Tasks Today'
             });
 
-            // Habits tracked
+            // Habits completed today
             const habitsData = Storage.getWidgetData(member.id, 'habits');
+            const todayHabits = habitsData.log?.[today]?.length || 0;
+            const totalHabits = habitsData.habits?.filter(h => !h.archived)?.length || 0;
             stats.push({
-                icon: 'repeat',
-                value: habitsData.habits?.length || 0,
-                label: 'Habits'
+                icon: 'target',
+                value: `${todayHabits}/${totalHabits}`,
+                label: 'Habits Today'
             });
 
             // Workouts this week
@@ -338,6 +355,34 @@ const FamilyDashboard = (function() {
                 icon: 'dumbbell',
                 value: workoutsThisWeek,
                 label: 'Workouts'
+            });
+        } else if (member.type === 'teen') {
+            // Coins balance (teens use coins instead of points)
+            const pointsData = Storage.getWidgetData(member.id, 'points');
+            stats.push({
+                icon: 'coins',
+                value: pointsData.balance || 0,
+                label: 'Coins'
+            });
+
+            // Tasks completed today
+            const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
+            const tasksToday = kidTaskData.tasks?.filter(t =>
+                t.completed && t.completedAt?.startsWith(today)
+            ).length || 0;
+            stats.push({
+                icon: 'check-circle',
+                value: tasksToday,
+                label: 'Tasks Today'
+            });
+
+            // Habits completed today
+            const habitsData = Storage.getWidgetData(member.id, 'habits');
+            const todayHabits = habitsData.log?.[today]?.length || 0;
+            stats.push({
+                icon: 'target',
+                value: todayHabits,
+                label: 'Habits Today'
             });
         } else if (member.type === 'toddler') {
             // Activities today
@@ -423,45 +468,115 @@ const FamilyDashboard = (function() {
         const activities = [];
         const today = DateUtils.today();
         const yesterday = DateUtils.addDays(today, -1);
+        const recentDates = [today, yesterday];
 
         members.forEach(member => {
-            // Get recent task completions
+            // Get recent task completions (including subtasks)
             const taskData = Storage.getWidgetData(member.id, 'task-list');
             (taskData.tasks || []).forEach(task => {
                 if (task.completed && task.completedAt) {
-                    activities.push({
-                        type: 'task',
-                        icon: 'check-circle',
-                        text: `completed "${task.title}"`,
-                        memberName: member.name,
-                        memberColor: member.avatar?.color || '#6366F1',
-                        timestamp: task.completedAt,
-                        date: task.completedAt.split('T')[0]
-                    });
+                    const date = task.completedAt.split('T')[0];
+                    if (recentDates.includes(date)) {
+                        activities.push({
+                            type: 'task',
+                            icon: 'check-circle',
+                            text: `completed "${task.title}"`,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: task.completedAt,
+                            date: date
+                        });
+                    }
                 }
+                // Check for completed subtasks (show as separate activities)
+                (task.subtasks || []).forEach(subtask => {
+                    if (subtask.completed && subtask.completedAt) {
+                        const subtaskDate = subtask.completedAt.split('T')[0];
+                        if (recentDates.includes(subtaskDate)) {
+                            activities.push({
+                                type: 'subtask',
+                                icon: 'check',
+                                text: `completed subtask "${subtask.title}"`,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: subtask.completedAt,
+                                date: subtaskDate
+                            });
+                        }
+                    }
+                });
             });
 
             // Get kid task completions
             const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
             (kidTaskData.tasks || []).forEach(task => {
                 if (task.completed && task.completedAt) {
-                    activities.push({
-                        type: 'task',
-                        icon: 'check-circle',
-                        text: `completed "${task.title}"`,
-                        memberName: member.name,
-                        memberColor: member.avatar?.color || '#6366F1',
-                        timestamp: task.completedAt,
-                        date: task.completedAt.split('T')[0]
-                    });
+                    const date = task.completedAt.split('T')[0];
+                    if (recentDates.includes(date)) {
+                        activities.push({
+                            type: 'task',
+                            icon: 'check-circle',
+                            text: `completed "${task.title}"`,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: task.completedAt,
+                            date: date
+                        });
+                    }
                 }
             });
 
+            // Get habit completions
+            const habitData = Storage.getWidgetData(member.id, 'habits');
+            const habits = habitData.habits || [];
+            const habitLog = habitData.log || {};
+            recentDates.forEach(date => {
+                const dayLog = habitLog[date] || [];
+                dayLog.forEach(habitId => {
+                    const habit = habits.find(h => h.id === habitId);
+                    if (habit) {
+                        activities.push({
+                            type: 'habit',
+                            icon: 'target',
+                            text: `completed habit "${habit.name}"`,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    }
+                });
+            });
+
+            // Get chore completions (for kids)
+            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
+                const choreData = Storage.getWidgetData(member.id, 'chores');
+                (choreData.completedToday || []).forEach(completion => {
+                    const date = completion.date || today;
+                    if (recentDates.includes(date)) {
+                        // Find the chore name
+                        const dailyChores = choreData.dailyChores?.[date] || [];
+                        const chore = dailyChores.find(c => c.id === completion.choreId);
+                        if (chore) {
+                            activities.push({
+                                type: 'chore',
+                                icon: 'sparkles',
+                                text: `completed chore "${chore.name}"`,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                    }
+                });
+            }
+
             // Get points earned (for kids)
-            if (member.type === 'kid') {
+            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
                 const pointsData = Storage.getWidgetData(member.id, 'points');
                 Object.entries(pointsData.dailyLog || {}).forEach(([date, log]) => {
-                    if (date === today || date === yesterday) {
+                    if (recentDates.includes(date)) {
                         if (log.pointsEarned > 0) {
                             activities.push({
                                 type: 'points',
@@ -480,7 +595,7 @@ const FamilyDashboard = (function() {
                 const rewardsData = Storage.getWidgetData(member.id, 'rewards');
                 (rewardsData.redemptionHistory || []).forEach(redemption => {
                     const date = redemption.date.split('T')[0];
-                    if (date === today || date === yesterday) {
+                    if (recentDates.includes(date)) {
                         activities.push({
                             type: 'reward',
                             icon: 'gift',
@@ -497,18 +612,131 @@ const FamilyDashboard = (function() {
             // Get workout completions
             const workoutData = Storage.getWidgetData(member.id, 'workout');
             Object.entries(workoutData.log || {}).forEach(([date, log]) => {
-                if (date === today || date === yesterday) {
+                if (recentDates.includes(date)) {
+                    // Show each workout activity
+                    (log.activities || []).forEach(activity => {
+                        activities.push({
+                            type: 'workout',
+                            icon: 'dumbbell',
+                            text: `completed ${activity.name || 'a workout'}`,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    });
+                    // Fallback if no activities array but log exists
+                    if (!log.activities || log.activities.length === 0) {
+                        activities.push({
+                            type: 'workout',
+                            icon: 'dumbbell',
+                            text: 'completed a workout',
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    }
+                }
+            });
+
+            // Get journal entries
+            const journalData = Storage.getWidgetData(member.id, 'journal');
+            (journalData.entries || []).forEach(entry => {
+                const date = entry.date || entry.createdAt?.split('T')[0];
+                if (date && recentDates.includes(date)) {
                     activities.push({
-                        type: 'workout',
-                        icon: 'dumbbell',
-                        text: 'completed a workout',
+                        type: 'journal',
+                        icon: 'book-open',
+                        text: 'added a journal entry',
                         memberName: member.name,
                         memberColor: member.avatar?.color || '#6366F1',
-                        timestamp: date,
+                        timestamp: entry.createdAt || date,
                         date: date
                     });
                 }
             });
+
+            // Toddler-specific activities
+            if (member.type === 'toddler') {
+                // Toddler routine completions
+                const routineData = Storage.getWidgetData(member.id, 'toddler-routine');
+                if (routineData.lastResetDate === today && routineData.completedToday?.length > 0) {
+                    const routines = routineData.routines || [];
+                    routineData.completedToday.forEach(routineId => {
+                        const routine = routines.find(r => r.id === routineId);
+                        if (routine) {
+                            activities.push({
+                                type: 'routine',
+                                icon: 'sun',
+                                text: `completed routine "${routine.title}"`,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: today,
+                                date: today
+                            });
+                        }
+                    });
+                }
+
+                // Daily log activities
+                const dailyLogData = Storage.getWidgetData(member.id, 'daily-log');
+                recentDates.forEach(date => {
+                    const dayLog = dailyLogData.logs?.[date];
+                    if (dayLog) {
+                        // Log meals, activities, naps
+                        if (dayLog.meal > 0) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'utensils',
+                                text: `had ${dayLog.meal} meal${dayLog.meal > 1 ? 's' : ''}`,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                        if (dayLog.activity > 0) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'shapes',
+                                text: `did ${dayLog.activity} activit${dayLog.activity > 1 ? 'ies' : 'y'}`,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                        if (dayLog.notes) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'message-square',
+                                text: 'had a note logged',
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                    }
+                });
+
+                // Milestones achieved
+                const milestonesData = Storage.getWidgetData(member.id, 'milestones');
+                (milestonesData.achieved || []).forEach(milestone => {
+                    if (recentDates.includes(milestone.date)) {
+                        activities.push({
+                            type: 'milestone',
+                            icon: 'award',
+                            text: `achieved a milestone`,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: milestone.date,
+                            date: milestone.date
+                        });
+                    }
+                });
+            }
         });
 
         // Sort by timestamp (most recent first)
@@ -525,7 +753,7 @@ const FamilyDashboard = (function() {
 
         return `
             <div class="activity-feed">
-                ${activities.slice(0, 10).map(activity => `
+                ${activities.slice(0, 8).map(activity => `
                     <div class="activity-item">
                         <div class="activity-item__icon" style="--icon-color: ${activity.memberColor}">
                             <i data-lucide="${activity.icon}"></i>
@@ -538,7 +766,616 @@ const FamilyDashboard = (function() {
                     </div>
                 `).join('')}
             </div>
+            <button class="btn btn--ghost btn--sm activity-show-more" id="showMoreActivityBtn">
+                <i data-lucide="chevron-down"></i>
+                Show More Activity
+            </button>
         `;
+    }
+
+    /**
+     * Gather all activities for full activity page (last 30 days)
+     */
+    function getAllActivities(members, daysBack = 30) {
+        const activities = [];
+        const today = new Date();
+
+        // Generate list of dates to check
+        const datesToCheck = [];
+        for (let i = 0; i < daysBack; i++) {
+            const d = new Date(today);
+            d.setDate(d.getDate() - i);
+            datesToCheck.push(d.toISOString().split('T')[0]);
+        }
+
+        members.forEach(member => {
+            // Task completions
+            const taskData = Storage.getWidgetData(member.id, 'task-list');
+            (taskData.tasks || []).forEach(task => {
+                if (task.completed && task.completedAt) {
+                    const date = task.completedAt.split('T')[0];
+                    if (datesToCheck.includes(date)) {
+                        activities.push({
+                            type: 'task',
+                            icon: 'check-circle',
+                            text: `completed "${task.title}"`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: task.completedAt,
+                            date: date
+                        });
+                    }
+                }
+                // Subtasks
+                (task.subtasks || []).forEach(subtask => {
+                    if (subtask.completed && subtask.completedAt) {
+                        const subtaskDate = subtask.completedAt.split('T')[0];
+                        if (datesToCheck.includes(subtaskDate)) {
+                            activities.push({
+                                type: 'subtask',
+                                icon: 'check',
+                                text: `completed subtask "${subtask.title}"`,
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: subtask.completedAt,
+                                date: subtaskDate
+                            });
+                        }
+                    }
+                });
+            });
+
+            // Kid tasks
+            const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
+            (kidTaskData.tasks || []).forEach(task => {
+                if (task.completed && task.completedAt) {
+                    const date = task.completedAt.split('T')[0];
+                    if (datesToCheck.includes(date)) {
+                        activities.push({
+                            type: 'task',
+                            icon: 'check-circle',
+                            text: `completed "${task.title}"`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: task.completedAt,
+                            date: date
+                        });
+                    }
+                }
+            });
+
+            // Habits
+            const habitData = Storage.getWidgetData(member.id, 'habits');
+            const habits = habitData.habits || [];
+            const habitLog = habitData.log || {};
+            datesToCheck.forEach(date => {
+                const dayLog = habitLog[date] || [];
+                dayLog.forEach(habitId => {
+                    const habit = habits.find(h => h.id === habitId);
+                    if (habit) {
+                        activities.push({
+                            type: 'habit',
+                            icon: 'target',
+                            text: `completed habit "${habit.name}"`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    }
+                });
+            });
+
+            // Chores (kids)
+            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
+                const choreData = Storage.getWidgetData(member.id, 'chores');
+                (choreData.completedToday || []).forEach(completion => {
+                    const date = completion.date;
+                    if (date && datesToCheck.includes(date)) {
+                        const dailyChores = choreData.dailyChores?.[date] || [];
+                        const chore = dailyChores.find(c => c.id === completion.choreId);
+                        if (chore) {
+                            activities.push({
+                                type: 'chore',
+                                icon: 'sparkles',
+                                text: `completed chore "${chore.name}"`,
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                    }
+                });
+
+                // Points
+                const pointsData = Storage.getWidgetData(member.id, 'points');
+                Object.entries(pointsData.dailyLog || {}).forEach(([date, log]) => {
+                    if (datesToCheck.includes(date) && log.pointsEarned > 0) {
+                        activities.push({
+                            type: 'points',
+                            icon: 'star',
+                            text: `earned ${log.pointsEarned} points`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    }
+                });
+
+                // Rewards
+                const rewardsData = Storage.getWidgetData(member.id, 'rewards');
+                (rewardsData.redemptionHistory || []).forEach(redemption => {
+                    const date = redemption.date.split('T')[0];
+                    if (datesToCheck.includes(date)) {
+                        activities.push({
+                            type: 'reward',
+                            icon: 'gift',
+                            text: `redeemed "${redemption.rewardName}"`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: redemption.date,
+                            date: date
+                        });
+                    }
+                });
+            }
+
+            // Workouts
+            const workoutData = Storage.getWidgetData(member.id, 'workout');
+            Object.entries(workoutData.log || {}).forEach(([date, log]) => {
+                if (datesToCheck.includes(date)) {
+                    (log.activities || []).forEach(activity => {
+                        activities.push({
+                            type: 'workout',
+                            icon: 'dumbbell',
+                            text: `completed ${activity.name || 'a workout'}`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    });
+                    if (!log.activities || log.activities.length === 0) {
+                        activities.push({
+                            type: 'workout',
+                            icon: 'dumbbell',
+                            text: 'completed a workout',
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: date,
+                            date: date
+                        });
+                    }
+                }
+            });
+
+            // Journal
+            const journalData = Storage.getWidgetData(member.id, 'journal');
+            (journalData.entries || []).forEach(entry => {
+                const date = entry.date || entry.createdAt?.split('T')[0];
+                if (date && datesToCheck.includes(date)) {
+                    activities.push({
+                        type: 'journal',
+                        icon: 'book-open',
+                        text: 'added a journal entry',
+                        memberId: member.id,
+                        memberName: member.name,
+                        memberColor: member.avatar?.color || '#6366F1',
+                        timestamp: entry.createdAt || date,
+                        date: date
+                    });
+                }
+            });
+
+            // Toddler-specific activities
+            if (member.type === 'toddler') {
+                // Toddler routine history
+                const routineData = Storage.getWidgetData(member.id, 'toddler-routine');
+                const routines = routineData.routines || [];
+                const routineHistory = routineData.history || [];
+
+                // Current day completions
+                if (routineData.lastResetDate && datesToCheck.includes(routineData.lastResetDate)) {
+                    (routineData.completedToday || []).forEach(routineId => {
+                        const routine = routines.find(r => r.id === routineId);
+                        if (routine) {
+                            activities.push({
+                                type: 'routine',
+                                icon: 'sun',
+                                text: `completed routine "${routine.title}"`,
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: routineData.lastResetDate,
+                                date: routineData.lastResetDate
+                            });
+                        }
+                    });
+                }
+
+                // Historical routine completions
+                routineHistory.forEach(historyEntry => {
+                    if (datesToCheck.includes(historyEntry.date) && historyEntry.completed > 0) {
+                        activities.push({
+                            type: 'routine',
+                            icon: 'sun',
+                            text: `completed ${historyEntry.completed} of ${historyEntry.total} routines`,
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: historyEntry.date,
+                            date: historyEntry.date
+                        });
+                    }
+                });
+
+                // Daily log activities
+                const dailyLogData = Storage.getWidgetData(member.id, 'daily-log');
+                Object.entries(dailyLogData.logs || {}).forEach(([date, dayLog]) => {
+                    if (datesToCheck.includes(date)) {
+                        if (dayLog.meal > 0) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'utensils',
+                                text: `had ${dayLog.meal} meal${dayLog.meal > 1 ? 's' : ''}`,
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                        if (dayLog.activity > 0) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'shapes',
+                                text: `did ${dayLog.activity} activit${dayLog.activity > 1 ? 'ies' : 'y'}`,
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                        if (dayLog.notes) {
+                            activities.push({
+                                type: 'daily-log',
+                                icon: 'message-square',
+                                text: 'had a note logged',
+                                memberId: member.id,
+                                memberName: member.name,
+                                memberColor: member.avatar?.color || '#6366F1',
+                                timestamp: date,
+                                date: date
+                            });
+                        }
+                    }
+                });
+
+                // Milestones achieved
+                const milestonesData = Storage.getWidgetData(member.id, 'milestones');
+                (milestonesData.achieved || []).forEach(milestone => {
+                    if (datesToCheck.includes(milestone.date)) {
+                        activities.push({
+                            type: 'milestone',
+                            icon: 'award',
+                            text: 'achieved a milestone',
+                            memberId: member.id,
+                            memberName: member.name,
+                            memberColor: member.avatar?.color || '#6366F1',
+                            timestamp: milestone.date,
+                            date: milestone.date
+                        });
+                    }
+                });
+            }
+        });
+
+        // Sort by timestamp (most recent first)
+        activities.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
+        return activities;
+    }
+
+    /**
+     * Show full activity page
+     */
+    function showActivityPage(container) {
+        const members = Storage.getMembers();
+        const allActivities = getAllActivities(members);
+
+        // Get unique activity types for filters
+        const activityTypes = [...new Set(allActivities.map(a => a.type))];
+
+        // Calculate stats
+        const today = DateUtils.today();
+        const todayCount = allActivities.filter(a => a.date === today).length;
+        const thisWeekCount = allActivities.filter(a => {
+            const actDate = new Date(a.date);
+            const now = new Date();
+            const weekAgo = new Date(now.setDate(now.getDate() - 7));
+            return actDate >= weekAgo;
+        }).length;
+
+        container.innerHTML = `
+            <div class="activity-page">
+                <!-- Hero Header -->
+                <div class="activity-page__hero">
+                    <div class="activity-page__hero-bg">
+                        <div class="activity-hero-shape activity-hero-shape--1"></div>
+                        <div class="activity-hero-shape activity-hero-shape--2"></div>
+                        <div class="activity-hero-shape activity-hero-shape--3"></div>
+                    </div>
+                    <div class="activity-page__hero-content">
+                        <button class="activity-page__back" id="activityBackBtn">
+                            <i data-lucide="arrow-left"></i>
+                            Back
+                        </button>
+                        <div class="activity-page__hero-text">
+                            <h1 class="activity-page__hero-title">
+                                <i data-lucide="activity"></i>
+                                Family Activity
+                            </h1>
+                            <p class="activity-page__hero-subtitle">Track what everyone's been up to</p>
+                        </div>
+                        <div class="activity-page__hero-stats">
+                            <div class="activity-hero-stat">
+                                <span class="activity-hero-stat__value">${todayCount}</span>
+                                <span class="activity-hero-stat__label">Today</span>
+                            </div>
+                            <div class="activity-hero-stat">
+                                <span class="activity-hero-stat__value">${thisWeekCount}</span>
+                                <span class="activity-hero-stat__label">This Week</span>
+                            </div>
+                            <div class="activity-hero-stat">
+                                <span class="activity-hero-stat__value">${members.length}</span>
+                                <span class="activity-hero-stat__label">Members</span>
+                            </div>
+                            <div class="activity-hero-stat">
+                                <span class="activity-hero-stat__value">${allActivities.length}</span>
+                                <span class="activity-hero-stat__label">Total</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="activity-page__filters">
+                    <div class="activity-filter-row">
+                        <div class="activity-filter-group">
+                            <span class="activity-filter-label">Type:</span>
+                            <div class="activity-filter-chips" id="typeFilters">
+                                <button class="activity-filter-chip activity-filter-chip--active" data-filter-type="all">
+                                    All
+                                </button>
+                                ${activityTypes.map(type => `
+                                    <button class="activity-filter-chip" data-filter-type="${type}">
+                                        <i data-lucide="${getActivityIcon(type)}"></i>
+                                        ${formatActivityType(type)}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="activity-filter-row">
+                        <div class="activity-filter-group">
+                            <span class="activity-filter-label">Member:</span>
+                            <div class="activity-filter-chips" id="memberFilters">
+                                <button class="activity-filter-chip activity-filter-chip--active" data-filter-member="all">
+                                    Everyone
+                                </button>
+                                ${members.map(m => `
+                                    <button class="activity-filter-chip" data-filter-member="${m.id}">
+                                        <span class="activity-filter-chip__avatar" style="background: ${m.avatar?.color || '#6366F1'}">
+                                            ${m.name.charAt(0)}
+                                        </span>
+                                        ${m.name}
+                                    </button>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity List -->
+                <div class="activity-page__content">
+                    ${renderActivityList(allActivities)}
+                </div>
+            </div>
+        `;
+
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        bindActivityPageEvents(container, members, allActivities);
+    }
+
+    /**
+     * Render activity list grouped by date
+     */
+    function renderActivityList(activities, typeFilter = 'all', memberFilter = 'all') {
+        let filtered = activities;
+
+        if (typeFilter !== 'all') {
+            filtered = filtered.filter(a => a.type === typeFilter);
+        }
+        if (memberFilter !== 'all') {
+            filtered = filtered.filter(a => a.memberId === memberFilter);
+        }
+
+        if (filtered.length === 0) {
+            return `
+                <div class="activity-page__empty">
+                    <i data-lucide="inbox"></i>
+                    <p>No activities found</p>
+                </div>
+            `;
+        }
+
+        // Group by date
+        const grouped = {};
+        filtered.forEach(activity => {
+            const date = activity.date;
+            if (!grouped[date]) {
+                grouped[date] = [];
+            }
+            grouped[date].push(activity);
+        });
+
+        // Sort activities within each day by timestamp (most recent first)
+        // For activities with same timestamp, sort by type then member name
+        Object.keys(grouped).forEach(date => {
+            grouped[date].sort((a, b) => {
+                // First sort by timestamp (descending - most recent first)
+                const timeCompare = b.timestamp.localeCompare(a.timestamp);
+                if (timeCompare !== 0) return timeCompare;
+                // If same timestamp, sort by activity type
+                const typeCompare = a.type.localeCompare(b.type);
+                if (typeCompare !== 0) return typeCompare;
+                // If same type, sort by member name
+                return a.memberName.localeCompare(b.memberName);
+            });
+        });
+
+        const today = DateUtils.today();
+        const yesterday = DateUtils.addDays(today, -1);
+
+        return Object.entries(grouped).map(([date, dayActivities]) => {
+            let dateLabel;
+            if (date === today) {
+                dateLabel = 'Today';
+            } else if (date === yesterday) {
+                dateLabel = 'Yesterday';
+            } else {
+                dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    month: 'short',
+                    day: 'numeric'
+                });
+            }
+
+            return `
+                <div class="activity-day">
+                    <div class="activity-day__header">
+                        <span class="activity-day__date">${dateLabel}</span>
+                        <span class="activity-day__count">${dayActivities.length} activities</span>
+                    </div>
+                    <div class="activity-day__list">
+                        ${dayActivities.map(activity => `
+                            <div class="activity-item activity-item--full">
+                                <div class="activity-item__icon" style="--icon-color: ${activity.memberColor}">
+                                    <i data-lucide="${activity.icon}"></i>
+                                </div>
+                                <div class="activity-item__content">
+                                    <span class="activity-item__member">${activity.memberName}</span>
+                                    <span class="activity-item__text">${activity.text}</span>
+                                </div>
+                                <span class="activity-item__badge activity-item__badge--${activity.type}">
+                                    ${formatActivityType(activity.type)}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Get icon for activity type
+     */
+    function getActivityIcon(type) {
+        const icons = {
+            task: 'check-circle',
+            subtask: 'check',
+            habit: 'target',
+            chore: 'sparkles',
+            points: 'star',
+            reward: 'gift',
+            workout: 'dumbbell',
+            journal: 'book-open',
+            routine: 'sun',
+            'daily-log': 'clipboard-list',
+            milestone: 'award'
+        };
+        return icons[type] || 'activity';
+    }
+
+    /**
+     * Format activity type for display
+     */
+    function formatActivityType(type) {
+        const labels = {
+            task: 'Tasks',
+            subtask: 'Subtasks',
+            habit: 'Habits',
+            chore: 'Chores',
+            points: 'Points',
+            reward: 'Rewards',
+            workout: 'Workouts',
+            journal: 'Journal',
+            routine: 'Routines',
+            'daily-log': 'Daily Log',
+            milestone: 'Milestones'
+        };
+        return labels[type] || type;
+    }
+
+    /**
+     * Bind activity page events
+     */
+    function bindActivityPageEvents(container, members, allActivities) {
+        let currentTypeFilter = 'all';
+        let currentMemberFilter = 'all';
+
+        // Back button
+        container.querySelector('#activityBackBtn')?.addEventListener('click', () => {
+            render(container);
+        });
+
+        // Type filter chips
+        container.querySelectorAll('[data-filter-type]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                currentTypeFilter = chip.dataset.filterType;
+                // Update active state
+                container.querySelectorAll('[data-filter-type]').forEach(c =>
+                    c.classList.remove('activity-filter-chip--active')
+                );
+                chip.classList.add('activity-filter-chip--active');
+                // Re-render list
+                const contentEl = container.querySelector('.activity-page__content');
+                if (contentEl) {
+                    contentEl.innerHTML = renderActivityList(allActivities, currentTypeFilter, currentMemberFilter);
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            });
+        });
+
+        // Member filter chips
+        container.querySelectorAll('[data-filter-member]').forEach(chip => {
+            chip.addEventListener('click', () => {
+                currentMemberFilter = chip.dataset.filterMember;
+                // Update active state
+                container.querySelectorAll('[data-filter-member]').forEach(c =>
+                    c.classList.remove('activity-filter-chip--active')
+                );
+                chip.classList.add('activity-filter-chip--active');
+                // Re-render list
+                const contentEl = container.querySelector('.activity-page__content');
+                if (contentEl) {
+                    contentEl.innerHTML = renderActivityList(allActivities, currentTypeFilter, currentMemberFilter);
+                    if (typeof lucide !== 'undefined') lucide.createIcons();
+                }
+            });
+        });
     }
 
     /**
@@ -668,6 +1505,14 @@ const FamilyDashboard = (function() {
             return `<img src="${avatar.photoUrl}" alt="${name}" class="avatar avatar--photo">`;
         }
 
+        if (avatar.type === 'emoji' && avatar.emoji) {
+            return `
+                <div class="avatar avatar--emoji" style="background-color: ${avatar.color}">
+                    <span class="avatar__emoji">${avatar.emoji}</span>
+                </div>
+            `;
+        }
+
         const textColor = typeof AvatarUtils !== 'undefined'
             ? AvatarUtils.getContrastColor(avatar.color)
             : '#fff';
@@ -720,6 +1565,11 @@ const FamilyDashboard = (function() {
                     Tabs.switchTo(memberId);
                 }
             });
+        });
+
+        // Show more activity button
+        container.querySelector('#showMoreActivityBtn')?.addEventListener('click', () => {
+            showActivityPage(container);
         });
     }
 

@@ -113,6 +113,14 @@ const Tabs = (function() {
             `;
         }
 
+        if (avatar.type === 'emoji' && avatar.emoji) {
+            return `
+                <div class="tabs__avatar" style="background-color: ${avatar.color}">
+                    <span class="tabs__avatar-emoji">${avatar.emoji}</span>
+                </div>
+            `;
+        }
+
         const textColor = AvatarUtils.getContrastColor(avatar.color);
         return `
             <div class="tabs__avatar" style="background-color: ${avatar.color}">

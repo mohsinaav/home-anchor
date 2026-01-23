@@ -929,10 +929,49 @@ const CircuitTimer = (function() {
         // Initialize circuit timer feature
     }
 
+    /**
+     * Check if timer is currently running
+     */
+    function isRunning() {
+        return timerState.isRunning;
+    }
+
+    /**
+     * Check if timer is paused
+     */
+    function isPaused() {
+        return timerState.isPaused;
+    }
+
+    /**
+     * Get current timer status
+     */
+    function getStatus() {
+        if (!timerState.isRunning && !timerState.isPaused) {
+            return { isRunning: false };
+        }
+
+        return {
+            isRunning: timerState.isRunning,
+            isPaused: timerState.isPaused,
+            presetName: timerState.preset?.name || 'Unknown',
+            currentPhase: timerState.currentPhase,
+            currentRound: timerState.currentRound,
+            totalRounds: timerState.preset?.rounds || 0,
+            timeRemaining: timerState.timeRemaining,
+            totalElapsed: timerState.totalElapsed
+        };
+    }
+
     return {
         init,
         renderWidget,
         startTimer,
+        stopTimer,
+        togglePause,
+        isRunning,
+        isPaused,
+        getStatus,
         showCreateTimerModal
     };
 })();

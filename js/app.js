@@ -348,6 +348,10 @@ const Content = (function() {
                         <section class="section">
                             <div class="section__header">
                                 <h2 class="section__title">Family Dashboard</h2>
+                                <button class="quick-access-btn" id="homeShoppingListBtn" title="Shopping List">
+                                    <i data-lucide="shopping-cart"></i>
+                                    <span>Shopping List</span>
+                                </button>
                             </div>
                             <div class="family-dashboard" id="familyDashboard">
                                 ${renderFamilyCards(members)}
@@ -403,6 +407,13 @@ const Content = (function() {
                     Tabs.switchTo(memberId);
                 }
             });
+        });
+
+        // Bind shopping list button
+        document.getElementById('homeShoppingListBtn')?.addEventListener('click', () => {
+            if (typeof Grocery !== 'undefined') {
+                Grocery.showGroceryListPage('home');
+            }
         });
 
         if (typeof lucide !== 'undefined') {
@@ -610,6 +621,14 @@ const Content = (function() {
             return `
                 <div class="family-card__avatar">
                     <img src="${avatar.photoUrl}" alt="Avatar">
+                </div>
+            `;
+        }
+
+        if (avatar.type === 'emoji' && avatar.emoji) {
+            return `
+                <div class="family-card__avatar" style="background-color: ${avatar.color}">
+                    <span class="family-card__emoji">${avatar.emoji}</span>
                 </div>
             `;
         }
@@ -904,6 +923,11 @@ const App = (function() {
         // Initialize tour (for first-time users)
         if (typeof Tour !== 'undefined') {
             Tour.init();
+        }
+
+        // Initialize voice assistant
+        if (typeof VoiceAssistant !== 'undefined') {
+            VoiceAssistant.init();
         }
 
         // Listen for tab changes

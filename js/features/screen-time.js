@@ -44,17 +44,31 @@ const ScreenTime = (function() {
         const remaining = Math.max(0, todayLimit - todayLog.used);
         const percentUsed = Math.min(100, (todayLog.used / todayLimit) * 100);
 
+        // Check if timer is running for this member
+        const timerStatus = getScreenTimerStatus();
+        const isTimerRunning = timerStatus.isRunning && timerStatus.memberId === memberId;
+        const isOverLimit = isTimerRunning && timerStatus.isOverLimit;
+
         container.innerHTML = `
-            <div class="screen-time-widget">
+            <div class="screen-time-widget ${isTimerRunning ? 'screen-time-widget--active' : ''} ${isOverLimit ? 'screen-time-widget--over' : ''}">
                 <div class="screen-time-widget__gauge">
                     <svg viewBox="0 0 100 100" class="screen-time-gauge">
                         <circle cx="50" cy="50" r="40" class="screen-time-gauge__bg"></circle>
-                        <circle cx="50" cy="50" r="40" class="screen-time-gauge__fill ${percentUsed > 80 ? 'screen-time-gauge__fill--warning' : ''}"
+                        <circle cx="50" cy="50" r="40" class="screen-time-gauge__fill ${percentUsed > 80 ? 'screen-time-gauge__fill--warning' : ''} ${isOverLimit ? 'screen-time-gauge__fill--over' : ''}"
                                 style="stroke-dasharray: ${percentUsed * 2.51} 251"></circle>
                     </svg>
                     <div class="screen-time-widget__center">
-                        <span class="screen-time-widget__time">${formatMinutes(remaining)}</span>
-                        <span class="screen-time-widget__label">remaining</span>
+                        ${isTimerRunning ? `
+                            <span class="screen-time-widget__time ${isOverLimit ? 'screen-time-widget__time--over' : 'screen-time-widget__time--active'}" id="screen-timer-display">
+                                ${isOverLimit ? '+' + formatMinutes(timerStatus.minutesOver) : formatMinutes(timerStatus.remainingMinutes)}
+                            </span>
+                            <span class="screen-time-widget__label ${isOverLimit ? 'screen-time-widget__label--over' : ''}">
+                                ${isOverLimit ? 'OVER LIMIT!' : 'remaining'}
+                            </span>
+                        ` : `
+                            <span class="screen-time-widget__time">${formatMinutes(remaining)}</span>
+                            <span class="screen-time-widget__label">remaining</span>
+                        `}
                     </div>
                 </div>
 
@@ -70,9 +84,25 @@ const ScreenTime = (function() {
                 </div>
 
                 <div class="screen-time-widget__actions">
-                    <button class="btn btn--primary btn--sm" data-action="log-time" data-member-id="${memberId}">
+                    ${isTimerRunning ? `
+                        <button class="btn btn--danger btn--sm" data-action="stop-timer" data-member-id="${memberId}">
+                            <i data-lucide="square"></i>
+                            Stop Timer
+                        </button>
+                    ` : remaining > 0 ? `
+                        <button class="btn btn--success btn--sm" data-action="start-timer" data-member-id="${memberId}">
+                            <i data-lucide="play"></i>
+                            Start Timer
+                        </button>
+                    ` : `
+                        <button class="btn btn--secondary btn--sm" disabled>
+                            <i data-lucide="clock"></i>
+                            No Time Left
+                        </button>
+                    `}
+                    <button class="btn btn--ghost btn--sm" data-action="log-time" data-member-id="${memberId}">
                         <i data-lucide="plus"></i>
-                        Log Time
+                        Log
                     </button>
                 </div>
 
@@ -80,6 +110,10 @@ const ScreenTime = (function() {
                     <button class="btn btn--sm btn--ghost" data-action="view-all" data-member-id="${memberId}">
                         <i data-lucide="maximize-2"></i>
                         View All
+                    </button>
+                    <button class="btn btn--sm btn--ghost" data-action="reset-time" data-member-id="${memberId}" title="Reset today's usage (requires PIN)">
+                        <i data-lucide="rotate-ccw"></i>
+                        Reset
                     </button>
                     <button class="btn btn--sm btn--ghost" data-action="set-limit" data-member-id="${memberId}">
                         <i data-lucide="settings"></i>
@@ -91,6 +125,11 @@ const ScreenTime = (function() {
 
         // Bind events
         bindScreenTimeEvents(container, memberId, widgetData);
+
+        // If timer is running, start updating the display
+        if (isTimerRunning) {
+            startWidgetTimerUpdate(container, memberId);
+        }
     }
 
     /**
@@ -123,6 +162,105 @@ const ScreenTime = (function() {
                 showSetLimitModal(memberId, widgetData);
             }
         });
+
+        // Reset today's usage button
+        container.querySelector('[data-action="reset-time"]')?.addEventListener('click', async () => {
+            const verified = await PIN.verify();
+            if (verified) {
+                resetTodayUsage(memberId, container);
+            }
+        });
+
+        // Start timer button
+        container.querySelector('[data-action="start-timer"]')?.addEventListener('click', () => {
+            const result = startScreenTimer(memberId);
+            if (result.success) {
+                Toast.success(result.message);
+                // Re-render widget to show running state
+                renderWidget(container, memberId);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } else {
+                Toast.warning(result.message);
+            }
+        });
+
+        // Stop timer button
+        container.querySelector('[data-action="stop-timer"]')?.addEventListener('click', () => {
+            const result = stopScreenTimer();
+            if (result.success) {
+                // Show appropriate message based on points change
+                if (result.pointsChange > 0) {
+                    Toast.success(result.message);
+                } else if (result.pointsChange < 0) {
+                    Toast.warning(result.message);
+                } else {
+                    Toast.info(result.message);
+                }
+                // Re-render widget to show updated state
+                renderWidget(container, memberId);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+            } else {
+                Toast.warning(result.message);
+            }
+        });
+    }
+
+    // Widget timer update interval reference
+    let widgetUpdateInterval = null;
+
+    /**
+     * Start updating the widget timer display
+     */
+    function startWidgetTimerUpdate(container, memberId) {
+        // Clear any existing interval
+        if (widgetUpdateInterval) {
+            clearInterval(widgetUpdateInterval);
+        }
+
+        widgetUpdateInterval = setInterval(() => {
+            const status = getScreenTimerStatus();
+
+            // If timer stopped or different member, re-render and stop updating
+            if (!status.isRunning || status.memberId !== memberId) {
+                clearInterval(widgetUpdateInterval);
+                widgetUpdateInterval = null;
+                renderWidget(container, memberId);
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+                return;
+            }
+
+            // Update the timer display
+            const timerDisplay = container.querySelector('#screen-timer-display');
+            if (timerDisplay) {
+                // Show time over (with +) or remaining time
+                if (status.isOverLimit) {
+                    timerDisplay.textContent = '+' + formatMinutes(status.minutesOver);
+                    timerDisplay.classList.remove('screen-time-widget__time--active');
+                    timerDisplay.classList.add('screen-time-widget__time--over');
+
+                    // Update label
+                    const label = container.querySelector('.screen-time-widget__label');
+                    if (label && !label.classList.contains('screen-time-widget__label--over')) {
+                        label.textContent = 'OVER LIMIT!';
+                        label.classList.add('screen-time-widget__label--over');
+                    }
+
+                    // Update widget container
+                    const widget = container.querySelector('.screen-time-widget');
+                    if (widget && !widget.classList.contains('screen-time-widget--over')) {
+                        widget.classList.add('screen-time-widget--over');
+                    }
+                } else {
+                    timerDisplay.textContent = formatMinutes(status.remainingMinutes);
+                }
+            }
+        }, 1000);
     }
 
     // =========================================================================
@@ -878,9 +1016,14 @@ const ScreenTime = (function() {
         // Support migration from old single limit to new weekday/weekend limits
         const weekdayLimit = widgetData.weekdayLimit || widgetData.dailyLimit || 120;
         const weekendLimit = widgetData.weekendLimit || widgetData.dailyLimit || 180;
+        // Points settings with defaults
+        const bonusPoints = widgetData.bonusPoints ?? 10;
+        const penaltyPerMin = widgetData.penaltyPerMin ?? 5;
+        const maxPenalty = widgetData.maxPenalty ?? 50;
 
         const content = `
             <div class="screen-time-limits-form">
+                <h4 style="margin-bottom: var(--space-3); color: var(--gray-600);">Time Limits</h4>
                 <div class="form-group">
                     <label class="form-label">
                         <i data-lucide="briefcase" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
@@ -906,6 +1049,36 @@ const ScreenTime = (function() {
                     </div>
                 </div>
                 <p class="form-helper" style="margin-top: var(--space-2); text-align: center;">Minutes per day (15 min - 8 hours)</p>
+
+                <hr style="margin: var(--space-4) 0; border: none; border-top: 1px solid var(--gray-200);">
+
+                <h4 style="margin-bottom: var(--space-3); color: var(--gray-600);">Points Settings</h4>
+                <div class="form-row" style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: var(--space-3);">
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: var(--text-xs);">
+                            <i data-lucide="award" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; color: var(--success);"></i>
+                            Bonus
+                        </label>
+                        <input type="number" class="form-input" id="bonusPoints" value="${bonusPoints}" min="0" max="100" style="text-align: center;">
+                        <span class="form-helper" style="font-size: 10px;">within limit</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: var(--text-xs);">
+                            <i data-lucide="minus-circle" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; color: var(--danger);"></i>
+                            Penalty/min
+                        </label>
+                        <input type="number" class="form-input" id="penaltyPerMin" value="${penaltyPerMin}" min="0" max="20" style="text-align: center;">
+                        <span class="form-helper" style="font-size: 10px;">per min over</span>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" style="font-size: var(--text-xs);">
+                            <i data-lucide="alert-triangle" style="width: 14px; height: 14px; display: inline-block; vertical-align: middle; color: var(--warning);"></i>
+                            Max Penalty
+                        </label>
+                        <input type="number" class="form-input" id="maxPenalty" value="${maxPenalty}" min="0" max="200" style="text-align: center;">
+                        <span class="form-helper" style="font-size: 10px;">maximum loss</span>
+                    </div>
+                </div>
             </div>
         `;
 
@@ -932,6 +1105,9 @@ const ScreenTime = (function() {
         Modal.bindFooterEvents(() => {
             const weekday = parseInt(document.getElementById('weekdayLimit')?.value) || 120;
             const weekend = parseInt(document.getElementById('weekendLimit')?.value) || 180;
+            const bonus = parseInt(document.getElementById('bonusPoints')?.value) ?? 10;
+            const penalty = parseInt(document.getElementById('penaltyPerMin')?.value) ?? 5;
+            const maxPen = parseInt(document.getElementById('maxPenalty')?.value) ?? 50;
 
             if (weekday < 15 || weekday > 480 || weekend < 15 || weekend > 480) {
                 Toast.error('Limits must be between 15 and 480 minutes');
@@ -943,9 +1119,12 @@ const ScreenTime = (function() {
             Storage.setWidgetData(memberId, 'screen-time', {
                 ...restData,
                 weekdayLimit: weekday,
-                weekendLimit: weekend
+                weekendLimit: weekend,
+                bonusPoints: bonus,
+                penaltyPerMin: penalty,
+                maxPenalty: maxPen
             });
-            Toast.success('Limits updated');
+            Toast.success('Settings updated');
 
             // Refresh widget
             const widgetBody = document.getElementById('widget-screen-time');
@@ -964,9 +1143,326 @@ const ScreenTime = (function() {
         // Initialize screen time feature
     }
 
+    /**
+     * Reset today's screen time usage (requires PIN verification before calling)
+     */
+    function resetTodayUsage(memberId, container) {
+        const today = DateUtils.today();
+        const widgetData = Storage.getWidgetData(memberId, 'screen-time') || {
+            weekdayLimit: 120,
+            weekendLimit: 180,
+            log: {}
+        };
+
+        // Check if there's any usage to reset
+        const todayLog = widgetData.log?.[today];
+        if (!todayLog || todayLog.used === 0) {
+            Toast.info('No screen time usage to reset today');
+            return;
+        }
+
+        // Stop any running timer first
+        if (screenTimerState.isRunning && screenTimerState.memberId === memberId) {
+            if (screenTimerState.intervalId) {
+                clearInterval(screenTimerState.intervalId);
+            }
+            screenTimerState = {
+                isRunning: false,
+                memberId: null,
+                startTime: null,
+                maxDuration: 0,
+                elapsedSeconds: 0,
+                isOverLimit: false,
+                intervalId: null
+            };
+        }
+
+        // Reset today's log
+        widgetData.log[today] = { used: 0, sessions: [] };
+        Storage.setWidgetData(memberId, 'screen-time', widgetData);
+
+        Toast.success('Screen time reset for today');
+
+        // Re-render widget
+        if (container) {
+            renderWidget(container, memberId);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
+    // =========================================================================
+    // SCREEN TIME TIMER (Voice Command Support)
+    // =========================================================================
+
+    // Timer state for active screen time session
+    let screenTimerState = {
+        isRunning: false,
+        memberId: null,
+        startTime: null,
+        maxDuration: 0, // in seconds (remaining time when started)
+        elapsedSeconds: 0,
+        isOverLimit: false,
+        intervalId: null
+    };
+
+    /**
+     * Start screen time timer
+     * Returns the remaining time in minutes or error
+     */
+    function startScreenTimer(memberId) {
+        if (screenTimerState.isRunning) {
+            return { success: false, message: 'Screen time timer is already running' };
+        }
+
+        const today = DateUtils.today();
+        const widgetData = Storage.getWidgetData(memberId, 'screen-time') || {
+            weekdayLimit: 120,
+            weekendLimit: 180,
+            log: {}
+        };
+
+        const todayLimit = getTodayLimit(widgetData);
+        const todayLog = widgetData.log?.[today] || { used: 0, sessions: [] };
+        const remainingMinutes = Math.max(0, todayLimit - todayLog.used);
+
+        if (remainingMinutes <= 0) {
+            return { success: false, message: 'No screen time remaining for today!' };
+        }
+
+        // Start the timer
+        screenTimerState = {
+            isRunning: true,
+            memberId: memberId,
+            startTime: Date.now(),
+            maxDuration: remainingMinutes * 60, // convert to seconds
+            elapsedSeconds: 0,
+            isOverLimit: false,
+            intervalId: null
+        };
+
+        // Start interval to track time
+        screenTimerState.intervalId = setInterval(() => {
+            if (screenTimerState.isRunning) {
+                screenTimerState.elapsedSeconds = Math.floor((Date.now() - screenTimerState.startTime) / 1000);
+
+                // Mark as over limit but DO NOT auto-stop
+                // Timer keeps running to track how long they exceed
+                if (screenTimerState.elapsedSeconds >= screenTimerState.maxDuration) {
+                    screenTimerState.isOverLimit = true;
+                }
+            }
+        }, 1000);
+
+        return {
+            success: true,
+            remainingMinutes: remainingMinutes,
+            message: `Screen time started! You have ${formatMinutes(remainingMinutes)} remaining.`
+        };
+    }
+
+    /**
+     * Stop screen time timer and log the session
+     */
+    function stopScreenTimer() {
+        if (!screenTimerState.isRunning) {
+            return { success: false, message: 'No screen time timer is running' };
+        }
+
+        // Clear the interval
+        if (screenTimerState.intervalId) {
+            clearInterval(screenTimerState.intervalId);
+        }
+
+        const memberId = screenTimerState.memberId;
+        const elapsedSeconds = Math.floor((Date.now() - screenTimerState.startTime) / 1000);
+        const elapsedMinutes = Math.ceil(elapsedSeconds / 60); // Round up to nearest minute
+        const maxDurationMinutes = Math.ceil(screenTimerState.maxDuration / 60);
+
+        // Calculate how many minutes over the limit (if any)
+        const minutesOverLimit = Math.max(0, elapsedMinutes - maxDurationMinutes);
+        const exceededLimit = minutesOverLimit > 0;
+
+        // Get current data
+        const today = DateUtils.today();
+        const widgetData = Storage.getWidgetData(memberId, 'screen-time') || {
+            weekdayLimit: 120,
+            weekendLimit: 180,
+            log: {}
+        };
+
+        const todayLimit = getTodayLimit(widgetData);
+
+        // Initialize today's log if needed
+        if (!widgetData.log) widgetData.log = {};
+        if (!widgetData.log[today]) {
+            widgetData.log[today] = { used: 0, sessions: [] };
+        }
+
+        // Add session
+        const session = {
+            id: `session-${Date.now()}`,
+            startTime: new Date(screenTimerState.startTime).toISOString(),
+            endTime: new Date().toISOString(),
+            duration: elapsedMinutes,
+            exceededLimit: exceededLimit,
+            minutesOver: minutesOverLimit
+        };
+
+        widgetData.log[today].sessions.push(session);
+        widgetData.log[today].used += elapsedMinutes;
+
+        // Save updated data
+        Storage.setWidgetData(memberId, 'screen-time', widgetData);
+
+        // Get customizable points settings (with defaults)
+        const bonusPoints = widgetData.bonusPoints ?? 10;
+        const penaltyPerMin = widgetData.penaltyPerMin ?? 5;
+        const maxPenalty = widgetData.maxPenalty ?? 50;
+
+        // Calculate points reward or penalty based on THIS session
+        let pointsChange = 0;
+        let pointsMessage = '';
+
+        if (exceededLimit) {
+            // PENALTY: Exceeded limit - deduct points based on settings
+            pointsChange = -Math.min(minutesOverLimit * penaltyPerMin, maxPenalty);
+            pointsMessage = `Exceeded limit by ${minutesOverLimit} minute${minutesOverLimit !== 1 ? 's' : ''}. ${pointsChange} points!`;
+        } else if (bonusPoints > 0) {
+            // REWARD: Stayed within limit - bonus for responsible usage
+            pointsChange = bonusPoints;
+            pointsMessage = `Great job staying within your limit! +${pointsChange} points!`;
+        }
+
+        // Apply points change
+        if (pointsChange !== 0) {
+            const pointsData = Storage.getWidgetData(memberId, 'points') || {
+                balance: 0,
+                todayCompleted: [],
+                history: []
+            };
+
+            pointsData.balance = Math.max(0, (pointsData.balance || 0) + pointsChange);
+
+            // Add to history
+            if (!pointsData.history) pointsData.history = [];
+            pointsData.history = [
+                {
+                    activityId: 'screen-time',
+                    activityName: pointsChange > 0 ? 'Screen Time Bonus' : 'Screen Time Penalty',
+                    activityIcon: pointsChange > 0 ? 'award' : 'alert-triangle',
+                    date: today,
+                    completedAt: new Date().toISOString(),
+                    points: Math.abs(pointsChange),
+                    basePoints: Math.abs(pointsChange),
+                    bonus: 0,
+                    type: pointsChange > 0 ? 'earned' : 'deducted'
+                },
+                ...pointsData.history.slice(0, 99)
+            ];
+
+            Storage.setWidgetData(memberId, 'points', pointsData);
+        }
+
+        // Reset timer state
+        screenTimerState = {
+            isRunning: false,
+            memberId: null,
+            startTime: null,
+            maxDuration: 0,
+            elapsedSeconds: 0,
+            isOverLimit: false,
+            intervalId: null
+        };
+
+        const totalUsed = widgetData.log[today].used;
+        const usedMessage = `Used ${elapsedMinutes} minutes of screen time.`;
+        const remainingMessage = totalUsed < todayLimit
+            ? ` ${formatMinutes(todayLimit - totalUsed)} remaining today.`
+            : ' No time remaining today.';
+
+        return {
+            success: true,
+            elapsedMinutes: elapsedMinutes,
+            exceededLimit: exceededLimit,
+            minutesOver: minutesOverLimit,
+            pointsChange: pointsChange,
+            message: `${usedMessage}${remainingMessage}${pointsMessage ? ' ' + pointsMessage : ''}`
+        };
+    }
+
+    /**
+     * Get current screen timer status
+     */
+    function getScreenTimerStatus() {
+        if (!screenTimerState.isRunning) {
+            return { isRunning: false };
+        }
+
+        const elapsedSeconds = Math.floor((Date.now() - screenTimerState.startTime) / 1000);
+        const isOverLimit = elapsedSeconds >= screenTimerState.maxDuration;
+
+        // If over limit, show how much time OVER (negative remaining)
+        // If within limit, show remaining time
+        const remainingSeconds = screenTimerState.maxDuration - elapsedSeconds;
+        const remainingMinutes = isOverLimit
+            ? -Math.floor(Math.abs(remainingSeconds) / 60) // Negative to show time over
+            : Math.ceil(remainingSeconds / 60);
+
+        // Minutes over the limit (for display purposes)
+        const minutesOver = isOverLimit ? Math.floor(Math.abs(remainingSeconds) / 60) : 0;
+
+        return {
+            isRunning: true,
+            memberId: screenTimerState.memberId,
+            elapsedMinutes: Math.floor(elapsedSeconds / 60),
+            remainingMinutes: remainingMinutes,
+            remainingSeconds: remainingSeconds,
+            isOverLimit: isOverLimit,
+            minutesOver: minutesOver
+        };
+    }
+
+    /**
+     * Check if screen timer is running
+     */
+    function isScreenTimerRunning() {
+        return screenTimerState.isRunning;
+    }
+
+    /**
+     * Get remaining screen time for a member (without starting timer)
+     */
+    function getRemainingScreenTime(memberId) {
+        const today = DateUtils.today();
+        const widgetData = Storage.getWidgetData(memberId, 'screen-time') || {
+            weekdayLimit: 120,
+            weekendLimit: 180,
+            log: {}
+        };
+
+        const todayLimit = getTodayLimit(widgetData);
+        const todayLog = widgetData.log?.[today] || { used: 0, sessions: [] };
+        const remainingMinutes = Math.max(0, todayLimit - todayLog.used);
+
+        return {
+            limit: todayLimit,
+            used: todayLog.used,
+            remaining: remainingMinutes,
+            isWeekend: isWeekend()
+        };
+    }
+
     return {
         init,
         renderWidget,
-        showFullPage
+        showFullPage,
+        // Timer functions for voice commands
+        startScreenTimer,
+        stopScreenTimer,
+        getScreenTimerStatus,
+        isScreenTimerRunning,
+        getRemainingScreenTime
     };
 })();
