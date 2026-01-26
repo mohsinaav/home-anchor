@@ -13,6 +13,54 @@ const ToddlerRoutine = (function() {
         bedtime: { label: 'Bedtime', icon: 'bed', order: 5 }
     };
 
+    // Time-based filtering configuration
+    const TIME_FILTERS = {
+        morning: { hours: [6, 11], categories: ['morning', 'meals'], label: 'Morning' },
+        midday: { hours: [11, 14], categories: ['meals', 'naps'], label: 'Midday' },
+        afternoon: { hours: [14, 17], categories: ['naps', 'meals'], label: 'Afternoon' },
+        evening: { hours: [17, 20], categories: ['meals', 'evening', 'bedtime'], label: 'Evening' },
+        night: { hours: [20, 6], categories: ['bedtime'], label: 'Bedtime' }
+    };
+
+    // Track "show all" state per member
+    let showAllRoutines = {};
+
+    /**
+     * Get current time period and relevant categories
+     */
+    function getCurrentTimePeriod() {
+        const hour = new Date().getHours();
+
+        if (hour >= 6 && hour < 11) return TIME_FILTERS.morning;
+        if (hour >= 11 && hour < 14) return TIME_FILTERS.midday;
+        if (hour >= 14 && hour < 17) return TIME_FILTERS.afternoon;
+        if (hour >= 17 && hour < 20) return TIME_FILTERS.evening;
+        return TIME_FILTERS.night; // 8pm - 6am
+    }
+
+    /**
+     * Check if a routine is relevant for current time
+     */
+    function isRoutineRelevantNow(routine) {
+        const timePeriod = getCurrentTimePeriod();
+        const category = routine.category || 'morning';
+        return timePeriod.categories.includes(category);
+    }
+
+    /**
+     * Get icon for time period
+     */
+    function getTimePeriodIcon(timePeriod) {
+        const iconMap = {
+            'Morning': 'sunrise',
+            'Midday': 'sun',
+            'Afternoon': 'cloud-sun',
+            'Evening': 'sunset',
+            'Bedtime': 'moon'
+        };
+        return iconMap[timePeriod.label] || 'clock';
+    }
+
     // SVG illustrations as data URLs for each routine
     const ROUTINE_IMAGES = {
         'wake-up': {
@@ -428,6 +476,10 @@ const ToddlerRoutine = (function() {
         const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
         const allComplete = completedCount === totalCount && totalCount > 0;
 
+        // Time-based filtering
+        const timePeriod = getCurrentTimePeriod();
+        const showAll = showAllRoutines[memberId] || false;
+
         container.innerHTML = `
             <div class="toddler-routine-widget ${allComplete ? 'toddler-routine-widget--complete' : ''}">
                 <div class="toddler-routine-widget__header">
@@ -441,6 +493,17 @@ const ToddlerRoutine = (function() {
                         </svg>
                         <span class="toddler-routine-progress-ring__text">${completedCount}/${totalCount}</span>
                     </div>
+                    <div class="toddler-routine-widget__time-filter">
+                        <span class="toddler-routine-time-badge" title="Current time period">
+                            <i data-lucide="${getTimePeriodIcon(timePeriod)}"></i>
+                            ${timePeriod.label}
+                        </span>
+                        <button class="btn btn--xs btn--ghost ${showAll ? 'btn--active' : ''}"
+                                data-action="toggle-filter"
+                                title="${showAll ? 'Show relevant only' : 'Show all routines'}">
+                            <i data-lucide="${showAll ? 'eye' : 'eye-off'}"></i>
+                        </button>
+                    </div>
                     <button class="btn btn--sm btn--ghost" data-action="stats" title="View stats">
                         <i data-lucide="bar-chart-2"></i>
                     </button>
@@ -449,8 +512,10 @@ const ToddlerRoutine = (function() {
                 <div class="toddler-routine-grid">
                     ${routines.map(routine => {
                         const isComplete = completedToday.includes(routine.id);
+                        const isRelevant = isRoutineRelevantNow(routine);
+                        const dimmed = !showAll && !isRelevant && !isComplete;
                         return `
-                            <div class="toddler-routine-card ${isComplete ? 'toddler-routine-card--done' : ''}"
+                            <div class="toddler-routine-card ${isComplete ? 'toddler-routine-card--done' : ''} ${dimmed ? 'toddler-routine-card--dimmed' : ''}"
                                  data-routine-id="${routine.id}">
                                 <div class="toddler-routine-card__image">
                                     <img src="${getImageSrc(routine)}" alt="${routine.title}">
@@ -615,6 +680,13 @@ const ToddlerRoutine = (function() {
                 const routineId = card.dataset.routineId;
                 toggleComplete(memberId, routineId);
             });
+        });
+
+        // Toggle filter button (show all / show relevant)
+        container.querySelector('[data-action="toggle-filter"]')?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showAllRoutines[memberId] = !showAllRoutines[memberId];
+            renderWidget(container, memberId);
         });
 
         // Stats button

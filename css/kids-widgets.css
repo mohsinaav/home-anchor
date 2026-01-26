@@ -8695,6 +8695,31 @@
     border-top: 1px solid var(--gray-200);
 }
 
+/* Time-based filtering */
+.toddler-routine-widget__time-filter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.toddler-routine-time-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: #92400E;
+    border: 1px solid #F59E0B;
+}
+
+.toddler-routine-time-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* Routine Grid - 3 columns for bigger cards */
 .toddler-routine-grid {
     display: grid;
@@ -8737,6 +8762,16 @@
 .toddler-routine-card--done {
     border-color: #22C55E;
     background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%);
+}
+
+.toddler-routine-card--dimmed {
+    opacity: 0.4;
+    transform: scale(0.95);
+}
+
+.toddler-routine-card--dimmed:hover {
+    opacity: 0.7;
+    transform: scale(0.98);
 }
 
 .toddler-routine-card--large {
@@ -15310,3 +15345,681 @@
     }
 }
 
+
+/* ==========================================================================
+   Caregiver Handoff Widget
+   ========================================================================== */
+
+.handoff-widget {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border-radius: var(--radius-xl);
+    border: 2px solid #F59E0B;
+}
+
+.handoff-widget--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #FEE2E2 0%, #FECACA 100%);
+}
+
+.handoff-widget__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.handoff-widget__date {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+}
+
+.handoff-widget__important-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--gray-400);
+    transition: all 0.2s ease;
+}
+
+.handoff-widget__important-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: var(--gray-600);
+}
+
+.handoff-widget__important-btn--active {
+    color: #EF4444;
+}
+
+.handoff-widget__important-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.handoff-summary {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.handoff-summary__row {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.handoff-summary__row--grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.handoff-summary__item {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.handoff-summary__item--full {
+    grid-column: 1 / -1;
+}
+
+.handoff-summary__label {
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--gray-600);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.handoff-mood-picker {
+    display: flex;
+    gap: var(--space-1);
+}
+
+.handoff-mood-btn {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 2px solid transparent;
+    background: white;
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    font-size: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    opacity: 0.6;
+}
+
+.handoff-mood-btn:hover {
+    transform: scale(1.1);
+    opacity: 1;
+}
+
+.handoff-mood-btn--active {
+    border-color: #F59E0B;
+    background: white;
+    opacity: 1;
+    transform: scale(1.15);
+    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+}
+
+.handoff-counter {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: var(--space-1);
+}
+
+.handoff-counter__btn {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-600);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.handoff-counter__btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.handoff-counter__value {
+    min-width: 24px;
+    text-align: center;
+    font-size: var(--text-lg);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.handoff-input {
+    padding: var(--space-2);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: white;
+    width: 100%;
+}
+
+.handoff-input:focus {
+    outline: none;
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.handoff-textarea {
+    padding: var(--space-2);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    background: white;
+    width: 100%;
+    resize: vertical;
+    min-height: 60px;
+    font-family: inherit;
+}
+
+.handoff-textarea:focus {
+    outline: none;
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.1);
+}
+
+.handoff-widget__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: var(--space-2);
+    border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.handoff-widget__updated {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+.handoff-widget__updated svg {
+    width: 12px;
+    height: 12px;
+}
+
+/* Handoff History Page */
+.handoff-history {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.handoff-history__card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 2px solid var(--gray-200);
+    transition: all 0.2s ease;
+}
+
+.handoff-history__card--today {
+    border-color: #F59E0B;
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+}
+
+.handoff-history__card--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+}
+
+.handoff-history__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.handoff-history__date {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.handoff-history__badges {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.handoff-history__important {
+    color: #EF4444;
+}
+
+.handoff-history__important svg {
+    width: 16px;
+    height: 16px;
+}
+
+.handoff-history__mood {
+    font-size: 24px;
+}
+
+.handoff-history__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+    margin-bottom: var(--space-3);
+}
+
+.handoff-history__stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+}
+
+.handoff-history__stat svg {
+    width: 14px;
+    height: 14px;
+    color: var(--gray-500);
+}
+
+.handoff-history__notes {
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-2);
+}
+
+.handoff-history__notes p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+.handoff-history__time {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+}
+
+/* ==========================================================================
+   Growth Chart Widget
+   ========================================================================== */
+
+.growth-chart-widget {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 100%);
+    border-radius: var(--radius-xl);
+    border: 2px solid #8B5CF6;
+}
+
+.growth-chart-widget__latest {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+}
+
+.growth-chart-stat {
+    background: white;
+    padding: var(--space-3);
+    border-radius: var(--radius-lg);
+    text-align: center;
+}
+
+.growth-chart-stat__label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: var(--font-semibold);
+    color: var(--gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: var(--space-1);
+}
+
+.growth-chart-stat__value {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    font-size: var(--text-xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.growth-chart-trend {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    padding: 2px 6px;
+    border-radius: var(--radius-sm);
+}
+
+.growth-chart-trend svg {
+    width: 12px;
+    height: 12px;
+}
+
+.growth-chart-trend--up {
+    background: #DCFCE7;
+    color: #16A34A;
+}
+
+.growth-chart-trend--down {
+    background: #FEE2E2;
+    color: #DC2626;
+}
+
+.growth-chart-trend--same {
+    background: var(--gray-100);
+    color: var(--gray-500);
+}
+
+.growth-chart-widget__date {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    text-align: center;
+}
+
+.growth-chart-widget__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-4);
+    color: var(--gray-500);
+}
+
+.growth-chart-widget__empty svg {
+    width: 32px;
+    height: 32px;
+    opacity: 0.5;
+}
+
+.growth-chart-widget__empty p {
+    margin: 0;
+    font-size: var(--text-sm);
+}
+
+.growth-chart-widget__actions {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+}
+
+/* Growth Chart Full Page */
+.growth-chart-page {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.growth-chart-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.growth-chart-unit-toggle {
+    display: flex;
+    background: var(--gray-100);
+    border-radius: var(--radius-lg);
+    padding: 4px;
+}
+
+.unit-toggle-btn {
+    padding: var(--space-2) var(--space-3);
+    border: none;
+    background: transparent;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.unit-toggle-btn:hover {
+    color: var(--gray-800);
+}
+
+.unit-toggle-btn--active {
+    background: white;
+    color: var(--primary);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.growth-chart-container {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-chart-svg-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.growth-chart-svg {
+    width: 100%;
+    height: 200px;
+}
+
+.growth-chart-legend {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-4);
+    flex-wrap: wrap;
+}
+
+.growth-chart-legend__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.growth-chart-legend__color {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-sm);
+}
+
+/* Growth Chart History */
+.growth-chart-history {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-chart-history__title {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.growth-chart-history__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.growth-measurement-card {
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    padding: var(--space-3);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-measurement-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-2);
+}
+
+.growth-measurement-card__date {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+}
+
+.growth-measurement-card__values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.growth-measurement-value {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: var(--space-2) var(--space-3);
+    background: white;
+    border-radius: var(--radius-md);
+    border-left: 3px solid var(--color, var(--primary));
+}
+
+.growth-measurement-value__label {
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+}
+
+.growth-measurement-value__val {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.growth-measurement-card__note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--gray-200);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.growth-measurement-card__note svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--gray-400);
+}
+
+/* Growth Chart Settings */
+.growth-settings {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.growth-settings__title {
+    margin: 0;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.growth-settings__fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.growth-settings__field {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-2) var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+}
+
+.growth-settings__add {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.growth-settings__add .form-input {
+    flex: 1;
+}
+
+/* Growth Add Form */
+.growth-add-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .handoff-summary__row--grid {
+        grid-template-columns: 1fr;
+    }
+
+    .handoff-mood-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 18px;
+    }
+
+    .growth-chart-widget__latest {
+        grid-template-columns: 1fr;
+    }
+
+    .growth-chart-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .growth-chart-unit-toggle {
+        justify-content: center;
+    }
+
+    .growth-measurement-card__values {
+        flex-direction: column;
+    }
+}
