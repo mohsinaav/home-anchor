@@ -815,7 +815,7 @@ const KidJournal = (function() {
                     </div>
                     ${showPasswordOption ? `
                         <button class="btn btn--sm btn--ghost kid-page__hero-action" id="journalSettingsBtn" title="${hasPassword ? 'Change password' : 'Set password'}">
-                            <i data-lucide="${hasPassword ? 'lock' : 'lock-open'}"></i>
+                            <i data-lucide="${hasPassword ? 'lock' : 'unlock'}"></i>
                         </button>
                     ` : ''}
                 </div>
@@ -1032,7 +1032,7 @@ const KidJournal = (function() {
                     </div>
                     ${showPasswordOption ? `
                         <button class="btn btn--sm btn--ghost teen-journal-page__password-btn" id="journalSettingsBtn" title="${hasPassword ? 'Change password' : 'Set password'}">
-                            <i data-lucide="${hasPassword ? 'lock' : 'lock-open'}"></i>
+                            <i data-lucide="${hasPassword ? 'lock' : 'unlock'}"></i>
                         </button>
                     ` : ''}
                 </div>
@@ -2763,6 +2763,7 @@ const KidJournal = (function() {
     return {
         init,
         renderWidget,
-        showFullPage
+        showFullPage,
+        verifyPassword // Export for use by widget-renderer expand button
     };
 })();

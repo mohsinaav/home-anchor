@@ -27,7 +27,7 @@ const WidgetRenderer = (function() {
         'workout', 'task-list', 'meal-plan', 'habits', 'gratitude', 'recipes',
         'grocery', 'routine', 'daily-log', 'toddler-routine', 'activities', 'journal',
         // Kid widgets with full page views
-        'chores', 'screen-time', 'achievements', 'rewards'
+        'chores', 'screen-time', 'achievements', 'rewards', 'caregiver-handoff', 'growth-chart'
     ];
 
     // Widget component registry - maps widget IDs to their render functions
@@ -289,6 +289,28 @@ const WidgetRenderer = (function() {
             },
             title: 'Milestones',
             icon: 'baby'
+        },
+        'caregiver-handoff': {
+            render: (container, member) => {
+                if (typeof CaregiverHandoff !== 'undefined' && CaregiverHandoff.renderWidget) {
+                    CaregiverHandoff.renderWidget(container, member.id);
+                } else {
+                    renderPlaceholder(container, 'Caregiver Handoff', 'clipboard-list', 'Quick daily summaries');
+                }
+            },
+            title: 'Caregiver Handoff',
+            icon: 'clipboard-list'
+        },
+        'growth-chart': {
+            render: (container, member) => {
+                if (typeof GrowthChart !== 'undefined' && GrowthChart.renderWidget) {
+                    GrowthChart.renderWidget(container, member.id);
+                } else {
+                    renderPlaceholder(container, 'Growth Chart', 'ruler', 'Track height and weight');
+                }
+            },
+            title: 'Growth Chart',
+            icon: 'ruler'
         },
         'toddler-tasks': {
             render: (container, member) => {
@@ -627,13 +649,21 @@ const WidgetRenderer = (function() {
                 setFocusedWidget(member.id, widgetId);
                 renderAdultFocusLayout(container, member, hasMoreWidgets);
 
-                // Restore scroll position after re-render
+                // Restore scroll position after re-render (for mobile horizontal nav)
                 const newNav = container.querySelector('.focus-nav');
                 if (newNav && scrollLeft > 0) {
                     newNav.scrollLeft = scrollLeft;
                 }
             });
         });
+
+        // Auto-scroll active tab into view on desktop
+        setTimeout(() => {
+            const activeTab = container.querySelector('.focus-nav__tab--active');
+            if (activeTab && window.innerWidth >= 600) {
+                activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 100);
 
         // Bind add widget button in sidebar
         container.querySelector('#addWidgetNavBtn')?.addEventListener('click', () => {
@@ -907,13 +937,21 @@ const WidgetRenderer = (function() {
                 setFocusedWidget(member.id, widgetId);
                 renderKidWidgets(container, member, hasMoreWidgets);
 
-                // Restore scroll position after re-render
+                // Restore scroll position after re-render (for mobile horizontal nav)
                 const newNav = container.querySelector('.focus-nav');
                 if (newNav && scrollLeft > 0) {
                     newNav.scrollLeft = scrollLeft;
                 }
             });
         });
+
+        // Auto-scroll active tab into view on desktop
+        setTimeout(() => {
+            const activeTab = container.querySelector('.focus-nav__tab--active');
+            if (activeTab && window.innerWidth >= 600) {
+                activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }
+        }, 100);
 
         // Bind add widget button in sidebar
         container.querySelector('#addWidgetNavBtn')?.addEventListener('click', () => {
@@ -1128,6 +1166,19 @@ const WidgetRenderer = (function() {
                 const data = Storage.getWidgetData(memberId, 'milestones') || {};
                 const achieved = data.achieved?.length || 0;
                 return `${achieved} achieved`;
+            }
+            case 'caregiver-handoff': {
+                const data = Storage.getWidgetData(memberId, 'caregiver-handoff') || {};
+                const todaySummary = data.summaries?.[today] || {};
+                if (todaySummary.updatedAt) {
+                    return todaySummary.important ? 'Important!' : 'Updated';
+                }
+                return 'Add summary';
+            }
+            case 'growth-chart': {
+                const data = Storage.getWidgetData(memberId, 'growth-chart') || {};
+                const count = data.measurements?.length || 0;
+                return count > 0 ? `${count} recorded` : 'Start tracking';
             }
             case 'routine': {
                 return 'View routine';
@@ -1442,7 +1493,19 @@ const WidgetRenderer = (function() {
     /**
      * Expand a widget to full page view
      */
-    function expandWidget(widgetId, member) {
+    async function expandWidget(widgetId, member) {
+        // Check for password-protected widgets first
+        if (widgetId === 'journal') {
+            const verified = await PIN.verify();
+            if (!verified) return;
+        }
+
+        // Check for kid/teen journal password (only if password is set)
+        if (widgetId === 'kid-journal' && typeof KidJournal !== 'undefined' && KidJournal.verifyPassword) {
+            const verified = await KidJournal.verifyPassword(member.id);
+            if (!verified) return;
+        }
+
         // Map widget IDs to their full page functions (using correct exported function names)
         const expandHandlers = {
             'points': () => typeof Points !== 'undefined' && Points.showFullPage ? Points.showFullPage(member.id) : null,
@@ -1467,7 +1530,10 @@ const WidgetRenderer = (function() {
             'chores': () => typeof Chores !== 'undefined' && Chores.showFullPage ? Chores.showFullPage(member.id) : null,
             'screen-time': () => typeof ScreenTime !== 'undefined' && ScreenTime.showFullPage ? ScreenTime.showFullPage(member.id) : null,
             'achievements': () => typeof Achievements !== 'undefined' && Achievements.showFullPage ? Achievements.showFullPage(member.id) : null,
-            'rewards': () => typeof Rewards !== 'undefined' && Rewards.showFullPage ? Rewards.showFullPage(member.id) : null
+            'rewards': () => typeof Rewards !== 'undefined' && Rewards.showFullPage ? Rewards.showFullPage(member.id) : null,
+            // Toddler widgets
+            'caregiver-handoff': () => typeof CaregiverHandoff !== 'undefined' && CaregiverHandoff.showFullPage ? CaregiverHandoff.showFullPage(member.id) : null,
+            'growth-chart': () => typeof GrowthChart !== 'undefined' && GrowthChart.showFullPage ? GrowthChart.showFullPage(member.id) : null
         };
 
         const handler = expandHandlers[widgetId];

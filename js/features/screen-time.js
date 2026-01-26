@@ -397,7 +397,7 @@ const ScreenTime = (function() {
 
         const getActivityIcon = (activity) => {
             const icons = {
-                'games': 'gamepad-2',
+                'games': 'gamepad',
                 'tv': 'tv',
                 'youtube': 'play-circle',
                 'tablet': 'tablet',
@@ -479,7 +479,7 @@ const ScreenTime = (function() {
                                             ${new Date(session.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
                                         </span>
                                     </div>
-                                    <div class="screen-time-session-card__duration">${session.minutes}m</div>
+                                    <div class="screen-time-session-card__duration">${session.minutes || session.duration || 0}m</div>
                                 </div>
                             `).join('')}
                         </div>
@@ -585,7 +585,9 @@ const ScreenTime = (function() {
             const sessions = log[d]?.sessions || [];
             sessions.forEach(s => {
                 const activity = s.activity || 'other';
-                activityBreakdown[activity] = (activityBreakdown[activity] || 0) + s.minutes;
+                // Handle both old format (duration) and new format (minutes)
+                const minutes = s.minutes || s.duration || 0;
+                activityBreakdown[activity] = (activityBreakdown[activity] || 0) + minutes;
             });
         });
 
@@ -652,7 +654,7 @@ const ScreenTime = (function() {
                                         <div class="screen-time-breakdown-item__header">
                                             ${isYoungKid
                                                 ? `<span class="emoji-icon">${activityEmojis[activity] || '📱'}</span>`
-                                                : `<i data-lucide="${activity === 'games' ? 'gamepad-2' : activity === 'tv' ? 'tv' : activity === 'youtube' ? 'play-circle' : activity === 'tablet' ? 'tablet' : activity === 'educational' ? 'book-open' : 'monitor'}"></i>`}
+                                                : `<i data-lucide="${activity === 'games' ? 'gamepad' : activity === 'tv' ? 'tv' : activity === 'youtube' ? 'play-circle' : activity === 'tablet' ? 'tablet' : activity === 'educational' ? 'book-open' : 'monitor'}"></i>`}
                                             <span>${activityLabels[activity] || activity}</span>
                                             <span class="screen-time-breakdown-item__time">${formatMinutes(time)}</span>
                                         </div>
@@ -720,7 +722,7 @@ const ScreenTime = (function() {
             <form id="logTimeForm">
                 <div class="form-group">
                     <label class="form-label">Minutes used</label>
-                    <input type="number" class="form-input" id="screenTimeMinutes" placeholder="30" min="1" max="480">
+                    <input type="number" class="form-input" id="screenTimeMinutes" placeholder="30" max="480">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Activity (optional)</label>
@@ -790,7 +792,7 @@ const ScreenTime = (function() {
             <form id="logTimeForm">
                 <div class="form-group">
                     <label class="form-label">Minutes used</label>
-                    <input type="number" class="form-input" id="screenTimeMinutes" placeholder="30" min="1" max="480">
+                    <input type="number" class="form-input" id="screenTimeMinutes" placeholder="30" max="480">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Activity (optional)</label>
@@ -904,7 +906,7 @@ const ScreenTime = (function() {
 
         const getActivityIcon = (activity) => {
             const icons = {
-                'games': 'gamepad-2',
+                'games': 'gamepad',
                 'tv': 'tv',
                 'youtube': 'play-circle',
                 'tablet': 'tablet',
@@ -981,7 +983,7 @@ const ScreenTime = (function() {
                                                 <div class="screen-time-history-session">
                                                     <i data-lucide="${getActivityIcon(session.activity)}"></i>
                                                     <span>${getActivityLabel(session.activity)}</span>
-                                                    <span class="screen-time-history-session__time">${session.minutes}m</span>
+                                                    <span class="screen-time-history-session__time">${session.minutes || session.duration || 0}m</span>
                                                 </div>
                                             `).join('')}
                                         </div>
@@ -1020,6 +1022,7 @@ const ScreenTime = (function() {
         const bonusPoints = widgetData.bonusPoints ?? 10;
         const penaltyPerMin = widgetData.penaltyPerMin ?? 5;
         const maxPenalty = widgetData.maxPenalty ?? 50;
+        const bufferMinutes = widgetData.bufferMinutes ?? 5;
 
         const content = `
             <div class="screen-time-limits-form">
@@ -1029,7 +1032,7 @@ const ScreenTime = (function() {
                         <i data-lucide="briefcase" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
                         Weekday Limit (Mon-Fri)
                     </label>
-                    <input type="number" class="form-input" id="weekdayLimit" value="${weekdayLimit}" min="15" max="480">
+                    <input type="number" class="form-input" id="weekdayLimit" value="${weekdayLimit}" max="480">
                     <div class="limit-presets" data-target="weekdayLimit">
                         <button type="button" class="btn btn--secondary btn--sm" data-preset="60">1h</button>
                         <button type="button" class="btn btn--secondary btn--sm" data-preset="90">1.5h</button>
@@ -1041,14 +1044,14 @@ const ScreenTime = (function() {
                         <i data-lucide="sun" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle;"></i>
                         Weekend Limit (Sat-Sun)
                     </label>
-                    <input type="number" class="form-input" id="weekendLimit" value="${weekendLimit}" min="15" max="480">
+                    <input type="number" class="form-input" id="weekendLimit" value="${weekendLimit}" max="480">
                     <div class="limit-presets" data-target="weekendLimit">
                         <button type="button" class="btn btn--secondary btn--sm" data-preset="120">2h</button>
                         <button type="button" class="btn btn--secondary btn--sm" data-preset="180">3h</button>
                         <button type="button" class="btn btn--secondary btn--sm" data-preset="240">4h</button>
                     </div>
                 </div>
-                <p class="form-helper" style="margin-top: var(--space-2); text-align: center;">Minutes per day (15 min - 8 hours)</p>
+                <p class="form-helper" style="margin-top: var(--space-2); text-align: center;">Minutes per day (up to 8 hours)</p>
 
                 <hr style="margin: var(--space-4) 0; border: none; border-top: 1px solid var(--gray-200);">
 
@@ -1079,6 +1082,14 @@ const ScreenTime = (function() {
                         <span class="form-helper" style="font-size: 10px;">maximum loss</span>
                     </div>
                 </div>
+                <div class="form-group" style="margin-top: var(--space-3);">
+                    <label class="form-label">
+                        <i data-lucide="shield" style="width: 16px; height: 16px; display: inline-block; vertical-align: middle; color: var(--primary);"></i>
+                        Grace Period (Buffer)
+                    </label>
+                    <input type="number" class="form-input" id="bufferMinutes" value="${bufferMinutes}" min="0" max="30" style="text-align: center;">
+                    <p class="form-helper" style="margin-top: var(--space-1);">Minutes over limit before penalties apply (0-30 min buffer)</p>
+                </div>
             </div>
         `;
 
@@ -1108,9 +1119,15 @@ const ScreenTime = (function() {
             const bonus = parseInt(document.getElementById('bonusPoints')?.value) ?? 10;
             const penalty = parseInt(document.getElementById('penaltyPerMin')?.value) ?? 5;
             const maxPen = parseInt(document.getElementById('maxPenalty')?.value) ?? 50;
+            const buffer = parseInt(document.getElementById('bufferMinutes')?.value) ?? 5;
 
-            if (weekday < 15 || weekday > 480 || weekend < 15 || weekend > 480) {
-                Toast.error('Limits must be between 15 and 480 minutes');
+            if (weekday < 0 || weekday > 480 || weekend < 0 || weekend > 480) {
+                Toast.error('Limits must be between 0 and 480 minutes');
+                return false;
+            }
+
+            if (buffer < 0 || buffer > 30) {
+                Toast.error('Buffer must be between 0 and 30 minutes');
                 return false;
             }
 
@@ -1122,7 +1139,8 @@ const ScreenTime = (function() {
                 weekendLimit: weekend,
                 bonusPoints: bonus,
                 penaltyPerMin: penalty,
-                maxPenalty: maxPen
+                maxPenalty: maxPen,
+                bufferMinutes: buffer
             });
             Toast.success('Settings updated');
 
@@ -1177,15 +1195,65 @@ const ScreenTime = (function() {
             };
         }
 
+        // REVERT POINTS: Find all screen-time related points from today and reverse them
+        const pointsData = Storage.getWidgetData(memberId, 'points');
+        if (pointsData && pointsData.history) {
+            // Find all screen-time entries from today
+            const todayScreenTimeEntries = pointsData.history.filter(entry =>
+                entry.activityId === 'screen-time' && entry.date === today
+            );
+
+            if (todayScreenTimeEntries.length > 0) {
+                // Calculate total points to reverse
+                let pointsToReverse = 0;
+                todayScreenTimeEntries.forEach(entry => {
+                    if (entry.type === 'earned') {
+                        // If points were earned (bonus), deduct them back
+                        pointsToReverse -= entry.points;
+                    } else if (entry.type === 'deducted') {
+                        // If points were deducted (penalty), add them back
+                        pointsToReverse += entry.points;
+                    }
+                });
+
+                // Apply the reversal
+                if (pointsToReverse !== 0) {
+                    pointsData.balance = Math.max(0, (pointsData.balance || 0) + pointsToReverse);
+
+                    // Remove screen-time entries from history for today
+                    pointsData.history = pointsData.history.filter(entry =>
+                        !(entry.activityId === 'screen-time' && entry.date === today)
+                    );
+
+                    Storage.setWidgetData(memberId, 'points', pointsData);
+
+                    if (pointsToReverse > 0) {
+                        Toast.info(`Restored ${pointsToReverse} points from penalties`);
+                    } else {
+                        Toast.info(`Removed ${Math.abs(pointsToReverse)} bonus points`);
+                    }
+                }
+            }
+        }
+
         // Reset today's log
-        widgetData.log[today] = { used: 0, sessions: [] };
+        widgetData.log[today] = { used: 0, sessions: [], bonusAwarded: false, bonusAwardedAt: null };
         Storage.setWidgetData(memberId, 'screen-time', widgetData);
 
         Toast.success('Screen time reset for today');
 
-        // Re-render widget
+        // Re-render screen time widget
         if (container) {
             renderWidget(container, memberId);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+
+        // Refresh points widget if it exists
+        const pointsWidget = document.getElementById('widget-points');
+        if (pointsWidget && typeof Points !== 'undefined' && Points.renderWidget) {
+            Points.renderWidget(pointsWidget, memberId);
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
@@ -1228,7 +1296,11 @@ const ScreenTime = (function() {
         const remainingMinutes = Math.max(0, todayLimit - todayLog.used);
 
         if (remainingMinutes <= 0) {
-            return { success: false, message: 'No screen time remaining for today!' };
+            // Check if bonus was awarded
+            const bonusMsg = todayLog.bonusAwarded
+                ? " You've earned your screen time bonus for today!"
+                : "";
+            return { success: false, message: `No screen time remaining for today!${bonusMsg}` };
         }
 
         // Start the timer
@@ -1297,15 +1369,23 @@ const ScreenTime = (function() {
         // Initialize today's log if needed
         if (!widgetData.log) widgetData.log = {};
         if (!widgetData.log[today]) {
-            widgetData.log[today] = { used: 0, sessions: [] };
+            widgetData.log[today] = {
+                used: 0,
+                sessions: [],
+                bonusAwarded: false,  // Track if daily bonus was awarded
+                bonusAwardedAt: null  // When bonus was awarded
+            };
         }
 
-        // Add session
+        // Add session (matching format used by manual logging)
         const session = {
+            minutes: elapsedMinutes,
+            activity: '', // Timer sessions don't have specific activity
+            time: new Date().toISOString(),
+            // Additional timer-specific data
             id: `session-${Date.now()}`,
             startTime: new Date(screenTimerState.startTime).toISOString(),
             endTime: new Date().toISOString(),
-            duration: elapsedMinutes,
             exceededLimit: exceededLimit,
             minutesOver: minutesOverLimit
         };
@@ -1320,19 +1400,36 @@ const ScreenTime = (function() {
         const bonusPoints = widgetData.bonusPoints ?? 10;
         const penaltyPerMin = widgetData.penaltyPerMin ?? 5;
         const maxPenalty = widgetData.maxPenalty ?? 50;
+        const bufferMinutes = widgetData.bufferMinutes ?? 5;
 
-        // Calculate points reward or penalty based on THIS session
+        // Calculate points reward or penalty
+        // Points logic:
+        // - If stopped within limit OR within buffer time → Award bonus (once per day)
+        // - If exceeded beyond buffer time → Deduct penalty points
         let pointsChange = 0;
         let pointsMessage = '';
 
-        if (exceededLimit) {
-            // PENALTY: Exceeded limit - deduct points based on settings
-            pointsChange = -Math.min(minutesOverLimit * penaltyPerMin, maxPenalty);
-            pointsMessage = `Exceeded limit by ${minutesOverLimit} minute${minutesOverLimit !== 1 ? 's' : ''}. ${pointsChange} points!`;
-        } else if (bonusPoints > 0) {
-            // REWARD: Stayed within limit - bonus for responsible usage
+        const todayLog = widgetData.log[today];
+        const withinBuffer = !exceededLimit || minutesOverLimit <= bufferMinutes;
+
+        if (exceededLimit && minutesOverLimit > bufferMinutes) {
+            // PENALTY: Exceeded limit beyond buffer - deduct points
+            const penaltyMinutes = minutesOverLimit - bufferMinutes;
+            pointsChange = -Math.min(penaltyMinutes * penaltyPerMin, maxPenalty);
+            pointsMessage = `Exceeded limit by ${minutesOverLimit} minute${minutesOverLimit !== 1 ? 's' : ''} (${bufferMinutes}min buffer). ${pointsChange} points!`;
+        } else if (bonusPoints > 0 && !todayLog.bonusAwarded && withinBuffer) {
+            // REWARD: Award bonus when stopped within limit OR within buffer time
             pointsChange = bonusPoints;
-            pointsMessage = `Great job staying within your limit! +${pointsChange} points!`;
+            if (exceededLimit) {
+                pointsMessage = `Stopped within ${bufferMinutes}min buffer! +${pointsChange} points!`;
+            } else {
+                pointsMessage = `Great job staying within your limit! +${pointsChange} points!`;
+            }
+
+            // Mark bonus as awarded for today
+            widgetData.log[today].bonusAwarded = true;
+            widgetData.log[today].bonusAwardedAt = new Date().toISOString();
+            Storage.setWidgetData(memberId, 'screen-time', widgetData);
         }
 
         // Apply points change

@@ -605,7 +605,7 @@
 .focus-layout {
     display: flex;
     align-items: flex-start; /* Both children align to top */
-    gap: var(--space-4);
+    gap: var(--space-1);
     width: 100%;
     padding: 0 var(--space-4) var(--space-4);
     position: relative;
@@ -650,14 +650,21 @@
     align-items: flex-start;
     gap: var(--space-2);
     padding: 0; /* Remove top/bottom padding to align with widget top */
+    padding-right: 14px; /* Extra space for arrow to extend into */
     margin: 0; /* Ensure no margins affect position */
     position: relative; /* Temporarily remove sticky to debug alignment */
     height: fit-content;
     max-height: calc(100vh - 120px);
     overflow-y: auto;
+    overflow-x: visible; /* Allow arrow to extend beyond */
     z-index: 10;
     align-self: flex-start;
     flex-shrink: 0;
+    scrollbar-width: none; /* Firefox */
+}
+
+.focus-nav::-webkit-scrollbar {
+    display: none; /* Chrome, Safari */
 }
 
 /* Individual Tab - Like sticky note flags with labels */
@@ -706,6 +713,7 @@
     height: 100%;
     background: var(--primary);
     clip-path: polygon(0 0, 0 100%, 100% 50%);
+    z-index: 3; /* Ensure arrow appears above widget */
 }
 
 /* Tab label text */

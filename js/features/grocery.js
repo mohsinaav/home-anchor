@@ -243,6 +243,13 @@ const Grocery = (function() {
 
         data.stores.push(newStore);
         saveWidgetData(memberId, data);
+
+        // Register new store in session state as expanded (false = not collapsed)
+        if (!sessionStoreStates[memberId]) {
+            sessionStoreStates[memberId] = {};
+        }
+        sessionStoreStates[memberId][newStore.id] = false;
+
         return newStore;
     }
 

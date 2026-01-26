@@ -23,7 +23,6 @@ const Storage = (function() {
             { id: 'gratitude', name: 'Gratitude', description: 'Daily gratitude journal', icon: 'heart', default: false },
             { id: 'habits', name: 'Habits', description: 'Habit tracker', icon: 'repeat', default: false },
             { id: 'recipes', name: 'Recipes', description: 'Recipe collection', icon: 'book-open', default: false },
-            { id: 'grocery', name: 'Grocery', description: 'Shopping list', icon: 'shopping-cart', default: false },
             { id: 'routine', name: 'Routines', description: 'Track recurring tasks and build habits', icon: 'repeat', default: false },
             { id: 'vision-board', name: 'Vision Board', description: 'Track your goals and dreams', icon: 'target', default: false },
             { id: 'journal', name: 'Journal', description: 'Private daily journal with mood tracking', icon: 'notebook-pen', default: false },
@@ -60,7 +59,9 @@ const Storage = (function() {
             { id: 'activities', name: 'Activities', description: 'Engagement activity ideas', icon: 'blocks', default: true },
             { id: 'daily-log', name: 'Daily Log', description: 'Track activities done today', icon: 'calendar-check', default: true },
             { id: 'toddler-tasks', name: 'My To-Dos', description: 'Simple visual task list', icon: 'check-circle', default: false },
-            { id: 'milestones', name: 'Milestones', description: 'Developmental milestones', icon: 'baby', default: false }
+            { id: 'milestones', name: 'Milestones', description: 'Developmental milestones', icon: 'baby', default: false },
+            { id: 'caregiver-handoff', name: 'Caregiver Handoff', description: 'Quick daily summaries for caregivers', icon: 'clipboard-list', default: false },
+            { id: 'growth-chart', name: 'Growth Chart', description: 'Track height, weight, and measurements', icon: 'ruler', default: false }
         ]
     };
 
@@ -102,6 +103,10 @@ const Storage = (function() {
                 toursCompleted: [],
                 lastTourDate: null,
                 skipAllTours: false
+            },
+            voiceAssistant: {
+                enabled: true,
+                ttsEnabled: false
             }
         },
         // Only Home tab by default - no members
@@ -255,7 +260,18 @@ const Storage = (function() {
     // =========================================================================
 
     function getSettings() {
-        return get('settings');
+        const settings = get('settings');
+        const defaults = getDefaultData().settings;
+
+        // Merge with defaults to ensure all properties exist
+        return {
+            ...defaults,
+            ...settings,
+            notifications: { ...defaults.notifications, ...settings.notifications },
+            meals: { ...defaults.meals, ...settings.meals },
+            onboarding: { ...defaults.onboarding, ...settings.onboarding },
+            voiceAssistant: { ...defaults.voiceAssistant, ...settings.voiceAssistant }
+        };
     }
 
     function updateSettings(newSettings) {
@@ -674,6 +690,47 @@ const Storage = (function() {
         saveAll(data);
     }
 
+    /**
+     * Bulk import calendar events from ICS file
+     * @param {Array} events - Array of events to import
+     * @param {string} memberId - Optional member to assign events to
+     * @returns {number} Number of events imported
+     */
+    function importCalendarEvents(events, memberId = null) {
+        const data = getAll();
+        let count = 0;
+
+        for (const event of events) {
+            const newEvent = {
+                id: `evt-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                title: event.title,
+                date: event.date,
+                time: event.time || null,
+                endTime: event.endTime || null,
+                isAllDay: event.isAllDay || false,
+                memberId: memberId,
+                description: event.description || '',
+                location: event.location || '',
+                imported: true,
+                notificationEnabled: false,
+                notificationMinutes: 15
+            };
+
+            data.calendar.events.push(newEvent);
+            count++;
+        }
+
+        // Sort events by date and time
+        data.calendar.events.sort((a, b) => {
+            const dateCompare = a.date.localeCompare(b.date);
+            if (dateCompare !== 0) return dateCompare;
+            return (a.time || '00:00').localeCompare(b.time || '00:00');
+        });
+
+        saveAll(data);
+        return count;
+    }
+
     // =========================================================================
     // AVATAR HELPERS
     // =========================================================================
@@ -1080,7 +1137,7 @@ const Storage = (function() {
                         { id: 's2', time: '07:30', activity: 'Breakfast', icon: 'utensils', color: '#10B981' },
                         { id: 's3', time: '08:00', activity: 'School', icon: 'book', color: '#3B82F6' },
                         { id: 's4', time: '15:00', activity: 'Homework', icon: 'edit', color: '#8B5CF6' },
-                        { id: 's5', time: '16:00', activity: 'Play Time', icon: 'gamepad-2', color: '#EC4899' },
+                        { id: 's5', time: '16:00', activity: 'Play Time', icon: 'gamepad', color: '#EC4899' },
                         { id: 's6', time: '19:00', activity: 'Dinner', icon: 'utensils', color: '#10B981' },
                         { id: 's7', time: '20:00', activity: 'Bedtime', icon: 'moon', color: '#6366F1' }
                     ]
@@ -1251,6 +1308,7 @@ const Storage = (function() {
         addCalendarEvent,
         updateCalendarEvent,
         deleteCalendarEvent,
+        importCalendarEvents,
 
         // Avatar helpers
         generateInitials,
