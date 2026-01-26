@@ -16023,3 +16023,375 @@
         flex-direction: column;
     }
 }
+
+/* ==========================================================================
+   Caregiver Handoff Full Page Tabs
+   ========================================================================== */
+
+.handoff-today-tab {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.handoff-today-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 2px solid var(--gray-200);
+}
+
+.handoff-today-card--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #FEF2F2 0%, white 100%);
+}
+
+.handoff-today-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--gray-200);
+}
+
+.handoff-today-header h3 {
+    margin: 0;
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.handoff-today-section {
+    margin-bottom: var(--space-4);
+}
+
+.handoff-today-label {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-600);
+    margin-bottom: var(--space-2);
+}
+
+.handoff-today-label svg {
+    width: 16px;
+    height: 16px;
+}
+
+.handoff-today-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.handoff-mood-picker--large {
+    display: flex;
+    gap: var(--space-2);
+    justify-content: center;
+}
+
+.handoff-mood-btn--large {
+    width: 48px;
+    height: 48px;
+    font-size: 28px;
+}
+
+.handoff-counter--large {
+    justify-content: center;
+    padding: var(--space-2);
+}
+
+.handoff-counter--large .handoff-counter__btn {
+    width: 36px;
+    height: 36px;
+    font-size: var(--text-xl);
+}
+
+.handoff-counter--large .handoff-counter__value {
+    font-size: var(--text-2xl);
+    min-width: 40px;
+}
+
+.handoff-notes-input {
+    min-height: 100px;
+}
+
+.handoff-today-footer {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-200);
+}
+
+.handoff-today-updated {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+}
+
+.handoff-today-updated svg {
+    width: 14px;
+    height: 14px;
+}
+
+/* Handoff History Tab */
+.handoff-history-tab {
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.handoff-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.handoff-history-card__flag {
+    width: 16px;
+    height: 16px;
+    color: #EF4444;
+}
+
+.handoff-history-stat {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--gray-100);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+}
+
+.handoff-history-stat svg {
+    width: 14px;
+    height: 14px;
+    color: var(--gray-500);
+}
+
+/* ==========================================================================
+   Growth Chart Full Page Tabs
+   ========================================================================== */
+
+.growth-chart-tab,
+.growth-history-tab,
+.growth-stats-tab {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.growth-chart-actions,
+.growth-history-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: var(--space-4);
+}
+
+.growth-chart-latest {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    margin-top: var(--space-4);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-chart-latest h3 {
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-700);
+}
+
+.growth-latest-values {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+}
+
+.growth-latest-value {
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-lg);
+    border-left: 4px solid var(--color, var(--primary));
+}
+
+.growth-latest-value__label {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin-bottom: var(--space-1);
+}
+
+.growth-latest-value__val {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+/* Growth History Tab */
+.growth-history-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.growth-history-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-history-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.growth-history-card__date {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.growth-history-card__values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.growth-history-card__note {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--gray-200);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+}
+
+.growth-history-card__note svg {
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    color: var(--gray-400);
+}
+
+/* Growth Stats Tab */
+.growth-stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: var(--space-3);
+    margin-bottom: var(--space-4);
+}
+
+.growth-stats-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    text-align: center;
+    border: 1px solid var(--gray-200);
+}
+
+.growth-stats-card__label {
+    display: block;
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin-bottom: var(--space-1);
+}
+
+.growth-stats-card__value {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    color: var(--gray-800);
+}
+
+.growth-stats-fields {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.growth-stats-field {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 1px solid var(--gray-200);
+}
+
+.growth-stats-field__title {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: 0 0 var(--space-3) 0;
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.growth-stats-field__color {
+    width: 12px;
+    height: 12px;
+    border-radius: var(--radius-sm);
+    background: var(--color, var(--primary));
+}
+
+.growth-stats-field__data {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: var(--space-3);
+}
+
+.growth-stats-metric {
+    padding: var(--space-2);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.growth-stats-metric--highlight {
+    background: linear-gradient(135deg, #DCFCE7 0%, #D1FAE5 100%);
+}
+
+.growth-stats-metric__label {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--gray-500);
+    margin-bottom: var(--space-1);
+}
+
+.growth-stats-metric__value {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.text-success {
+    color: #16A34A !important;
+}
+
+.text-danger {
+    color: #DC2626 !important;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .handoff-today-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .growth-stats-field__data {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}

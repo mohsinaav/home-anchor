@@ -227,92 +227,95 @@ const CaregiverHandoff = (function() {
     }
 
     /**
-     * Show full page history
+     * Show full page with tabs
      */
-    function showFullPage(memberId) {
+    function showFullPage(memberId, activeTab = 'today') {
         const main = document.querySelector('main');
         if (!main) return;
 
         const member = Storage.getMember(memberId);
+        renderFullPage(main, memberId, member, activeTab);
+    }
+
+    /**
+     * Render full page
+     */
+    function renderFullPage(container, memberId, member, activeTab = 'today') {
         const data = getWidgetData(memberId);
         const summaries = data.summaries || {};
-        const dates = Object.keys(summaries).sort().reverse().slice(0, 7);
+        const today = DateUtils.today();
+        const todaySummary = getTodaySummary(memberId);
 
-        main.innerHTML = `
-            <div class="full-page">
-                <div class="full-page__header">
-                    <button class="btn btn--ghost" id="backBtn">
+        // Calculate stats
+        const totalDays = Object.keys(summaries).length;
+        const importantCount = Object.values(summaries).filter(s => s.important).length;
+        const lastUpdated = todaySummary.updatedAt
+            ? formatTimeAgo(new Date(todaySummary.updatedAt))
+            : 'Not updated';
+
+        // Define tabs
+        const tabs = [
+            { id: 'today', label: 'Today', icon: 'calendar-check', emoji: '📋' },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📅' }
+        ];
+
+        // Render tab content
+        let tabContent;
+        if (activeTab === 'today') {
+            tabContent = renderTodayTab(memberId, todaySummary);
+        } else {
+            tabContent = renderHistoryTab(summaries);
+        }
+
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const colors = useKidTheme ? KidTheme.getColors('caregiver-handoff') : {
+            gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FBBF24 100%)',
+            dark: '#92400E'
+        };
+
+        container.innerHTML = `
+            <div class="kid-page kid-page--handoff ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <!-- Hero Section -->
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark || '#92400E'}">
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
                         <i data-lucide="arrow-left"></i>
                         Back
                     </button>
-                    <h1 class="full-page__title">Handoff History</h1>
-                    <div class="full-page__actions"></div>
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title">
+                            📋 Caregiver Handoff
+                        </h1>
+                        <p class="kid-page__hero-subtitle">${member?.name || ''}'s Daily Summary</p>
+                    </div>
+                    <div class="kid-page__hero-stats">
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${MOODS[todaySummary.mood]}</span>
+                            <span class="kid-hero-stat__label">Today's Mood</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${totalDays}</span>
+                            <span class="kid-hero-stat__label">Days Logged</span>
+                        </div>
+                        <div class="kid-hero-stat">
+                            <span class="kid-hero-stat__value">${importantCount}</span>
+                            <span class="kid-hero-stat__label">Important</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="full-page__content">
-                    ${dates.length === 0 ? `
-                        <div class="empty-state">
-                            <i data-lucide="clipboard"></i>
-                            <p>No handoff notes yet</p>
-                            <span class="text-muted">Start logging daily summaries!</span>
-                        </div>
-                    ` : `
-                        <div class="handoff-history">
-                            ${dates.map(date => {
-                                const summary = summaries[date];
-                                const isToday = date === DateUtils.today();
-                                return `
-                                    <div class="handoff-history__card ${isToday ? 'handoff-history__card--today' : ''} ${summary.important ? 'handoff-history__card--important' : ''}">
-                                        <div class="handoff-history__header">
-                                            <span class="handoff-history__date">
-                                                ${isToday ? 'Today' : DateUtils.formatShort(date)}
-                                            </span>
-                                            <div class="handoff-history__badges">
-                                                ${summary.important ? '<span class="handoff-history__important"><i data-lucide="flag"></i></span>' : ''}
-                                                <span class="handoff-history__mood">${MOODS[summary.mood || 2]}</span>
-                                            </div>
-                                        </div>
+                <!-- Tab Navigation -->
+                <div class="kid-page__tabs">
+                    ${tabs.map(t => `
+                        <button class="kid-page__tab ${t.id === activeTab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
+                            <span class="emoji-icon">${t.emoji}</span>
+                            ${t.label}
+                        </button>
+                    `).join('')}
+                </div>
 
-                                        <div class="handoff-history__stats">
-                                            ${summary.mealsCount ? `
-                                                <div class="handoff-history__stat">
-                                                    <i data-lucide="utensils"></i>
-                                                    <span>${summary.mealsCount} meals</span>
-                                                </div>
-                                            ` : ''}
-                                            ${summary.napInfo ? `
-                                                <div class="handoff-history__stat">
-                                                    <i data-lucide="moon"></i>
-                                                    <span>Nap: ${summary.napInfo}</span>
-                                                </div>
-                                            ` : ''}
-                                            ${summary.lastDiaper ? `
-                                                <div class="handoff-history__stat">
-                                                    <i data-lucide="baby"></i>
-                                                    <span>Diaper: ${summary.lastDiaper}</span>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-
-                                        ${summary.notes ? `
-                                            <div class="handoff-history__notes">
-                                                <p>${summary.notes}</p>
-                                            </div>
-                                        ` : ''}
-
-                                        ${summary.updatedAt ? `
-                                            <div class="handoff-history__time">
-                                                Updated ${new Date(summary.updatedAt).toLocaleTimeString('en-US', {
-                                                    hour: 'numeric',
-                                                    minute: '2-digit'
-                                                })}
-                                            </div>
-                                        ` : ''}
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    `}
+                <!-- Tab Content -->
+                <div class="kid-page__content">
+                    ${tabContent}
                 </div>
             </div>
         `;
@@ -322,10 +325,237 @@ const CaregiverHandoff = (function() {
             lucide.createIcons();
         }
 
-        // Bind back button
-        document.getElementById('backBtn')?.addEventListener('click', () => {
+        // Bind events
+        bindFullPageEvents(container, memberId, member, activeTab);
+    }
+
+    /**
+     * Render Today tab
+     */
+    function renderTodayTab(memberId, summary) {
+        const today = DateUtils.today();
+        const lastUpdated = summary.updatedAt
+            ? `Updated ${new Date(summary.updatedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}`
+            : 'Not updated yet';
+
+        return `
+            <div class="handoff-today-tab">
+                <div class="handoff-today-card ${summary.important ? 'handoff-today-card--important' : ''}">
+                    <div class="handoff-today-header">
+                        <h3>${DateUtils.formatShort(today)}</h3>
+                        <button class="btn btn--sm ${summary.important ? 'btn--danger' : 'btn--ghost'}"
+                                data-action="toggle-important"
+                                title="${summary.important ? 'Remove flag' : 'Mark important'}">
+                            <i data-lucide="flag"></i>
+                            ${summary.important ? 'Important' : 'Flag'}
+                        </button>
+                    </div>
+
+                    <div class="handoff-today-section">
+                        <label class="handoff-today-label">Mood</label>
+                        <div class="handoff-mood-picker handoff-mood-picker--large">
+                            ${MOODS.map((emoji, i) => `
+                                <button class="handoff-mood-btn handoff-mood-btn--large ${i === summary.mood ? 'handoff-mood-btn--active' : ''}"
+                                        data-mood="${i}" title="${MOOD_LABELS[i]}">
+                                    ${emoji}
+                                </button>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <div class="handoff-today-grid">
+                        <div class="handoff-today-section">
+                            <label class="handoff-today-label">
+                                <i data-lucide="utensils"></i>
+                                Meals Today
+                            </label>
+                            <div class="handoff-counter handoff-counter--large">
+                                <button class="handoff-counter__btn" data-action="decrement-meals">-</button>
+                                <span class="handoff-counter__value">${summary.mealsCount}</span>
+                                <button class="handoff-counter__btn" data-action="increment-meals">+</button>
+                            </div>
+                        </div>
+
+                        <div class="handoff-today-section">
+                            <label class="handoff-today-label">
+                                <i data-lucide="moon"></i>
+                                Nap Info
+                            </label>
+                            <input type="text" class="form-input" placeholder="e.g., 2hrs at 1pm"
+                                   data-field="napInfo" value="${summary.napInfo}">
+                        </div>
+
+                        <div class="handoff-today-section">
+                            <label class="handoff-today-label">
+                                <i data-lucide="baby"></i>
+                                Last Diaper
+                            </label>
+                            <input type="text" class="form-input" placeholder="e.g., 3:30 PM wet"
+                                   data-field="lastDiaper" value="${summary.lastDiaper}">
+                        </div>
+                    </div>
+
+                    <div class="handoff-today-section">
+                        <label class="handoff-today-label">
+                            <i data-lucide="message-square"></i>
+                            Notes for Next Caregiver
+                        </label>
+                        <textarea class="form-input handoff-notes-input"
+                                  placeholder="How was the day? Anything important to share?"
+                                  data-field="notes" rows="4">${summary.notes}</textarea>
+                    </div>
+
+                    <div class="handoff-today-footer">
+                        <span class="handoff-today-updated">
+                            <i data-lucide="clock"></i>
+                            ${lastUpdated}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render History tab
+     */
+    function renderHistoryTab(summaries) {
+        const dates = Object.keys(summaries).sort().reverse().slice(0, 14);
+        const today = DateUtils.today();
+
+        if (dates.length === 0) {
+            return `
+                <div class="empty-state">
+                    <i data-lucide="clipboard"></i>
+                    <p>No handoff notes yet</p>
+                    <span class="text-muted">Start logging daily summaries!</span>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="handoff-history-tab">
+                <div class="handoff-history-list">
+                    ${dates.map(date => {
+                        const summary = summaries[date];
+                        const isToday = date === today;
+                        return `
+                            <div class="handoff-history-card ${isToday ? 'handoff-history-card--today' : ''} ${summary.important ? 'handoff-history-card--important' : ''}">
+                                <div class="handoff-history-card__header">
+                                    <div class="handoff-history-card__date">
+                                        <span class="handoff-history-card__day">${isToday ? 'Today' : DateUtils.formatShort(date)}</span>
+                                        ${summary.important ? '<i data-lucide="flag" class="handoff-history-card__flag"></i>' : ''}
+                                    </div>
+                                    <span class="handoff-history-card__mood">${MOODS[summary.mood || 2]}</span>
+                                </div>
+
+                                <div class="handoff-history-card__stats">
+                                    ${summary.mealsCount ? `
+                                        <div class="handoff-history-stat">
+                                            <i data-lucide="utensils"></i>
+                                            <span>${summary.mealsCount} meals</span>
+                                        </div>
+                                    ` : ''}
+                                    ${summary.napInfo ? `
+                                        <div class="handoff-history-stat">
+                                            <i data-lucide="moon"></i>
+                                            <span>Nap: ${summary.napInfo}</span>
+                                        </div>
+                                    ` : ''}
+                                    ${summary.lastDiaper ? `
+                                        <div class="handoff-history-stat">
+                                            <i data-lucide="baby"></i>
+                                            <span>Diaper: ${summary.lastDiaper}</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+
+                                ${summary.notes ? `
+                                    <div class="handoff-history-card__notes">
+                                        <p>${summary.notes}</p>
+                                    </div>
+                                ` : ''}
+
+                                ${summary.updatedAt ? `
+                                    <div class="handoff-history-card__time">
+                                        <i data-lucide="clock"></i>
+                                        ${new Date(summary.updatedAt).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit'
+                                        })}
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, activeTab) {
+        // Back button
+        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
+
+        // Tab switching
+        container.querySelectorAll('[data-tab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tab = btn.dataset.tab;
+                renderFullPage(container, memberId, member, tab);
+            });
+        });
+
+        // Only bind these if on Today tab
+        if (activeTab === 'today') {
+            // Mood buttons
+            container.querySelectorAll('.handoff-mood-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const mood = parseInt(btn.dataset.mood);
+                    const summary = getTodaySummary(memberId);
+                    summary.mood = mood;
+                    saveSummary(memberId, summary);
+                    renderFullPage(container, memberId, member, 'today');
+                });
+            });
+
+            // Meal counter
+            container.querySelector('[data-action="increment-meals"]')?.addEventListener('click', () => {
+                const summary = getTodaySummary(memberId);
+                summary.mealsCount++;
+                saveSummary(memberId, summary);
+                renderFullPage(container, memberId, member, 'today');
+            });
+
+            container.querySelector('[data-action="decrement-meals"]')?.addEventListener('click', () => {
+                const summary = getTodaySummary(memberId);
+                summary.mealsCount = Math.max(0, summary.mealsCount - 1);
+                saveSummary(memberId, summary);
+                renderFullPage(container, memberId, member, 'today');
+            });
+
+            // Text inputs
+            container.querySelectorAll('[data-field]').forEach(input => {
+                input.addEventListener('change', () => {
+                    const field = input.dataset.field;
+                    const summary = getTodaySummary(memberId);
+                    summary[field] = input.value;
+                    saveSummary(memberId, summary);
+                });
+            });
+
+            // Important toggle
+            container.querySelector('[data-action="toggle-important"]')?.addEventListener('click', () => {
+                const summary = getTodaySummary(memberId);
+                summary.important = !summary.important;
+                saveSummary(memberId, summary);
+                renderFullPage(container, memberId, member, 'today');
+            });
+        }
     }
 
     /**
