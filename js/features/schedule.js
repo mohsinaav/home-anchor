@@ -70,7 +70,7 @@ const Schedule = (function() {
         { id: 'shopping-cart', name: 'Errands' },
         { id: 'users', name: 'Social' },
         { id: 'heart', name: 'Self-care' },
-        { id: 'gamepad-2', name: 'Play' },
+        { id: 'gamepad', name: 'Play' },
         { id: 'pencil', name: 'Creative' }
     ];
 

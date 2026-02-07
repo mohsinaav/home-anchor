@@ -4,46 +4,97 @@
  */
 
 const ToddlerRoutine = (function() {
-    // Category definitions for grouping
-    const CATEGORIES = {
-        morning: { label: 'Morning', icon: 'sunrise', order: 1 },
-        meals: { label: 'Meals & Snacks', icon: 'utensils', order: 2 },
-        naps: { label: 'Naps', icon: 'moon', order: 3 },
-        evening: { label: 'Evening', icon: 'sunset', order: 4 },
-        bedtime: { label: 'Bedtime', icon: 'bed', order: 5 }
+    // Default category definitions for grouping
+    const DEFAULT_CATEGORIES = {
+        anytime: { label: 'Anytime', icon: 'clock', order: 0, emoji: '🔄' },
+        morning: { label: 'Morning', icon: 'sunrise', order: 1, emoji: '🌅' },
+        afternoon: { label: 'Afternoon', icon: 'cloud-sun', order: 2, emoji: '☀️' },
+        evening: { label: 'Evening', icon: 'sunset', order: 3, emoji: '🌆' },
+        bedtime: { label: 'Bedtime', icon: 'bed', order: 4, emoji: '🌙' }
     };
+
+    // Available icons for categories
+    const CATEGORY_ICONS = [
+        { key: 'clock', label: 'Clock' },
+        { key: 'sunrise', label: 'Sunrise' },
+        { key: 'sun', label: 'Sun' },
+        { key: 'sunset', label: 'Sunset' },
+        { key: 'moon', label: 'Moon' },
+        { key: 'cloud-sun', label: 'Cloud Sun' },
+        { key: 'utensils', label: 'Utensils' },
+        { key: 'coffee', label: 'Coffee' },
+        { key: 'bed', label: 'Bed' },
+        { key: 'home', label: 'Home' },
+        { key: 'star', label: 'Star' },
+        { key: 'heart', label: 'Heart' },
+        { key: 'smile', label: 'Smile' },
+        { key: 'baby', label: 'Baby' },
+        { key: 'book-open', label: 'Book' },
+        { key: 'music', label: 'Music' },
+        { key: 'activity', label: 'Activity' }
+    ];
+
+    /**
+     * Get categories for a member (with defaults)
+     */
+    function getCategories(memberId) {
+        const stored = Storage.getWidgetData(memberId, 'toddler-routine');
+        if (stored?.categories && Object.keys(stored.categories).length > 0) {
+            return stored.categories;
+        }
+        return { ...DEFAULT_CATEGORIES };
+    }
 
     // Time-based filtering configuration
     const TIME_FILTERS = {
-        morning: { hours: [6, 11], categories: ['morning', 'meals'], label: 'Morning' },
-        midday: { hours: [11, 14], categories: ['meals', 'naps'], label: 'Midday' },
-        afternoon: { hours: [14, 17], categories: ['naps', 'meals'], label: 'Afternoon' },
-        evening: { hours: [17, 20], categories: ['meals', 'evening', 'bedtime'], label: 'Evening' },
+        morning: { hours: [6, 12], categories: ['morning'], label: 'Morning' },
+        afternoon: { hours: [12, 17], categories: ['afternoon'], label: 'Afternoon' },
+        evening: { hours: [17, 20], categories: ['evening'], label: 'Evening' },
         night: { hours: [20, 6], categories: ['bedtime'], label: 'Bedtime' }
     };
 
     // Track "show all" state per member
     let showAllRoutines = {};
 
+    // Track selected time filter per member ('auto' = use current time, or specific filter key)
+    let selectedTimeFilter = {};
+
     /**
-     * Get current time period and relevant categories
+     * Get current time period based on actual time
      */
     function getCurrentTimePeriod() {
         const hour = new Date().getHours();
 
-        if (hour >= 6 && hour < 11) return TIME_FILTERS.morning;
-        if (hour >= 11 && hour < 14) return TIME_FILTERS.midday;
-        if (hour >= 14 && hour < 17) return TIME_FILTERS.afternoon;
-        if (hour >= 17 && hour < 20) return TIME_FILTERS.evening;
-        return TIME_FILTERS.night; // 8pm - 6am
+        if (hour >= 6 && hour < 12) return { ...TIME_FILTERS.morning, key: 'morning' };
+        if (hour >= 12 && hour < 17) return { ...TIME_FILTERS.afternoon, key: 'afternoon' };
+        if (hour >= 17 && hour < 20) return { ...TIME_FILTERS.evening, key: 'evening' };
+        return { ...TIME_FILTERS.night, key: 'night' }; // 8pm - 6am
     }
 
     /**
-     * Check if a routine is relevant for current time
+     * Get active time period (selected or auto)
      */
-    function isRoutineRelevantNow(routine) {
-        const timePeriod = getCurrentTimePeriod();
+    function getActiveTimePeriod(memberId) {
+        const selected = selectedTimeFilter[memberId];
+        if (selected && selected !== 'auto' && TIME_FILTERS[selected]) {
+            return { ...TIME_FILTERS[selected], key: selected };
+        }
+        return getCurrentTimePeriod();
+    }
+
+    /**
+     * Check if a routine is relevant for the active time filter
+     */
+    function isRoutineRelevantNow(routine, memberId) {
         const category = routine.category || 'morning';
+        // Categories that have time-based filtering
+        const timeFilteredCategories = ['morning', 'afternoon', 'evening', 'bedtime'];
+
+        // Custom categories and "anytime" are always shown
+        if (!timeFilteredCategories.includes(category)) return true;
+
+        // Apply time filter for built-in categories
+        const timePeriod = getActiveTimePeriod(memberId);
         return timePeriod.categories.includes(category);
     }
 
@@ -270,12 +321,12 @@ const ToddlerRoutine = (function() {
         { id: 'default-1', title: 'Wake Up', imageKey: 'wake-up', category: 'morning', order: 1 },
         { id: 'default-2', title: 'Brush Teeth', imageKey: 'brush-teeth', category: 'morning', order: 2 },
         { id: 'default-3', title: 'Get Dressed', imageKey: 'get-dressed', category: 'morning', order: 3 },
-        { id: 'default-4', title: 'Breakfast', imageKey: 'breakfast', category: 'meals', order: 4 },
-        { id: 'default-5', title: 'Wash Hands', imageKey: 'wash-hands', category: 'meals', order: 5 },
-        { id: 'default-6', title: 'Lunch', imageKey: 'lunch', category: 'meals', order: 6 },
-        { id: 'default-7', title: 'Nap Time', imageKey: 'nap', category: 'naps', order: 7 },
-        { id: 'default-8', title: 'Snack', imageKey: 'snack', category: 'meals', order: 8 },
-        { id: 'default-9', title: 'Dinner', imageKey: 'dinner', category: 'meals', order: 9 },
+        { id: 'default-4', title: 'Breakfast', imageKey: 'breakfast', category: 'morning', order: 4 },
+        { id: 'default-5', title: 'Wash Hands', imageKey: 'wash-hands', category: 'anytime', order: 5 },
+        { id: 'default-6', title: 'Lunch', imageKey: 'lunch', category: 'afternoon', order: 6 },
+        { id: 'default-7', title: 'Nap Time', imageKey: 'nap', category: 'afternoon', order: 7 },
+        { id: 'default-8', title: 'Snack', imageKey: 'snack', category: 'afternoon', order: 8 },
+        { id: 'default-9', title: 'Dinner', imageKey: 'dinner', category: 'evening', order: 9 },
         { id: 'default-10', title: 'Bath Time', imageKey: 'bath', category: 'evening', order: 10 },
         { id: 'default-11', title: 'Pajamas', imageKey: 'pajamas', category: 'bedtime', order: 11 },
         { id: 'default-12', title: 'Story Time', imageKey: 'story', category: 'bedtime', order: 12 },
@@ -424,11 +475,11 @@ const ToddlerRoutine = (function() {
     /**
      * Group routines by category
      */
-    function groupRoutinesByCategory(routines) {
+    function groupRoutinesByCategory(routines, categories) {
         const groups = {};
 
         // Initialize all categories
-        Object.keys(CATEGORIES).forEach(cat => {
+        Object.keys(categories).forEach(cat => {
             groups[cat] = [];
         });
 
@@ -477,8 +528,20 @@ const ToddlerRoutine = (function() {
         const allComplete = completedCount === totalCount && totalCount > 0;
 
         // Time-based filtering
-        const timePeriod = getCurrentTimePeriod();
+        const currentTimePeriod = getCurrentTimePeriod();
+        const activeTimePeriod = getActiveTimePeriod(memberId);
+        const selectedFilter = selectedTimeFilter[memberId] || 'auto';
         const showAll = showAllRoutines[memberId] || false;
+
+        // Filter options
+        const filterOptions = [
+            { key: 'auto', label: `Now (${currentTimePeriod.label})`, icon: 'clock' },
+            { key: 'morning', label: 'Morning', icon: 'sunrise' },
+            { key: 'afternoon', label: 'Afternoon', icon: 'cloud-sun' },
+            { key: 'evening', label: 'Evening', icon: 'sunset' },
+            { key: 'night', label: 'Bedtime', icon: 'moon' },
+            { key: 'all', label: 'All', icon: 'list' }
+        ];
 
         container.innerHTML = `
             <div class="toddler-routine-widget ${allComplete ? 'toddler-routine-widget--complete' : ''}">
@@ -494,25 +557,20 @@ const ToddlerRoutine = (function() {
                         <span class="toddler-routine-progress-ring__text">${completedCount}/${totalCount}</span>
                     </div>
                     <div class="toddler-routine-widget__time-filter">
-                        <span class="toddler-routine-time-badge" title="Current time period">
-                            <i data-lucide="${getTimePeriodIcon(timePeriod)}"></i>
-                            ${timePeriod.label}
-                        </span>
-                        <button class="btn btn--xs btn--ghost ${showAll ? 'btn--active' : ''}"
-                                data-action="toggle-filter"
-                                title="${showAll ? 'Show relevant only' : 'Show all routines'}">
-                            <i data-lucide="${showAll ? 'eye' : 'eye-off'}"></i>
-                        </button>
+                        <select class="toddler-routine-filter-select" data-action="change-filter" title="Filter by time of day">
+                            ${filterOptions.map(opt => `
+                                <option value="${opt.key}" ${selectedFilter === opt.key ? 'selected' : ''}>
+                                    ${opt.label}
+                                </option>
+                            `).join('')}
+                        </select>
                     </div>
-                    <button class="btn btn--sm btn--ghost" data-action="stats" title="View stats">
-                        <i data-lucide="bar-chart-2"></i>
-                    </button>
                 </div>
 
                 <div class="toddler-routine-grid">
                     ${routines.map(routine => {
                         const isComplete = completedToday.includes(routine.id);
-                        const isRelevant = isRoutineRelevantNow(routine);
+                        const isRelevant = selectedFilter === 'all' ? true : isRoutineRelevantNow(routine, memberId);
                         const dimmed = !showAll && !isRelevant && !isComplete;
                         return `
                             <div class="toddler-routine-card ${isComplete ? 'toddler-routine-card--done' : ''} ${dimmed ? 'toddler-routine-card--dimmed' : ''}"
@@ -682,23 +740,20 @@ const ToddlerRoutine = (function() {
             });
         });
 
-        // Toggle filter button (show all / show relevant)
-        container.querySelector('[data-action="toggle-filter"]')?.addEventListener('click', (e) => {
+        // Time filter dropdown
+        container.querySelector('[data-action="change-filter"]')?.addEventListener('change', (e) => {
             e.stopPropagation();
-            showAllRoutines[memberId] = !showAllRoutines[memberId];
+            const value = e.target.value;
+            selectedTimeFilter[memberId] = value;
+            // If "all" is selected, also enable showAll
+            showAllRoutines[memberId] = (value === 'all');
             renderWidget(container, memberId);
         });
 
-        // Stats button
-        container.querySelector('[data-action="stats"]')?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            showStatsModal(memberId);
-        });
-
-        // History button
+        // History button - navigate to full page with history tab active
         container.querySelector('[data-action="history"]')?.addEventListener('click', (e) => {
             e.stopPropagation();
-            showHistoryPage(memberId);
+            showFullPage(memberId, 'history');
         });
 
         // Reset button
@@ -805,244 +860,775 @@ const ToddlerRoutine = (function() {
     }
 
     /**
-     * Show full page view with category grouping
+     * Render Today tab - Routines grouped by category
      */
-    function showFullPage(memberId) {
-        const main = document.querySelector('main');
-        if (!main) return;
+    function renderTodayTab(memberId, data, categories) {
+        const routines = data.routines || [];
+        const completedToday = data.completedToday || [];
 
-        const member = Storage.getMember(memberId);
+        // Calculate progress
+        const completedCount = completedToday.length;
+        const totalCount = routines.length;
+        const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        const allComplete = completedCount === totalCount && totalCount > 0;
+
+        // Get encouraging message based on progress
+        const getEncouragingMessage = () => {
+            if (allComplete) return { emoji: '🎉', text: "Amazing! You did it all!", subtext: "You're a superstar today!" };
+            if (progressPercent >= 75) return { emoji: '🌟', text: "Almost there!", subtext: "Just a few more to go!" };
+            if (progressPercent >= 50) return { emoji: '💪', text: "Great job!", subtext: "You're doing awesome!" };
+            if (progressPercent >= 25) return { emoji: '🚀', text: "Good start!", subtext: "Keep it up!" };
+            if (completedCount > 0) return { emoji: '✨', text: "You started!", subtext: "Let's do more!" };
+            return { emoji: '🌈', text: "Let's begin!", subtext: "Tap a picture to start!" };
+        };
+        const encouragement = getEncouragingMessage();
+
+        // Group routines by category
+        const groupedRoutines = groupRoutinesByCategory(routines, categories);
+
+        // Sort categories by order
+        const sortedCategories = Object.entries(categories)
+            .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+
+        return `
+            <div class="routine-today-tab routine-today-tab--playful">
+                <!-- Visual Progress Section -->
+                <div class="routine-progress-section">
+                    <div class="routine-progress-gauge ${allComplete ? 'routine-progress-gauge--complete' : ''}">
+                        <svg viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="40" fill="none" stroke="#E5E7EB" stroke-width="12"/>
+                            <circle cx="50" cy="50" r="40" fill="none"
+                                stroke="${allComplete ? '#22C55E' : '#8B5CF6'}" stroke-width="12"
+                                stroke-dasharray="${progressPercent * 2.51} 251" stroke-linecap="round"
+                                transform="rotate(-90 50 50)"
+                                class="routine-progress-gauge__fill"/>
+                        </svg>
+                        <div class="routine-progress-gauge__center">
+                            <span class="routine-progress-gauge__emoji">${encouragement.emoji}</span>
+                            <span class="routine-progress-gauge__value">${completedCount}/${totalCount}</span>
+                        </div>
+                    </div>
+                    <div class="routine-progress-message">
+                        <span class="routine-progress-message__title">${encouragement.text}</span>
+                        <span class="routine-progress-message__subtitle">${encouragement.subtext}</span>
+                    </div>
+                </div>
+
+                <!-- Routine Categories -->
+                ${sortedCategories
+                    .filter(([cat]) => groupedRoutines[cat] && groupedRoutines[cat].length > 0)
+                    .map(([cat, catInfo]) => {
+                        const catRoutines = groupedRoutines[cat];
+                        const catCompleted = catRoutines.filter(r => completedToday.includes(r.id)).length;
+                        const allCatComplete = catCompleted === catRoutines.length;
+
+                        return `
+                            <div class="routine-category ${allCatComplete ? 'routine-category--complete' : ''}" data-category="${cat}">
+                                <div class="routine-category__header routine-category__header--playful">
+                                    <div class="routine-category__title">
+                                        <span class="routine-category__emoji">${catInfo.emoji || '📋'}</span>
+                                        <span>${catInfo.label}</span>
+                                    </div>
+                                    <span class="routine-category__count">${catCompleted}/${catRoutines.length} ${allCatComplete ? '✅' : ''}</span>
+                                </div>
+                                <div class="routine-category__grid">
+                                    ${catRoutines.map(routine => {
+                                        const isComplete = completedToday.includes(routine.id);
+                                        return `
+                                            <div class="toddler-routine-card toddler-routine-card--large ${isComplete ? 'toddler-routine-card--done' : ''}"
+                                                 data-routine-id="${routine.id}">
+                                                <div class="toddler-routine-card__image">
+                                                    <img src="${getImageSrc(routine)}" alt="${routine.title}">
+                                                    ${isComplete ? `
+                                                        <div class="toddler-routine-card__check">
+                                                            <i data-lucide="check"></i>
+                                                        </div>
+                                                    ` : ''}
+                                                </div>
+                                                <span class="toddler-routine-card__label">${routine.title}</span>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+
+                ${routines.length === 0 ? `
+                    <div class="kid-page__empty kid-page__empty--playful">
+                        <div class="kid-page__empty-icon">🌟</div>
+                        <p>No routines yet!</p>
+                        <p class="kid-page__empty-hint">Tap the ⚙️ button to add some!</p>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Generate mini calendar HTML for history tabs
+     */
+    function generateMiniCalendar(currentMonth, currentYear, datesWithHistory) {
+        const today = DateUtils.today();
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const startDay = firstDay.getDay(); // Day of week (0-6)
+        const daysInMonth = lastDay.getDate();
+
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June',
+                            'July', 'August', 'September', 'October', 'November', 'December'];
+
+        let calendarHTML = `
+            <div class="history-calendar">
+                <div class="history-calendar__header">
+                    <button class="history-calendar__nav" data-calendar-nav="prev">
+                        <i data-lucide="chevron-left"></i>
+                    </button>
+                    <span class="history-calendar__title">${monthNames[currentMonth]} ${currentYear}</span>
+                    <button class="history-calendar__nav" data-calendar-nav="next">
+                        <i data-lucide="chevron-right"></i>
+                    </button>
+                </div>
+                <div class="history-calendar__weekdays">
+                    ${['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => `<span>${d}</span>`).join('')}
+                </div>
+                <div class="history-calendar__grid">
+        `;
+
+        // Empty cells before first day
+        for (let i = 0; i < startDay; i++) {
+            calendarHTML += `<span class="history-calendar__day history-calendar__day--empty"></span>`;
+        }
+
+        // Days of month
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            const hasHistory = datesWithHistory.includes(dateStr);
+            const isToday = dateStr === today;
+            const isFuture = dateStr > today;
+
+            calendarHTML += `
+                <span class="history-calendar__day ${hasHistory ? 'history-calendar__day--has-activity' : ''} ${isToday ? 'history-calendar__day--today' : ''} ${isFuture ? 'history-calendar__day--future' : ''}"
+                      data-calendar-date="${dateStr}"
+                      ${!hasHistory || isFuture ? '' : 'data-clickable="true"'}>
+                    ${day}
+                </span>
+            `;
+        }
+
+        calendarHTML += `
+                </div>
+            </div>
+        `;
+
+        return calendarHTML;
+    }
+
+    /**
+     * Render History tab - Past completion records with calendar
+     */
+    function renderHistoryTab(memberId, data, calendarMonth = null, calendarYear = null, selectedDate = null) {
+        const history = data.history || [];
+        const routines = data.routines || [];
+        const todayStr = DateUtils.today();
+
+        // Default to current month/year if not specified
+        const now = new Date();
+        const currentMonth = calendarMonth !== null ? calendarMonth : now.getMonth();
+        const currentYear = calendarYear !== null ? calendarYear : now.getFullYear();
+
+        // Create routine lookup map
+        const routineMap = {};
+        routines.forEach(r => {
+            routineMap[r.id] = r;
+        });
+
+        // Get all dates with history
+        const datesWithHistory = history.map(h => h.date);
+
+        // Sort history by date descending
+        const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));
+
+        // Filter by selected date or show all
+        let historyToShow;
+        if (selectedDate) {
+            historyToShow = sortedHistory.filter(h => h.date === selectedDate);
+        } else {
+            historyToShow = sortedHistory;
+        }
+
+        // Get date label - kid-friendly
+        const getDateLabel = (date) => {
+            if (date === todayStr) return 'Today! 🌟';
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            if (date === yesterdayStr) return 'Yesterday';
+            return DateUtils.formatShort(date);
+        };
+
+        if (sortedHistory.length === 0) {
+            return `
+                <div class="routine-history-tab" data-calendar-month="${currentMonth}" data-calendar-year="${currentYear}">
+                    ${generateMiniCalendar(currentMonth, currentYear, [])}
+                    <div class="kid-page__empty kid-page__empty--playful">
+                        <div class="kid-page__empty-icon">📅</div>
+                        <p>No history yet!</p>
+                        <span>Complete routines to see your history! 🎯</span>
+                    </div>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="routine-history-tab" data-calendar-month="${currentMonth}" data-calendar-year="${currentYear}">
+                ${generateMiniCalendar(currentMonth, currentYear, datesWithHistory)}
+                ${selectedDate ? `
+                    <button class="btn btn--sm btn--ghost history-show-all" data-show-all-history>
+                        <i data-lucide="list"></i>
+                        Show all dates
+                    </button>
+                ` : ''}
+                <div class="routine-history-list">
+                    ${historyToShow.map(entry => {
+                        const isPerfect = entry.completed === entry.total && entry.total > 0;
+                        return `
+                            <div class="routine-history-day ${isPerfect ? 'routine-history-day--perfect' : ''}" data-history-date="${entry.date}">
+                                <div class="routine-history-day__header">
+                                    <span class="routine-history-day__date">${getDateLabel(entry.date)}</span>
+                                    <span class="routine-history-day__count">
+                                        ${entry.completed}/${entry.total}
+                                        ${isPerfect ? ' ⭐' : ''}
+                                    </span>
+                                </div>
+                                <div class="routine-history-day__list">
+                                    ${(entry.routineIds || []).map(routineId => {
+                                        const routine = routineMap[routineId];
+                                        return `
+                                            <div class="routine-history-item">
+                                                ${routine ? `
+                                                    <div class="routine-history-item__image">
+                                                        <img src="${getImageSrc(routine)}" alt="${routine.title}">
+                                                    </div>
+                                                ` : ''}
+                                                <span class="routine-history-item__name">${routine?.title || 'Routine'}</span>
+                                                <i data-lucide="check" class="routine-history-item__check"></i>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                    ${(!entry.routineIds || entry.routineIds.length === 0) ? `
+                                        <div class="routine-history-item routine-history-item--empty">
+                                            <span>No routines completed</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Stats tab - Routine statistics
+     */
+    function renderStatsTab(memberId, data) {
+        const stats = calculateStats(data);
+        const skipped = getSkippedRoutines(data);
+        const history = data.history || [];
+
+        // Generate last 7 days calendar
+        const last7Days = [];
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateStr = date.toISOString().split('T')[0];
+            const dayRecord = history.find(h => h.date === dateStr);
+            last7Days.push({
+                date: dateStr,
+                dayName: date.toLocaleDateString('en-US', { weekday: 'short' }),
+                completed: dayRecord?.completed || 0,
+                total: dayRecord?.total || data.routines.length,
+                isToday: i === 0
+            });
+        }
+
+        // Calculate current streak
+        let streak = 0;
+        const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));
+        for (let i = 0; i < sortedHistory.length; i++) {
+            if (sortedHistory[i].completed === sortedHistory[i].total && sortedHistory[i].total > 0) {
+                streak++;
+            } else {
+                break;
+            }
+        }
+
+        return `
+            <div class="routine-stats-tab">
+                <div class="routine-stats-overview">
+                    <div class="routine-stats-card routine-stats-card--playful">
+                        <span class="emoji-stat">📊</span>
+                        <div class="routine-stats-card__value">${stats.avgCompletion}%</div>
+                        <div class="routine-stats-card__label">Avg Done!</div>
+                    </div>
+                    <div class="routine-stats-card routine-stats-card--playful">
+                        <span class="emoji-stat">⭐</span>
+                        <div class="routine-stats-card__value">${stats.perfectDays}</div>
+                        <div class="routine-stats-card__label">Perfect Days!</div>
+                    </div>
+                    <div class="routine-stats-card routine-stats-card--playful">
+                        <span class="emoji-stat">🔥</span>
+                        <div class="routine-stats-card__value">${streak}</div>
+                        <div class="routine-stats-card__label">Current Streak!</div>
+                    </div>
+                    <div class="routine-stats-card routine-stats-card--playful">
+                        <span class="emoji-stat">📅</span>
+                        <div class="routine-stats-card__value">${stats.totalDays}</div>
+                        <div class="routine-stats-card__label">Days Tracked!</div>
+                    </div>
+                </div>
+
+                <div class="routine-stats-calendar">
+                    <h4 class="routine-stats-section-title">📆 Last 7 Days</h4>
+                    <div class="routine-stats-days">
+                        ${last7Days.map(day => {
+                            const percent = day.total > 0 ? Math.round((day.completed / day.total) * 100) : 0;
+                            const level = percent === 100 ? 'perfect' : percent >= 50 ? 'good' : percent > 0 ? 'partial' : 'none';
+                            return `
+                                <div class="routine-stats-day ${day.isToday ? 'routine-stats-day--today' : ''}">
+                                    <span class="routine-stats-day__name">${day.dayName}</span>
+                                    <div class="routine-stats-day__circle routine-stats-day__circle--${level}">
+                                        ${day.completed}/${day.total}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                ${skipped.length > 0 ? `
+                    <div class="routine-stats-skipped">
+                        <h4 class="routine-stats-section-title">🙈 Sometimes Missed</h4>
+                        <div class="routine-stats-skipped-list">
+                            ${skipped.slice(0, 3).map(s => `
+                                <div class="routine-stats-skipped-item">
+                                    <span>${s.title}</span>
+                                    <span class="routine-stats-skipped-rate">${s.rate}%</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    /**
+     * Render full page content
+     */
+    function renderFullPage(container, memberId, member, activeTab, calendarState = {}) {
         const data = checkAndResetDaily(memberId);
         const routines = data.routines || [];
         const completedToday = data.completedToday || [];
+        const categories = getCategories(memberId);
 
         const completedCount = completedToday.length;
         const totalCount = routines.length;
         const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
         const allComplete = completedCount === totalCount && totalCount > 0;
 
-        // Group routines by category
-        const groupedRoutines = groupRoutinesByCategory(routines);
+        // Calculate streak
+        const history = data.history || [];
+        let streak = 0;
+        const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));
+        for (let i = 0; i < sortedHistory.length; i++) {
+            if (sortedHistory[i].completed === sortedHistory[i].total && sortedHistory[i].total > 0) {
+                streak++;
+            } else {
+                break;
+            }
+        }
 
-        // Generate category sections HTML
-        const categorySectionsHTML = Object.entries(CATEGORIES)
-            .filter(([cat]) => groupedRoutines[cat] && groupedRoutines[cat].length > 0)
-            .map(([cat, catInfo]) => {
-                const catRoutines = groupedRoutines[cat];
-                const catCompleted = catRoutines.filter(r => completedToday.includes(r.id)).length;
+        const tabs = [
+            { id: 'today', label: 'Today', icon: 'check-circle', emoji: '✨' },
+            { id: 'history', label: 'History', icon: 'history', emoji: '📅' },
+            { id: 'stats', label: 'Stats', icon: 'bar-chart-2', emoji: '📊' }
+        ];
 
-                return `
-                    <div class="routine-category" data-category="${cat}">
-                        <div class="routine-category__header">
-                            <div class="routine-category__title">
-                                <i data-lucide="${catInfo.icon}"></i>
-                                <span>${catInfo.label}</span>
-                            </div>
-                            <span class="routine-category__count">${catCompleted}/${catRoutines.length}</span>
-                        </div>
-                        <div class="routine-category__grid">
-                            ${catRoutines.map(routine => {
-                                const isComplete = completedToday.includes(routine.id);
-                                return `
-                                    <div class="toddler-routine-card toddler-routine-card--large ${isComplete ? 'toddler-routine-card--done' : ''}"
-                                         data-routine-id="${routine.id}">
-                                        <div class="toddler-routine-card__image">
-                                            <img src="${getImageSrc(routine)}" alt="${routine.title}">
-                                            ${isComplete ? `
-                                                <div class="toddler-routine-card__check">
-                                                    <i data-lucide="check"></i>
-                                                </div>
-                                            ` : ''}
-                                        </div>
-                                        <span class="toddler-routine-card__label">${routine.title}</span>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        // Kid-friendly theming (toddlers are always "young kids")
+        const useKidTheme = typeof KidTheme !== 'undefined';
+        const colors = useKidTheme ? KidTheme.getColors('routine') : {
+            gradient: 'linear-gradient(135deg, #E0F2FE 0%, #BAE6FD 50%, #7DD3FC 100%)',
+            dark: '#0369A1'
+        };
 
-        main.innerHTML = `
-            <div class="full-page">
-                <div class="full-page__header">
-                    <button class="btn btn--ghost" id="backBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
+        container.innerHTML = `
+            <div class="kid-page kid-page--routine ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
+                <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
+                    <button class="btn btn--ghost kid-page__back" id="backBtn">
+                        <i data-lucide="arrow-left"></i> Back
                     </button>
-                    <h1 class="full-page__title">${member?.name || ''}'s Routine</h1>
-                    <div class="full-page__actions">
-                        <button class="btn btn--sm btn--ghost" id="statsBtn" title="View stats">
-                            <i data-lucide="bar-chart-2"></i>
-                        </button>
-                        <button class="btn btn--sm btn--ghost" id="editRoutinesBtn">
-                            <i data-lucide="settings"></i>
-                        </button>
+                    <button class="kid-page__settings" id="settingsBtn">
+                        <i data-lucide="settings"></i>
+                    </button>
+
+                    <div class="kid-page__hero-content">
+                        <h1 class="kid-page__hero-title kid-page__hero-title--playful">🌟 ${member?.name || ''}'s Routine</h1>
+                        <div class="kid-page__hero-stats">
+                            <div class="kid-hero-stat">
+                                <span class="kid-hero-stat__value">${completedCount}/${totalCount}</span>
+                                <span class="kid-hero-stat__label">✅ Done Today</span>
+                            </div>
+                            <div class="kid-hero-stat">
+                                <span class="kid-hero-stat__value">${progressPercent}%</span>
+                                <span class="kid-hero-stat__label">🎯 Complete</span>
+                            </div>
+                            <div class="kid-hero-stat">
+                                <span class="kid-hero-stat__value">${streak}</span>
+                                <span class="kid-hero-stat__label">🔥 Streak</span>
+                            </div>
+                        </div>
+                        ${allComplete ? '<div class="kid-page__badge kid-page__badge--playful">🎉 All Done! ⭐</div>' : ''}
                     </div>
                 </div>
 
-                <div class="full-page__content">
-                    <div class="toddler-routine-full-header ${allComplete ? 'toddler-routine-full-header--complete' : ''}">
-                        <div class="toddler-routine-progress-ring toddler-routine-progress-ring--large" data-progress="${progressPercent}">
-                            <svg viewBox="0 0 36 36">
-                                <path class="toddler-routine-progress-ring__bg"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                                <path class="toddler-routine-progress-ring__fill"
-                                    stroke-dasharray="${progressPercent}, 100"
-                                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                            </svg>
-                            <span class="toddler-routine-progress-ring__text">${progressPercent}%</span>
-                        </div>
-                        <div class="toddler-routine-full-header__info">
-                            <span class="toddler-routine-progress-text">
-                                ${completedCount} of ${totalCount} complete
-                            </span>
-                            ${allComplete ? '<span class="toddler-routine-complete-badge">All Done!</span>' : ''}
-                        </div>
-                        <button class="btn btn--sm btn--outline" id="resetAllBtn">
-                            <i data-lucide="rotate-ccw"></i>
-                            Reset
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
+                    ${tabs.map(tab => `
+                        <button class="kid-page__tab ${activeTab === tab.id ? 'kid-page__tab--active' : ''}"
+                                data-tab="${tab.id}">
+                            <span class="emoji-icon">${tab.emoji}</span>
+                            ${tab.label}
                         </button>
-                    </div>
+                    `).join('')}
+                </div>
 
-                    <div class="toddler-routine-categories">
-                        ${categorySectionsHTML}
-                    </div>
+                <div class="kid-page__content">
+                    ${activeTab === 'today' ? renderTodayTab(memberId, data, categories) : ''}
+                    ${activeTab === 'history' ? renderHistoryTab(memberId, data, calendarState.month, calendarState.year, calendarState.selectedDate) : ''}
+                    ${activeTab === 'stats' ? renderStatsTab(memberId, data) : ''}
                 </div>
             </div>
         `;
 
-        // Initialize icons
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
 
-        // Bind events
-        document.getElementById('backBtn')?.addEventListener('click', () => {
+        bindFullPageEvents(container, memberId, member, activeTab, calendarState);
+    }
+
+    /**
+     * Bind full page events
+     */
+    function bindFullPageEvents(container, memberId, member, activeTab, calendarState = {}) {
+        // Back button
+        container.querySelector('#backBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
         });
 
-        document.getElementById('resetAllBtn')?.addEventListener('click', () => {
-            showResetConfirm(memberId);
-        });
-
-        document.getElementById('statsBtn')?.addEventListener('click', () => {
-            showStatsModal(memberId);
-        });
-
-        document.getElementById('editRoutinesBtn')?.addEventListener('click', async () => {
+        // Settings button (PIN protected)
+        container.querySelector('#settingsBtn')?.addEventListener('click', async () => {
             const verified = await PIN.verify();
             if (verified) {
                 showManageModal(memberId);
             }
         });
 
-        // Toggle complete on card click
-        document.querySelectorAll('.toddler-routine-card').forEach(card => {
+        // Tab switching
+        container.querySelectorAll('[data-tab]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const tabId = tab.dataset.tab;
+                renderFullPage(container, memberId, member, tabId);
+            });
+        });
+
+        // Toggle complete on card click (in today tab)
+        container.querySelectorAll('.toddler-routine-card').forEach(card => {
             card.addEventListener('click', () => {
                 const routineId = card.dataset.routineId;
                 toggleComplete(memberId, routineId);
+                renderFullPage(container, memberId, member, activeTab, calendarState);
             });
         });
+
+        // Calendar navigation (in history tab)
+        container.querySelectorAll('[data-calendar-nav]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const historyTab = container.querySelector('.routine-history-tab');
+                const currentMonth = parseInt(historyTab?.dataset?.calendarMonth || new Date().getMonth());
+                const currentYear = parseInt(historyTab?.dataset?.calendarYear || new Date().getFullYear());
+
+                let newMonth = currentMonth;
+                let newYear = currentYear;
+
+                if (btn.dataset.calendarNav === 'prev') {
+                    newMonth--;
+                    if (newMonth < 0) {
+                        newMonth = 11;
+                        newYear--;
+                    }
+                } else {
+                    newMonth++;
+                    if (newMonth > 11) {
+                        newMonth = 0;
+                        newYear++;
+                    }
+                }
+
+                renderFullPage(container, memberId, member, activeTab, { month: newMonth, year: newYear });
+            });
+        });
+
+        // Calendar date click (in history tab)
+        container.querySelectorAll('[data-calendar-date][data-clickable="true"]').forEach(day => {
+            day.addEventListener('click', () => {
+                const date = day.dataset.calendarDate;
+                const historyTab = container.querySelector('.routine-history-tab');
+                const currentMonth = parseInt(historyTab?.dataset?.calendarMonth || new Date().getMonth());
+                const currentYear = parseInt(historyTab?.dataset?.calendarYear || new Date().getFullYear());
+
+                renderFullPage(container, memberId, member, activeTab, {
+                    month: currentMonth,
+                    year: currentYear,
+                    selectedDate: date
+                });
+            });
+        });
+
+        // Show all history button
+        container.querySelector('[data-show-all-history]')?.addEventListener('click', () => {
+            const historyTab = container.querySelector('.routine-history-tab');
+            const currentMonth = parseInt(historyTab?.dataset?.calendarMonth || new Date().getMonth());
+            const currentYear = parseInt(historyTab?.dataset?.calendarYear || new Date().getFullYear());
+
+            renderFullPage(container, memberId, member, activeTab, {
+                month: currentMonth,
+                year: currentYear,
+                selectedDate: null
+            });
+        });
+    }
+
+    /**
+     * Show full page view with category grouping
+     */
+    function showFullPage(memberId, activeTab = 'today') {
+        const main = document.querySelector('main');
+        if (!main) return;
+
+        const member = Storage.getMember(memberId);
+        renderFullPage(main, memberId, member, activeTab);
     }
 
 
     /**
      * Generate manage modal HTML
      */
-    function generateManageHTML(memberId) {
+    function generateManageHTML(memberId, activeSection = 'routines') {
         const data = getWidgetData(memberId);
         const routines = data.routines || [];
+        const categories = getCategories(memberId);
 
         const imageOptions = Object.keys(ROUTINE_IMAGES).map(key => ({
             key,
             label: ROUTINE_IMAGES[key].label
         }));
 
-        const categoryOptions = Object.entries(CATEGORIES).map(([key, cat]) => ({
+        // Sort categories by order
+        const sortedCategories = Object.entries(categories)
+            .sort((a, b) => (a[1].order || 0) - (b[1].order || 0));
+
+        const categoryOptions = sortedCategories.map(([key, cat]) => ({
             key,
-            label: cat.label
+            label: cat.label,
+            emoji: cat.emoji || '📋'
         }));
 
         return `
             <div class="manage-routines">
-                <div class="manage-routines__list">
-                    ${routines.map((routine) => `
-                        <div class="manage-routine-item" data-routine-id="${routine.id}" draggable="true">
-                            <div class="manage-routine-item__drag-handle">
-                                <i data-lucide="grip-vertical"></i>
-                            </div>
-                            <div class="manage-routine-item__image" data-upload="${routine.id}">
-                                <img src="${getImageSrc(routine)}" alt="${routine.title}">
-                                <div class="manage-routine-item__image-overlay">
-                                    <i data-lucide="camera"></i>
-                                </div>
-                                ${routine.customImage ? `
-                                    <button class="manage-routine-item__remove-image" data-remove-image="${routine.id}" title="Remove custom image">
-                                        <i data-lucide="x"></i>
-                                    </button>
-                                ` : ''}
-                            </div>
-                            <div class="manage-routine-item__details">
-                                <input type="text" class="form-input manage-routine-item__name" value="${routine.title}"
-                                       data-field="title" placeholder="Enter routine name">
-                                <div class="manage-routine-item__selects">
-                                    <select class="form-select" data-field="imageKey" title="Image">
-                                        ${imageOptions.map(opt => `
-                                            <option value="${opt.key}" ${opt.key === routine.imageKey ? 'selected' : ''}>
-                                                ${opt.label}
-                                            </option>
-                                        `).join('')}
-                                    </select>
-                                    <select class="form-select" data-field="category" title="Category">
-                                        ${categoryOptions.map(opt => `
-                                            <option value="${opt.key}" ${opt.key === (routine.category || 'morning') ? 'selected' : ''}>
-                                                ${opt.label}
-                                            </option>
-                                        `).join('')}
-                                    </select>
-                                </div>
-                            </div>
-                            <button class="btn btn--sm btn--ghost manage-routine-item__delete" data-delete="${routine.id}">
-                                <i data-lucide="trash-2"></i>
-                            </button>
-                        </div>
-                    `).join('')}
+                <div class="manage-routines__tabs">
+                    <button class="manage-routines__tab ${activeSection === 'routines' ? 'manage-routines__tab--active' : ''}" data-section="routines">
+                        <i data-lucide="list-check"></i>
+                        Routines
+                    </button>
+                    <button class="manage-routines__tab ${activeSection === 'categories' ? 'manage-routines__tab--active' : ''}" data-section="categories">
+                        <i data-lucide="clock"></i>
+                        Time of Day
+                    </button>
                 </div>
 
-                <div class="manage-routines__add">
-                    <h4 class="manage-routines__add-title">Add New Routine</h4>
-                    <div class="manage-routines__add-form">
-                        <input type="text" class="form-input" id="newRoutineName" placeholder="Routine name (e.g., Potty Time)">
-                        <select class="form-select" id="newRoutineImage" title="Image">
-                            ${imageOptions.map(opt => `
-                                <option value="${opt.key}">${opt.label}</option>
-                            `).join('')}
-                        </select>
-                        <select class="form-select" id="newRoutineCategory" title="Category">
-                            ${categoryOptions.map(opt => `
-                                <option value="${opt.key}">${opt.label}</option>
-                            `).join('')}
-                        </select>
-                        <button class="btn btn--primary btn--sm" id="addRoutineBtn">
-                            <i data-lucide="plus"></i>
-                            Add
-                        </button>
+                ${activeSection === 'routines' ? `
+                    <p class="manage-routines__hint">
+                        <i data-lucide="info"></i>
+                        Tap a picture to upload your own photo
+                    </p>
+
+                    <div class="manage-routines__list">
+                        ${routines.map((routine) => `
+                            <div class="manage-routine-item" data-routine-id="${routine.id}" draggable="true">
+                                <div class="manage-routine-item__drag-handle">
+                                    <i data-lucide="grip-vertical"></i>
+                                </div>
+                                <div class="manage-routine-item__image" data-upload="${routine.id}">
+                                    <img src="${getImageSrc(routine)}" alt="${routine.title}">
+                                    <div class="manage-routine-item__image-overlay">
+                                        <i data-lucide="camera"></i>
+                                    </div>
+                                    ${routine.customImage ? `
+                                        <button class="manage-routine-item__remove-image" data-remove-image="${routine.id}" title="Remove custom image">
+                                            <i data-lucide="x"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                                <div class="manage-routine-item__details">
+                                    <input type="text" class="form-input manage-routine-item__name" value="${routine.title}"
+                                           data-field="title" placeholder="Enter routine name">
+                                    <div class="manage-routine-item__selects">
+                                        <div class="manage-routine-item__select-group">
+                                            <span class="manage-routine-item__select-label">Picture:</span>
+                                            <select class="form-select" data-field="imageKey">
+                                                ${imageOptions.map(opt => `
+                                                    <option value="${opt.key}" ${opt.key === routine.imageKey ? 'selected' : ''}>
+                                                        ${opt.label}
+                                                    </option>
+                                                `).join('')}
+                                            </select>
+                                        </div>
+                                        <div class="manage-routine-item__select-group">
+                                            <span class="manage-routine-item__select-label">When:</span>
+                                            <select class="form-select" data-field="category">
+                                                ${categoryOptions.map(opt => `
+                                                    <option value="${opt.key}" ${opt.key === (routine.category || 'morning') ? 'selected' : ''}>
+                                                        ${opt.emoji} ${opt.label}
+                                                    </option>
+                                                `).join('')}
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="btn btn--sm btn--ghost manage-routine-item__delete" data-delete="${routine.id}">
+                                    <i data-lucide="trash-2"></i>
+                                </button>
+                            </div>
+                        `).join('')}
                     </div>
-                </div>
+
+                    <div class="manage-routines__add">
+                        <h4 class="manage-routines__add-title">Add a Routine</h4>
+
+                        <!-- Quick Add: Visual preset grid -->
+                        <p class="manage-routines__add-subtitle">Tap to add:</p>
+                        <div class="manage-routines__presets">
+                            ${imageOptions.map(opt => `
+                                <button class="manage-routines__preset" data-add-preset="${opt.key}" title="${opt.label}">
+                                    <img src="${getImageSrc({ imageKey: opt.key })}" alt="${opt.label}">
+                                    <span>${opt.label}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+
+                        <!-- Custom Routine -->
+                        <div class="manage-routines__custom">
+                            <p class="manage-routines__add-subtitle">Or create custom:</p>
+                            <div class="manage-routines__custom-form">
+                                <div class="manage-routines__custom-image" id="customImageUpload">
+                                    <div class="manage-routines__custom-image-placeholder">
+                                        <i data-lucide="camera"></i>
+                                        <span>Add Photo</span>
+                                    </div>
+                                    <img id="customImagePreview" src="" alt="" style="display: none;">
+                                </div>
+                                <div class="manage-routines__custom-fields">
+                                    <input type="text" class="form-input" id="newRoutineName" placeholder="Routine name">
+                                    <div class="manage-routine-item__select-group">
+                                        <span class="manage-routine-item__select-label">When:</span>
+                                        <select class="form-select" id="newRoutineCategory">
+                                            ${categoryOptions.map(opt => `
+                                                <option value="${opt.key}">${opt.emoji} ${opt.label}</option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <button class="btn btn--primary btn--sm" id="addCustomRoutineBtn">
+                                        <i data-lucide="plus"></i>
+                                        Add Custom
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="customImageInput" accept="image/*" style="display: none;">
+                    </div>
+                ` : `
+                    <div class="manage-categories">
+                        <p class="manage-categories__info">Customize your routine categories. Changes affect how routines are grouped.</p>
+
+                        <div class="manage-categories__list">
+                            ${sortedCategories.map(([key, cat]) => `
+                                <div class="manage-category-item" data-category-key="${key}">
+                                    <div class="manage-category-item__icon" style="background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);">
+                                        <i data-lucide="${cat.icon}"></i>
+                                    </div>
+                                    <div class="manage-category-item__details">
+                                        <input type="text" class="form-input manage-category-item__name" value="${cat.label}"
+                                               data-cat-field="label" placeholder="Category name">
+                                        <select class="form-select" data-cat-field="icon" title="Icon">
+                                            ${CATEGORY_ICONS.map(icon => `
+                                                <option value="${icon.key}" ${icon.key === cat.icon ? 'selected' : ''}>
+                                                    ${icon.label}
+                                                </option>
+                                            `).join('')}
+                                        </select>
+                                    </div>
+                                    <button class="btn btn--sm btn--ghost manage-category-item__delete" data-delete-category="${key}"
+                                            ${Object.keys(categories).length <= 1 ? 'disabled title="Cannot delete last category"' : ''}>
+                                        <i data-lucide="trash-2"></i>
+                                    </button>
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <div class="manage-categories__add">
+                            <h4 class="manage-categories__add-title">Add New Category</h4>
+                            <div class="manage-categories__add-form">
+                                <input type="text" class="form-input" id="newCategoryName" placeholder="Category name (e.g., Playtime)">
+                                <select class="form-select" id="newCategoryIcon" title="Icon">
+                                    ${CATEGORY_ICONS.map(icon => `
+                                        <option value="${icon.key}">${icon.label}</option>
+                                    `).join('')}
+                                </select>
+                                <button class="btn btn--primary btn--sm" id="addCategoryBtn">
+                                    <i data-lucide="plus"></i>
+                                    Add
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="manage-categories__reset">
+                            <button class="btn btn--sm btn--ghost" id="resetCategoriesBtn">
+                                <i data-lucide="rotate-ccw"></i>
+                                Reset to Defaults
+                            </button>
+                        </div>
+                    </div>
+                `}
 
                 <input type="file" id="imageUploadInput" accept="image/*" style="display: none;">
             </div>
         `;
     }
 
+    // Track active manage section
+    let manageActiveSection = 'routines';
+
     /**
      * Show manage modal
      */
     function showManageModal(memberId) {
+        manageActiveSection = 'routines';
         Modal.open({
             title: 'Manage Routines',
-            content: generateManageHTML(memberId),
+            content: generateManageHTML(memberId, manageActiveSection),
             footer: '<button class="btn btn--primary" data-modal-done>Done</button>',
             size: 'large'
         });
@@ -1057,11 +1643,15 @@ const ToddlerRoutine = (function() {
     /**
      * Refresh manage modal
      */
-    function refreshManageModal(memberId) {
+    function refreshManageModal(memberId, section = null) {
         const modalContent = document.getElementById('modalContent');
         if (!modalContent) return;
 
-        modalContent.innerHTML = generateManageHTML(memberId);
+        if (section) {
+            manageActiveSection = section;
+        }
+
+        modalContent.innerHTML = generateManageHTML(memberId, manageActiveSection);
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
@@ -1219,15 +1809,94 @@ const ToddlerRoutine = (function() {
         // Setup drag and drop in manage modal
         setupManageDragAndDrop(memberId);
 
-        // Add new routine
-        const addRoutine = () => {
+        // Track custom image for new routine
+        let pendingCustomImage = null;
+
+        // Quick add preset routine
+        document.querySelectorAll('[data-add-preset]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const imageKey = btn.dataset.addPreset;
+                const routineInfo = ROUTINE_IMAGES[imageKey];
+                if (!routineInfo) return;
+
+                const data = getWidgetData(memberId);
+                const routines = data.routines || [];
+
+                // Determine default category based on routine type
+                let category = 'morning';
+                if (['wash-hands', 'potty'].includes(imageKey)) {
+                    category = 'anytime';
+                } else if (['lunch', 'snack', 'nap'].includes(imageKey)) {
+                    category = 'afternoon';
+                } else if (['dinner', 'bath'].includes(imageKey)) {
+                    category = 'evening';
+                } else if (['pajamas', 'story', 'bedtime'].includes(imageKey)) {
+                    category = 'bedtime';
+                }
+
+                const newRoutine = {
+                    id: `routine-${Date.now()}`,
+                    title: routineInfo.label,
+                    imageKey: imageKey,
+                    category: category,
+                    customImage: null,
+                    order: routines.length + 1
+                };
+
+                Storage.setWidgetData(memberId, 'toddler-routine', {
+                    ...data,
+                    routines: [...routines, newRoutine]
+                });
+
+                Toast.success(`Added "${routineInfo.label}"!`);
+                refreshManageModal(memberId);
+                refreshWidget(memberId);
+            });
+        });
+
+        // Custom image upload area click
+        document.getElementById('customImageUpload')?.addEventListener('click', () => {
+            document.getElementById('customImageInput')?.click();
+        });
+
+        // Custom image file selection
+        document.getElementById('customImageInput')?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+
+            if (file.size > 500 * 1024) {
+                Toast.error('Image too large. Max 500KB.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                pendingCustomImage = event.target.result;
+                const preview = document.getElementById('customImagePreview');
+                const placeholder = document.querySelector('.manage-routines__custom-image-placeholder');
+                if (preview && placeholder) {
+                    preview.src = pendingCustomImage;
+                    preview.style.display = 'block';
+                    placeholder.style.display = 'none';
+                }
+            };
+            reader.readAsDataURL(file);
+            e.target.value = '';
+        });
+
+        // Add custom routine
+        const addCustomRoutine = () => {
             const nameInput = document.getElementById('newRoutineName');
-            const imageSelect = document.getElementById('newRoutineImage');
             const categorySelect = document.getElementById('newRoutineCategory');
             const name = nameInput?.value?.trim();
 
             if (!name) {
                 Toast.error('Please enter a routine name');
+                return;
+            }
+
+            if (!pendingCustomImage) {
+                Toast.error('Please add a photo for your custom routine');
                 return;
             }
 
@@ -1237,9 +1906,9 @@ const ToddlerRoutine = (function() {
             const newRoutine = {
                 id: `routine-${Date.now()}`,
                 title: name,
-                imageKey: imageSelect?.value || 'wake-up',
+                imageKey: 'wake-up', // Default fallback
                 category: categorySelect?.value || 'morning',
-                customImage: null,
+                customImage: pendingCustomImage,
                 order: routines.length + 1
             };
 
@@ -1248,22 +1917,199 @@ const ToddlerRoutine = (function() {
                 routines: [...routines, newRoutine]
             });
 
-            Toast.success('Routine added!');
+            pendingCustomImage = null;
+            Toast.success('Custom routine added!');
             refreshManageModal(memberId);
             refreshWidget(memberId);
         };
 
-        document.getElementById('addRoutineBtn')?.addEventListener('click', addRoutine);
+        document.getElementById('addCustomRoutineBtn')?.addEventListener('click', addCustomRoutine);
         document.getElementById('newRoutineName')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                addRoutine();
+                addCustomRoutine();
             }
         });
 
         // Done button - close modal
         document.querySelector('[data-modal-done]')?.addEventListener('click', () => {
             Modal.close();
+        });
+
+        // Section tab switching
+        document.querySelectorAll('[data-section]').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const section = tab.dataset.section;
+                refreshManageModal(memberId, section);
+            });
+        });
+
+        // Category management events
+        // Save category changes on input
+        document.querySelectorAll('.manage-category-item').forEach(item => {
+            const categoryKey = item.dataset.categoryKey;
+            const nameInput = item.querySelector('[data-cat-field="label"]');
+            const iconSelect = item.querySelector('[data-cat-field="icon"]');
+
+            const saveCategoryChanges = () => {
+                const data = getWidgetData(memberId);
+                const categories = data.categories || { ...DEFAULT_CATEGORIES };
+
+                if (categories[categoryKey]) {
+                    categories[categoryKey] = {
+                        ...categories[categoryKey],
+                        label: nameInput?.value || categories[categoryKey].label,
+                        icon: iconSelect?.value || categories[categoryKey].icon
+                    };
+
+                    Storage.setWidgetData(memberId, 'toddler-routine', {
+                        ...data,
+                        categories
+                    });
+
+                    refreshWidget(memberId);
+                }
+            };
+
+            nameInput?.addEventListener('change', saveCategoryChanges);
+            iconSelect?.addEventListener('change', () => {
+                saveCategoryChanges();
+                // Update icon preview
+                const iconPreview = item.querySelector('.manage-category-item__icon i');
+                if (iconPreview && iconSelect) {
+                    iconPreview.setAttribute('data-lucide', iconSelect.value);
+                    if (typeof lucide !== 'undefined') {
+                        lucide.createIcons();
+                    }
+                }
+            });
+        });
+
+        // Delete category
+        document.querySelectorAll('[data-delete-category]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const categoryKey = btn.dataset.deleteCategory;
+                const data = getWidgetData(memberId);
+                const categories = data.categories || { ...DEFAULT_CATEGORIES };
+
+                if (Object.keys(categories).length <= 1) {
+                    Toast.error('Cannot delete the last category');
+                    return;
+                }
+
+                // Check if any routines use this category
+                const routines = data.routines || [];
+                const routinesWithCategory = routines.filter(r => r.category === categoryKey);
+
+                if (routinesWithCategory.length > 0) {
+                    // Move routines to first available category
+                    const firstCategoryKey = Object.keys(categories).find(k => k !== categoryKey);
+                    const updatedRoutines = routines.map(r => {
+                        if (r.category === categoryKey) {
+                            return { ...r, category: firstCategoryKey };
+                        }
+                        return r;
+                    });
+
+                    delete categories[categoryKey];
+
+                    Storage.setWidgetData(memberId, 'toddler-routine', {
+                        ...data,
+                        categories,
+                        routines: updatedRoutines
+                    });
+
+                    Toast.success(`Category deleted. ${routinesWithCategory.length} routines moved.`);
+                } else {
+                    delete categories[categoryKey];
+
+                    Storage.setWidgetData(memberId, 'toddler-routine', {
+                        ...data,
+                        categories
+                    });
+
+                    Toast.success('Category deleted');
+                }
+
+                refreshManageModal(memberId, 'categories');
+                refreshWidget(memberId);
+            });
+        });
+
+        // Add new category
+        const addCategory = () => {
+            const nameInput = document.getElementById('newCategoryName');
+            const iconSelect = document.getElementById('newCategoryIcon');
+            const name = nameInput?.value?.trim();
+
+            if (!name) {
+                Toast.error('Please enter a category name');
+                return;
+            }
+
+            const data = getWidgetData(memberId);
+            const categories = data.categories || { ...DEFAULT_CATEGORIES };
+
+            // Generate a unique key from the name
+            const key = name.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-');
+
+            if (categories[key]) {
+                Toast.error('A category with this name already exists');
+                return;
+            }
+
+            // Find the highest order
+            const maxOrder = Math.max(...Object.values(categories).map(c => c.order || 0), 0);
+
+            categories[key] = {
+                label: name,
+                icon: iconSelect?.value || 'star',
+                order: maxOrder + 1
+            };
+
+            Storage.setWidgetData(memberId, 'toddler-routine', {
+                ...data,
+                categories
+            });
+
+            Toast.success('Category added!');
+            refreshManageModal(memberId, 'categories');
+            refreshWidget(memberId);
+        };
+
+        document.getElementById('addCategoryBtn')?.addEventListener('click', addCategory);
+        document.getElementById('newCategoryName')?.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addCategory();
+            }
+        });
+
+        // Reset categories to defaults
+        document.getElementById('resetCategoriesBtn')?.addEventListener('click', () => {
+            const data = getWidgetData(memberId);
+
+            // Reset categories to defaults
+            const categories = { ...DEFAULT_CATEGORIES };
+
+            // Update routines to use valid categories
+            const validKeys = Object.keys(categories);
+            const routines = (data.routines || []).map(r => {
+                if (!validKeys.includes(r.category)) {
+                    return { ...r, category: 'morning' };
+                }
+                return r;
+            });
+
+            Storage.setWidgetData(memberId, 'toddler-routine', {
+                ...data,
+                categories,
+                routines
+            });
+
+            Toast.success('Categories reset to defaults');
+            refreshManageModal(memberId, 'categories');
+            refreshWidget(memberId);
         });
     }
 
@@ -1275,24 +2121,43 @@ const ToddlerRoutine = (function() {
         if (!list) return;
 
         let draggedItem = null;
+        let canDrag = false;
 
-        list.querySelectorAll('.manage-routine-item').forEach((item, index) => {
+        list.querySelectorAll('.manage-routine-item').forEach((item) => {
             const handle = item.querySelector('.manage-routine-item__drag-handle');
 
-            // Only allow drag from handle
+            // Track if mousedown was on handle (needed because e.target in dragstart is the draggable element)
+            if (handle) {
+                handle.addEventListener('mousedown', () => {
+                    canDrag = true;
+                });
+                // Also support touch
+                handle.addEventListener('touchstart', () => {
+                    canDrag = true;
+                }, { passive: true });
+            }
+
+            // Reset on mouseup anywhere
+            document.addEventListener('mouseup', () => {
+                setTimeout(() => { canDrag = false; }, 0);
+            }, { once: false });
+
+            // Only allow drag if started from handle
             item.addEventListener('dragstart', (e) => {
-                if (!e.target.closest('.manage-routine-item__drag-handle')) {
+                if (!canDrag) {
                     e.preventDefault();
                     return;
                 }
                 draggedItem = item;
                 item.classList.add('dragging');
                 e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', item.dataset.routineId);
             });
 
             item.addEventListener('dragend', () => {
                 item.classList.remove('dragging');
                 draggedItem = null;
+                canDrag = false;
                 list.querySelectorAll('.manage-routine-item').forEach(i => {
                     i.classList.remove('drag-over');
                 });
@@ -1353,6 +2218,16 @@ const ToddlerRoutine = (function() {
         if (widgetBody) {
             renderWidget(widgetBody, memberId);
         }
+
+        // Also refresh full page if it's visible
+        const fullPage = document.querySelector('.kid-page--routine');
+        if (fullPage) {
+            const main = document.querySelector('main');
+            const member = Storage.getMember(memberId);
+            const activeTabBtn = fullPage.querySelector('.kid-page__tab--active');
+            const activeTab = activeTabBtn?.dataset?.tab || 'today';
+            renderFullPage(main, memberId, member, activeTab);
+        }
     }
 
     /**
@@ -1360,127 +2235,6 @@ const ToddlerRoutine = (function() {
      */
     function showEditRoutinesModal(memberId) {
         showManageModal(memberId);
-    }
-
-    /**
-     * Show routine history page
-     */
-    function showHistoryPage(memberId) {
-        const main = document.getElementById('mainContent');
-        if (!main) return;
-
-        const member = Storage.getMember(memberId);
-        const data = getWidgetData(memberId);
-        const history = data.history || [];
-        const routines = data.routines || [];
-
-        // Create routine lookup map
-        const routineMap = {};
-        routines.forEach(r => {
-            routineMap[r.id] = r.title;
-        });
-
-        // Sort history by date descending
-        const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));
-
-        // Calculate stats
-        const todayStr = DateUtils.today();
-        const completedToday = data.completedToday || [];
-        const todayCount = completedToday.length;
-        const totalRoutines = routines.length;
-
-        // Calculate streak (consecutive days with all routines completed)
-        let streak = 0;
-        for (let i = 0; i < sortedHistory.length; i++) {
-            if (sortedHistory[i].completed === sortedHistory[i].total && sortedHistory[i].total > 0) {
-                streak++;
-            } else {
-                break;
-            }
-        }
-
-        // Get date label
-        const getDateLabel = (date) => {
-            if (date === todayStr) return 'Today';
-            const yesterday = DateUtils.formatISO(DateUtils.addDays(new Date(), -1));
-            if (date === yesterday) return 'Yesterday';
-            return DateUtils.formatShort(date);
-        };
-
-        main.innerHTML = `
-            <div class="toddler-tasks-history-page">
-                <div class="toddler-tasks-page__header">
-                    <button class="btn btn--ghost" id="backToMemberBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
-                    <h1 class="toddler-tasks-page__title">
-                        📅 Routine History
-                    </h1>
-                    <div></div>
-                </div>
-
-                <div class="toddler-tasks-page__stats">
-                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--done">
-                        <div class="toddler-tasks-page-stat__icon">✅</div>
-                        <div class="toddler-tasks-page-stat__info">
-                            <span class="toddler-tasks-page-stat__value">${todayCount}/${totalRoutines}</span>
-                            <span class="toddler-tasks-page-stat__label">Today</span>
-                        </div>
-                    </div>
-                    <div class="toddler-tasks-page-stat toddler-tasks-page-stat--total">
-                        <div class="toddler-tasks-page-stat__icon">🔥</div>
-                        <div class="toddler-tasks-page-stat__info">
-                            <span class="toddler-tasks-page-stat__value">${streak}</span>
-                            <span class="toddler-tasks-page-stat__label">Day Streak</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="toddler-tasks-history">
-                    ${sortedHistory.length === 0 ? `
-                        <div class="toddler-tasks-page__empty">
-                            <div class="toddler-tasks-page__empty-icon">📅</div>
-                            <h2>No History Yet</h2>
-                            <p>Complete some routines to see your history!</p>
-                        </div>
-                    ` : sortedHistory.map(entry => `
-                        <div class="toddler-tasks-history__day">
-                            <div class="toddler-tasks-history__day-header">
-                                <span class="toddler-tasks-history__day-label">${getDateLabel(entry.date)}</span>
-                                <span class="toddler-tasks-history__day-count ${entry.completed === entry.total ? 'toddler-tasks-history__day-count--complete' : ''}">
-                                    ${entry.completed}/${entry.total} completed
-                                    ${entry.completed === entry.total && entry.total > 0 ? ' ⭐' : ''}
-                                </span>
-                            </div>
-                            <div class="toddler-tasks-history__day-list">
-                                ${(entry.routineIds || []).map(routineId => `
-                                    <div class="toddler-tasks-history__item">
-                                        <span class="toddler-tasks-history__item-icon">✅</span>
-                                        <span class="toddler-tasks-history__item-title">${routineMap[routineId] || 'Routine'}</span>
-                                    </div>
-                                `).join('')}
-                                ${entry.routineIds && entry.routineIds.length === 0 ? `
-                                    <div class="toddler-tasks-history__item toddler-tasks-history__item--empty">
-                                        <span class="toddler-tasks-history__item-icon">📋</span>
-                                        <span class="toddler-tasks-history__item-title">No routines completed</span>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-
-        if (typeof lucide !== 'undefined') {
-            lucide.createIcons();
-        }
-
-        // Back button
-        document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
-            State.emit('tabChanged', memberId);
-        });
     }
 
     /**
@@ -1494,7 +2248,6 @@ const ToddlerRoutine = (function() {
         init,
         renderWidget,
         showFullPage,
-        showHistoryPage,
         ROUTINE_IMAGES
     };
 })();

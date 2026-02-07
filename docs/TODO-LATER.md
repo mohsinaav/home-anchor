@@ -576,3 +576,251 @@ html:has(.tab-content--kid)::-webkit-scrollbar-track,
 - Investigate scrollbar-gutter CSS property
 - Consider if this is browser-specific (Chrome vs Safari vs Firefox)
 - Research mobile-first scrollbar styling approaches
+
+---
+
+## Google Calendar API Integration (OAuth)
+
+**Status:** Planned
+**Priority:** Medium
+**Complexity:** High (requires backend)
+
+### Overview
+Full two-way sync with Google Calendar using OAuth2 authentication. Users can sign in with Google and sync their private calendars with Home Anchor.
+
+### Why This Needs a Backend
+- OAuth tokens must be stored securely (not in localStorage)
+- Refresh tokens need server-side handling
+- API keys should not be exposed in client-side code
+
+### Requirements
+1. **Google Cloud Project**
+   - Create project at https://console.cloud.google.com
+   - Enable Google Calendar API
+   - Configure OAuth consent screen
+   - Create OAuth 2.0 credentials
+
+2. **Backend Server** (Node.js/Express recommended)
+   - Handle OAuth callback
+   - Store/refresh tokens securely
+   - Proxy Calendar API requests
+
+3. **Database**
+   - Store user tokens (encrypted)
+   - Cache calendar data for offline use
+
+### Implementation Steps
+
+#### Phase 1: Backend Setup
+```
+/api/auth/google          - Initiate OAuth flow
+/api/auth/google/callback - Handle OAuth callback
+/api/calendar/events      - GET/POST calendar events
+/api/calendar/sync        - Sync Home Anchor ↔ Google
+```
+
+#### Phase 2: Frontend Integration
+- "Connect Google Calendar" button in Settings
+- Popup OAuth flow
+- Calendar selection (which calendars to sync)
+- Sync status indicator
+
+#### Phase 3: Two-Way Sync
+- Import Google events → Home Anchor Schedule
+- Export Home Anchor events → Google Calendar
+- Conflict resolution strategy
+- Real-time sync with webhooks (advanced)
+
+### API Endpoints Needed
+```javascript
+// Google Calendar API v3
+GET  /calendars/{calendarId}/events  - List events
+POST /calendars/{calendarId}/events  - Create event
+PUT  /calendars/{calendarId}/events/{eventId}  - Update event
+DELETE /calendars/{calendarId}/events/{eventId} - Delete event
+```
+
+### Security Considerations
+- Use HTTPS only
+- Store tokens encrypted at rest
+- Implement token rotation
+- Add rate limiting
+- Validate all user input
+
+### Alternative: Apple Calendar (iCloud)
+Similar OAuth flow but uses Apple's authentication. Could be added as a second provider.
+
+### Decision
+**Parked** - Requires backend infrastructure. Implement after Firebase auth is set up (see Firebase section above). For now, ICS file import/export provides basic calendar interoperability.
+
+---
+
+## Per-Member Widget Color Customization
+
+**Status:** Planned
+**Priority:** Medium
+**Affected:** All kid/toddler/teen widgets and full page views
+**Files:** `js/utils/kid-theme.js`, `js/storage.js`, `js/features/settings-page.js`, all widget feature files
+
+### Overview
+Allow users to customize widget colors on a per-member basis. Each family member can have their own color theme for their widgets and full page views.
+
+### Current State
+- Colors are hardcoded in `KidTheme.WIDGET_COLORS` object
+- `KidTheme.getColors(widgetId)` returns colors based on widget type only
+- All members share the same color scheme per widget
+- Colors applied via inline styles: `style="background: ${colors.gradient}"`
+
+### Proposed Feature
+
+#### Design Options
+1. **One theme per member** - Each member picks a single color palette that applies to all their widgets (simpler)
+2. **Per-widget colors** - Each widget can have its own color per member (more flexible)
+
+#### Color Selection Options
+1. **Preset palettes** - Curated themes like Ocean, Sunset, Forest, Candy, etc. (recommended - easier, cohesive)
+2. **Full color picker** - Let users pick any color with a color wheel (more complex)
+
+#### Access Points
+- Member settings card in Family & Members section
+- Palette icon in full page hero sections
+- Or both locations
+
+### Implementation Plan
+
+#### Phase 1: Data Storage
+Add `colorTheme` to member object in storage:
+```javascript
+member.colorTheme = 'ocean'; // or 'sunset', 'forest', 'candy', 'default'
+// OR for per-widget:
+member.widgetColors = {
+  'points': 'ocean',
+  'rewards': 'sunset',
+  // ...
+};
+```
+
+#### Phase 2: Extend KidTheme
+```javascript
+// Modify getColors to accept member parameter
+function getColors(widgetId, member) {
+  // Check if member has custom theme first
+  if (member?.colorTheme && COLOR_PALETTES[member.colorTheme]) {
+    return COLOR_PALETTES[member.colorTheme][widgetId] || COLOR_PALETTES[member.colorTheme].default;
+  }
+  // Fall back to default widget colors
+  return WIDGET_COLORS[widgetId] || WIDGET_COLORS['points'];
+}
+```
+
+#### Phase 3: Create Color Palettes
+```javascript
+const COLOR_PALETTES = {
+  'ocean': {
+    default: { primary: '#0EA5E9', gradient: '...', light: '...', dark: '...' },
+    // Widget-specific overrides optional
+  },
+  'sunset': { ... },
+  'forest': { ... },
+  'candy': { ... },
+  'lavender': { ... },
+};
+```
+
+#### Phase 4: Settings UI
+- Add "Customize Colors" button to member card in Settings
+- Modal with palette selection (color swatches)
+- Preview of how widgets will look
+- Save updates member via `Storage.updateMember()`
+
+#### Phase 5: Update Widget Files
+All 15+ widget files need to pass `member` to `getColors()`:
+```javascript
+// Before
+const colors = KidTheme.getColors('points');
+
+// After
+const colors = KidTheme.getColors('points', member);
+```
+
+### Files to Modify
+1. `js/utils/kid-theme.js` - Add palettes, extend `getColors()`
+2. `js/storage.js` - Add `colorTheme` to member schema
+3. `js/features/settings-page.js` - Add color customization UI
+4. 15+ widget files - Pass member to `getColors()` calls:
+   - points.js, rewards.js, achievements.js, kid-tasks.js
+   - kid-workout.js, kid-journal.js, chores.js, screen-time.js
+   - daily-log.js, growth-chart.js, caregiver-handoff.js
+   - toddler-routine.js, toddler-tasks.js, activities.js, milestones.js
+
+### Backward Compatibility
+- Members without `colorTheme` fall back to default colors
+- No migration needed - new field is optional
+- Existing color system continues working
+
+### Decision
+**Parked** - Nice-to-have customization feature. Core functionality works with default colors. Implement when time permits.
+
+---
+
+## Shopping List - Auto-Category Detection for Pantry Items
+
+**Status:** Partial Implementation
+**Priority:** Medium
+**Affected:** Grocery widget - items moving to pantry
+**Files:** `js/features/grocery.js`
+
+### Problem
+When items are checked off in the shopping list and moved to pantry, they were all going to the "Other" category instead of being properly categorized (Produce, Dairy, Meat, etc.).
+
+### Current Fix (Jan 2026)
+Fixed the immediate issue by:
+1. `addQuickItem()` - Now uses `detectCategory(itemName)` instead of hardcoded 'other'
+2. Quick suggestions click handler - Now passes detected category to `addItem()`
+3. Pantry-to-shopping-list flow - Now preserves category via `data-pantry-category` attribute
+
+### Remaining Work
+The `detectCategory()` function uses a simple keyword matching approach which has limitations:
+
+```javascript
+const categoryKeywords = {
+    produce: ['apple', 'banana', 'orange', 'lettuce', 'tomato', ...],
+    dairy: ['milk', 'cheese', 'yogurt', 'butter', ...],
+    meat: ['chicken', 'beef', 'pork', 'fish', ...],
+    // etc.
+};
+```
+
+### Potential Improvements
+
+#### 1. Expand Keyword List
+- Add more items to each category's keyword list
+- Include common brand names (e.g., "Chobani" → dairy)
+- Include plurals and variations (e.g., "chickens", "chicken breast")
+
+#### 2. Fuzzy Matching
+- Implement fuzzy string matching for typos and partial matches
+- "brocoli" → broccoli → produce
+- "chix" → chicken → meat
+
+#### 3. User-Defined Overrides
+- Allow users to manually categorize an item once
+- Remember the categorization for future additions
+- Store in `purchaseHistory` with category info
+
+#### 4. Learning from History
+- Track which category user assigns to items
+- Use historical data to predict category for new items
+- "Last time you added 'Impossible Burger' to Meat"
+
+#### 5. Smart Suggestions
+- When category can't be detected, show a quick picker
+- "What type of item is 'Oatly'?" → [Dairy] [Beverages] [Other]
+
+### Technical Notes
+- `detectCategory()` function is at line ~2194 in grocery.js
+- Categories are defined in `CATEGORIES` constant at top of file
+- Pantry items store `category` field which should be preserved through the flow
+
+### Decision
+**Parked** - Basic fix applied. Enhanced category detection would improve UX but requires more extensive work. Revisit when core features are stable.

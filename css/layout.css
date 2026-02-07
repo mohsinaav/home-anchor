@@ -630,19 +630,31 @@
 }
 
 /* Narrower sidebar for medium screens */
-@media (max-width: 1280px) and (min-width: 1025px) {
+@media (max-width: 1280px) and (min-width: 901px) {
     .member-layout {
-        grid-template-columns: 1fr 280px;
-        gap: var(--space-5);
+        grid-template-columns: 1fr 260px;
+        gap: var(--space-4);
     }
 
     .member-sidebar {
-        width: 280px;
+        width: 260px;
     }
 }
 
-/* Responsive member layout */
-@media (max-width: 1024px) {
+/* Even narrower sidebar for smaller screens */
+@media (max-width: 900px) and (min-width: 769px) {
+    .member-layout {
+        grid-template-columns: 1fr 220px;
+        gap: var(--space-3);
+    }
+
+    .member-sidebar {
+        width: 220px;
+    }
+}
+
+/* Responsive member layout - stack on mobile only */
+@media (max-width: 768px) {
     .member-layout {
         grid-template-columns: 1fr;
     }

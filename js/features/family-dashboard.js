@@ -67,17 +67,6 @@ const FamilyDashboard = (function() {
 
                         <!-- Right Column -->
                         <div class="dashboard-column">
-                            <!-- Activity Feed -->
-                            <section class="dashboard-section">
-                                <h2 class="dashboard-section__title">
-                                    <i data-lucide="activity"></i>
-                                    Recent Activity
-                                </h2>
-                                <div class="dashboard-section__content">
-                                    ${renderActivityFeed(members)}
-                                </div>
-                            </section>
-
                             <!-- Upcoming Events -->
                             <section class="dashboard-section">
                                 <h2 class="dashboard-section__title">
@@ -90,6 +79,23 @@ const FamilyDashboard = (function() {
                             </section>
                         </div>
                     </div>
+
+                    <!-- Activity Monitor (Full Width) -->
+                    <section class="dashboard-section dashboard-section--full">
+                        <div class="dashboard-section__header">
+                            <h2 class="dashboard-section__title">
+                                <i data-lucide="activity"></i>
+                                Activity Monitor
+                            </h2>
+                            <button class="btn btn--ghost btn--sm" id="showFullActivityBtn">
+                                <i data-lucide="maximize-2"></i>
+                                Full View
+                            </button>
+                        </div>
+                        <div class="dashboard-section__content">
+                            ${renderActivityMonitor(members)}
+                        </div>
+                    </section>
 
                     <!-- Family Challenges -->
                     <section class="dashboard-section dashboard-section--full">
@@ -462,7 +468,203 @@ const FamilyDashboard = (function() {
     }
 
     /**
-     * Render activity feed
+     * Render Activity Monitor using central activity log
+     */
+    function renderActivityMonitor(members) {
+        const categories = Storage.getActivityCategories();
+        const stats = Storage.getActivityStats();
+        const groupedLog = Storage.getActivityLogGroupedByDate({ limit: 50 });
+
+        return `
+            <div class="activity-monitor">
+                <!-- Summary Stats -->
+                <div class="activity-monitor__stats">
+                    <div class="activity-stat">
+                        <div class="activity-stat__value">${stats.today}</div>
+                        <div class="activity-stat__label">Today</div>
+                    </div>
+                    <div class="activity-stat">
+                        <div class="activity-stat__value">${stats.thisWeek}</div>
+                        <div class="activity-stat__label">This Week</div>
+                    </div>
+                    <div class="activity-stat">
+                        <div class="activity-stat__value">${stats.total}</div>
+                        <div class="activity-stat__label">Total</div>
+                    </div>
+                    <div class="activity-stat">
+                        <div class="activity-stat__value">${Object.keys(stats.byMember).length}</div>
+                        <div class="activity-stat__label">Active</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="activity-monitor__filters">
+                    <div class="filter-group">
+                        <label class="filter-label">Member</label>
+                        <select class="filter-select" id="activityMemberFilter">
+                            <option value="">All Members</option>
+                            ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Category</label>
+                        <select class="filter-select" id="activityCategoryFilter">
+                            <option value="">All Categories</option>
+                            ${Object.entries(categories).map(([id, cat]) =>
+                                `<option value="${id}">${cat.name}</option>`
+                            ).join('')}
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Date</label>
+                        <select class="filter-select" id="activityDateFilter">
+                            <option value="today">Today</option>
+                            <option value="week" selected>This Week</option>
+                            <option value="month">This Month</option>
+                            <option value="all">All Time</option>
+                        </select>
+                    </div>
+                    <button class="btn btn--ghost btn--sm" id="refreshActivityBtn" title="Refresh">
+                        <i data-lucide="refresh-cw"></i>
+                    </button>
+                </div>
+
+                <!-- Category Breakdown -->
+                <div class="activity-monitor__categories">
+                    <div class="category-cards">
+                        ${Object.entries(categories).map(([id, cat]) => {
+                            const count = stats.byCategory[id] || 0;
+                            return `
+                                <div class="category-card" data-category="${id}" style="--category-color: ${cat.color}">
+                                    <div class="category-card__icon">
+                                        <i data-lucide="${cat.icon}"></i>
+                                    </div>
+                                    <div class="category-card__info">
+                                        <div class="category-card__name">${cat.name}</div>
+                                        <div class="category-card__count">${count}</div>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+
+                <!-- Activity Feed -->
+                <div class="activity-monitor__feed" id="activityFeed">
+                    ${renderActivityMonitorFeed(groupedLog, categories)}
+                </div>
+            </div>
+        `;
+    }
+
+    /**
+     * Render Activity Monitor Feed
+     */
+    function renderActivityMonitorFeed(groupedLog, categories) {
+        const dateKeys = Object.keys(groupedLog).sort().reverse();
+
+        if (dateKeys.length === 0) {
+            return `
+                <div class="activity-empty">
+                    <i data-lucide="activity"></i>
+                    <p>No activities logged yet. Activities will appear here as family members use the app.</p>
+                </div>
+            `;
+        }
+
+        return dateKeys.slice(0, 7).map(dateKey => {
+            const date = new Date(dateKey);
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            let dateLabel;
+            if (dateKey === today.toISOString().split('T')[0]) {
+                dateLabel = 'Today';
+            } else if (dateKey === yesterday.toISOString().split('T')[0]) {
+                dateLabel = 'Yesterday';
+            } else {
+                dateLabel = date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+            }
+
+            const events = groupedLog[dateKey];
+
+            return `
+                <div class="activity-day">
+                    <div class="activity-day__header">
+                        <span class="activity-day__date">${dateLabel}</span>
+                        <span class="activity-day__count">${events.length}</span>
+                    </div>
+                    <div class="activity-day__list">
+                        ${events.slice(0, 10).map(event => {
+                            const category = categories[event.category] || { icon: 'circle', color: '#6B7280' };
+                            const time = new Date(event.timestamp).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+
+                            return `
+                                <div class="activity-item" data-category="${event.category}">
+                                    <div class="activity-item__icon" style="background-color: ${category.color}20; color: ${category.color}">
+                                        <i data-lucide="${category.icon}"></i>
+                                    </div>
+                                    <div class="activity-item__content">
+                                        <div class="activity-item__member">${event.memberName}</div>
+                                        <div class="activity-item__details">${event.details}</div>
+                                    </div>
+                                    <div class="activity-item__meta">
+                                        <span class="activity-item__time">${time}</span>
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Refresh activity feed with filters
+     */
+    function refreshActivityMonitorFeed() {
+        const memberFilter = document.getElementById('activityMemberFilter')?.value;
+        const categoryFilter = document.getElementById('activityCategoryFilter')?.value;
+        const dateFilter = document.getElementById('activityDateFilter')?.value;
+
+        const filters = {};
+        if (memberFilter) filters.memberId = memberFilter;
+        if (categoryFilter) filters.category = categoryFilter;
+
+        // Date filter
+        const now = new Date();
+        if (dateFilter === 'today') {
+            filters.startDate = now.toISOString().split('T')[0];
+        } else if (dateFilter === 'week') {
+            const weekAgo = new Date(now);
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            filters.startDate = weekAgo.toISOString().split('T')[0];
+        } else if (dateFilter === 'month') {
+            const monthAgo = new Date(now);
+            monthAgo.setMonth(monthAgo.getMonth() - 1);
+            filters.startDate = monthAgo.toISOString().split('T')[0];
+        }
+
+        const groupedLog = Storage.getActivityLogGroupedByDate(filters);
+        const categories = Storage.getActivityCategories();
+
+        const feedContainer = document.getElementById('activityFeed');
+        if (feedContainer) {
+            feedContainer.innerHTML = renderActivityMonitorFeed(groupedLog, categories);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
+    }
+
+    /**
+     * Render activity feed (legacy - reconstructs from widget data)
      */
     function renderActivityFeed(members) {
         const activities = [];
@@ -1567,9 +1769,35 @@ const FamilyDashboard = (function() {
             });
         });
 
-        // Show more activity button
+        // Show more activity button (legacy)
         container.querySelector('#showMoreActivityBtn')?.addEventListener('click', () => {
             showActivityPage(container);
+        });
+
+        // Activity Monitor events
+        container.querySelector('#activityMemberFilter')?.addEventListener('change', refreshActivityMonitorFeed);
+        container.querySelector('#activityCategoryFilter')?.addEventListener('change', refreshActivityMonitorFeed);
+        container.querySelector('#activityDateFilter')?.addEventListener('change', refreshActivityMonitorFeed);
+        container.querySelector('#refreshActivityBtn')?.addEventListener('click', () => {
+            refreshActivityMonitorFeed();
+            Toast.success('Activity feed refreshed');
+        });
+
+        // Full Activity view button
+        container.querySelector('#showFullActivityBtn')?.addEventListener('click', () => {
+            showActivityPage(container);
+        });
+
+        // Category cards click to filter
+        container.querySelectorAll('.category-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const categoryId = card.dataset.category;
+                const categoryFilter = container.querySelector('#activityCategoryFilter');
+                if (categoryFilter) {
+                    categoryFilter.value = categoryId;
+                    refreshActivityMonitorFeed();
+                }
+            });
         });
     }
 

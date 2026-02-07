@@ -62,7 +62,7 @@ const Routine = (function() {
         { title: 'Grocery shopping', icon: 'shopping-cart', frequency: 'weekly', category: 'home' },
         { title: 'Clean bathroom', icon: 'bath', frequency: 'weekly', category: 'cleaning' },
         { title: 'Pay bills', icon: 'credit-card', frequency: 'monthly', category: 'finance' },
-        { title: 'Water plants', icon: 'flower-2', frequency: 'weekly', category: 'home' },
+        { title: 'Water plants', icon: 'flower', frequency: 'weekly', category: 'home' },
         { title: 'Exercise', icon: 'dumbbell', frequency: 'daily', category: 'health' }
     ];
 
@@ -1580,7 +1580,7 @@ const Routine = (function() {
                 <div class="form-group">
                     <label class="form-label">Icon</label>
                     <div class="routine-form__icons" id="iconPicker">
-                        ${['check', 'shirt', 'shopping-cart', 'bath', 'bed', 'car', 'home', 'trash-2', 'wind', 'credit-card', 'phone', 'mail', 'dumbbell', 'heart', 'book', 'flower-2'].map((icon, i) => `
+                        ${['check', 'shirt', 'shopping-cart', 'bath', 'bed', 'car', 'home', 'trash-2', 'wind', 'credit-card', 'phone', 'mail', 'dumbbell', 'heart', 'book', 'flower'].map((icon, i) => `
                             <button type="button" class="icon-picker__btn ${i === 0 ? 'icon-picker__btn--selected' : ''}" data-icon="${icon}">
                                 <i data-lucide="${icon}"></i>
                             </button>
@@ -1746,7 +1746,7 @@ const Routine = (function() {
                     <label class="form-label">Icon</label>
                     <div class="icon-picker">
                         <input type="hidden" id="editRoutineIcon" value="${routine.icon || 'check'}">
-                        ${['check', 'shirt', 'shopping-cart', 'bath', 'bed', 'car', 'home', 'trash-2', 'wind', 'credit-card', 'phone', 'mail', 'dumbbell', 'heart', 'book', 'flower-2'].map(icon => `
+                        ${['check', 'shirt', 'shopping-cart', 'bath', 'bed', 'car', 'home', 'trash-2', 'wind', 'credit-card', 'phone', 'mail', 'dumbbell', 'heart', 'book', 'flower'].map(icon => `
                             <button type="button" class="icon-picker__icon ${icon === routine.icon ? 'icon-picker__icon--selected' : ''}" data-icon="${icon}" title="${icon}">
                                 <i data-lucide="${icon}"></i>
                             </button>

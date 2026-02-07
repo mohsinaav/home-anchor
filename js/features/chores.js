@@ -8,24 +8,35 @@ const Chores = (function() {
     // Track current tab in full page view
     let currentTab = 'today';
 
-    // Default chore pool
-    const DEFAULT_CHORES = [
-        { id: 'chore-1', name: 'Make bed', icon: 'bed', points: 5 },
-        { id: 'chore-2', name: 'Clean room', icon: 'home', points: 10 },
-        { id: 'chore-3', name: 'Set table', icon: 'utensils', points: 5 },
-        { id: 'chore-4', name: 'Feed pet', icon: 'heart', points: 5 },
-        { id: 'chore-5', name: 'Take out trash', icon: 'trash', points: 8 },
-        { id: 'chore-6', name: 'Wipe counters', icon: 'sparkles', points: 5 },
-        { id: 'chore-7', name: 'Water plants', icon: 'flower-2', points: 3 },
-        { id: 'chore-8', name: 'Put toys away', icon: 'box', points: 5 },
-        { id: 'chore-9', name: 'Help with laundry', icon: 'shirt', points: 8 },
-        { id: 'chore-10', name: 'Dust furniture', icon: 'wind', points: 7 }
+    // Chore colors
+    const DEFAULT_CHORE_COLOR = '#3B82F6'; // Blue for default chores
+    const CUSTOM_CHORE_COLOR = '#8B5CF6';  // Purple for custom chores
+
+    // Chore emojis for selection
+    const CHORE_EMOJIS = [
+        '🛏️', '🧹', '🍽️', '🐕', '🗑️', '✨', '🌱', '🧸',
+        '👕', '💨', '💧', '🧺', '🐾', '🐟', '🚗', '🚴',
+        '🍃', '🌞', '🌙', '⭐', '📦', '🧽', '🪣', '🧤'
     ];
 
-    // Chore icons
+    // Default chore pool
+    const DEFAULT_CHORES = [
+        { id: 'chore-1', name: 'Make bed', icon: 'bed', emoji: '🛏️', points: 5, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-2', name: 'Clean room', icon: 'home', emoji: '🧹', points: 10, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-3', name: 'Set table', icon: 'utensils', emoji: '🍽️', points: 5, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-4', name: 'Feed pet', icon: 'heart', emoji: '🐕', points: 5, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-5', name: 'Take out trash', icon: 'trash', emoji: '🗑️', points: 8, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-6', name: 'Wipe counters', icon: 'sparkles', emoji: '✨', points: 5, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-7', name: 'Water plants', icon: 'flower', emoji: '🌱', points: 3, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-8', name: 'Put toys away', icon: 'box', emoji: '🧸', points: 5, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-9', name: 'Help with laundry', icon: 'shirt', emoji: '👕', points: 8, color: DEFAULT_CHORE_COLOR },
+        { id: 'chore-10', name: 'Dust furniture', icon: 'wind', emoji: '💨', points: 7, color: DEFAULT_CHORE_COLOR }
+    ];
+
+    // Chore icons (kept for backwards compatibility)
     const CHORE_ICONS = [
-        'bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower-2',
-        'box', 'shirt', 'wind', 'droplets', 'broom', 'dog', 'cat', 'fish',
+        'bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower',
+        'box', 'shirt', 'wind', 'droplets', 'broom', 'paw-print', 'heart', 'fish',
         'car', 'bike', 'leaf', 'sun', 'moon', 'star', 'check-square'
     ];
 
@@ -126,8 +137,8 @@ const Chores = (function() {
                         </div>
                         <div class="chores-completed-list chores-completed-list--celebration">
                             ${completedChores.map(chore => `
-                                <div class="chore-completed-item">
-                                    <i data-lucide="${chore.icon || 'check'}"></i>
+                                <div class="chore-completed-item" style="--chore-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check'}"></i>`}
                                     <span>${chore.name}</span>
                                     <button class="chore-reset-btn" data-reset-chore="${chore.id}" data-member-id="${memberId}" title="Undo this chore">
                                         <i data-lucide="rotate-ccw"></i>
@@ -139,9 +150,9 @@ const Chores = (function() {
                 ` : `
                     <div class="chores-widget__cards">
                         ${pendingChores.map((chore, index) => `
-                            <div class="chore-picker-card" data-chore-id="${chore.id}" data-member-id="${memberId}" style="--delay: ${index * 0.1}s">
-                                <div class="chore-picker-card__icon">
-                                    <i data-lucide="${chore.icon || 'check-square'}"></i>
+                            <div class="chore-picker-card" data-chore-id="${chore.id}" data-member-id="${memberId}" style="--delay: ${index * 0.1}s; --chore-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                <div class="chore-picker-card__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                                 </div>
                                 <div class="chore-picker-card__info">
                                     <span class="chore-picker-card__name">${chore.name}</span>
@@ -166,8 +177,8 @@ const Chores = (function() {
                         </h4>
                         <div class="chores-completed-list">
                             ${completedChores.map(chore => `
-                                <div class="chore-completed-item">
-                                    <i data-lucide="${chore.icon || 'check'}"></i>
+                                <div class="chore-completed-item" style="--chore-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check'}"></i>`}
                                     <span>${chore.name}</span>
                                     <button class="chore-reset-btn" data-reset-chore="${chore.id}" data-member-id="${memberId}" title="Undo this chore">
                                         <i data-lucide="rotate-ccw"></i>
@@ -261,6 +272,15 @@ const Chores = (function() {
 
         Storage.setWidgetData(memberId, 'chores', updatedData);
         Storage.trackAction(memberId, 'chores', 'completed');
+
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'chores',
+            action: 'completed',
+            details: `Completed chore "${chore.name}"${chore.points ? ` (+${chore.points} pts)` : ''}`,
+            meta: { choreId, choreName: chore.name, points: chore.points }
+        });
 
         // Award points if points widget exists
         const pointsData = Storage.getWidgetData(memberId, 'points');
@@ -412,10 +432,16 @@ const Chores = (function() {
             <div class="kid-page kid-page--chores ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
                 <!-- Hero Section -->
                 <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
-                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
+                    <div class="kid-page__hero-header">
+                        <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                            <i data-lucide="arrow-left"></i>
+                            Back
+                        </button>
+                        <button class="btn btn--sm btn--ghost" id="addChorePageBtn" title="Add new chore">
+                            <i data-lucide="plus-circle"></i>
+                            Add Chore
+                        </button>
+                    </div>
                     <div class="kid-page__hero-content">
                         <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
                             ${isYoungKid ? '🧹 My Chores!' : 'Chores'}
@@ -438,7 +464,7 @@ const Chores = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -513,9 +539,9 @@ const Chores = (function() {
                         <h3>${isYoungKid ? '📝 To Do' : 'Pending Chores'}</h3>
                         <div class="chores-today-list">
                             ${pendingChores.map(chore => `
-                                <div class="chores-today-card" data-chore-id="${chore.id}">
-                                    <div class="chores-today-card__icon">
-                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                <div class="chores-today-card" data-chore-id="${chore.id}" style="--chore-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    <div class="chores-today-card__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                        ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                                     </div>
                                     <div class="chores-today-card__info">
                                         <span class="chores-today-card__name">${chore.name}</span>
@@ -538,9 +564,9 @@ const Chores = (function() {
                         <h3>${isYoungKid ? '✅ Completed!' : 'Completed'}</h3>
                         <div class="chores-today-list">
                             ${completedChores.map(chore => `
-                                <div class="chores-today-card chores-today-card--completed">
-                                    <div class="chores-today-card__icon">
-                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                <div class="chores-today-card chores-today-card--completed" style="--chore-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    <div class="chores-today-card__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                        ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                                     </div>
                                     <div class="chores-today-card__info">
                                         <span class="chores-today-card__name">${chore.name}</span>
@@ -641,7 +667,9 @@ const Chores = (function() {
                                 <div class="chores-history-day__chores">
                                     ${dayChores.map(chore => `
                                         <div class="chores-history-chore">
-                                            <i data-lucide="${chore.icon || 'check'}"></i>
+                                            <div class="chores-history-chore__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                                ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check'}"></i>`}
+                                            </div>
                                             <span>${chore.name}</span>
                                         </div>
                                     `).join('')}
@@ -697,8 +725,8 @@ const Chores = (function() {
                 <div class="chores-pool-list">
                     ${pool.map(chore => `
                         <div class="chores-pool-card">
-                            <div class="chores-pool-card__icon">
-                                <i data-lucide="${chore.icon || 'check-square'}"></i>
+                            <div class="chores-pool-card__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                             </div>
                             <span class="chores-pool-card__name">${chore.name}</span>
                             <span class="chores-pool-card__points">
@@ -719,6 +747,14 @@ const Chores = (function() {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
+        });
+
+        // Add Chore button (PIN protected)
+        document.getElementById('addChorePageBtn')?.addEventListener('click', async () => {
+            const verified = await PIN.verify();
+            if (verified) {
+                showManageChoresModal(memberId);
+            }
         });
 
         // Tab switching
@@ -770,6 +806,15 @@ const Chores = (function() {
         ];
 
         Storage.setWidgetData(memberId, 'chores', widgetData);
+
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'chores',
+            action: 'completed',
+            details: `Completed chore "${chore.name}"${chore.points ? ` (+${chore.points} pts)` : ''}`,
+            meta: { choreId, choreName: chore.name, points: chore.points }
+        });
 
         // Award points if points widget exists
         const pointsData = Storage.getWidgetData(memberId, 'points');
@@ -866,8 +911,8 @@ const Chores = (function() {
                 <div class="view-chores-modal__list">
                     ${pool.map(chore => `
                         <div class="view-chore-item">
-                            <div class="view-chore-item__icon">
-                                <i data-lucide="${chore.icon || 'check-square'}"></i>
+                            <div class="view-chore-item__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                             </div>
                             <span class="view-chore-item__name">${chore.name}</span>
                             <span class="view-chore-item__points">
@@ -942,8 +987,8 @@ const Chores = (function() {
                             </div>
                         ` : pool.map(chore => `
                             <div class="manage-chores-v2__item">
-                                <div class="manage-chores-v2__icon">
-                                    <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                <div class="manage-chores-v2__icon" style="background-color: ${chore.color || DEFAULT_CHORE_COLOR}">
+                                    ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                                 </div>
                                 <div class="manage-chores-v2__info">
                                     <span class="manage-chores-v2__name">${chore.name}</span>
@@ -982,11 +1027,11 @@ const Chores = (function() {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Icon</label>
-                            <div class="chore-icon-picker" id="choreIconPicker">
-                                ${CHORE_ICONS.map((icon, i) => `
-                                    <button type="button" class="chore-icon-picker__btn ${i === 0 ? 'chore-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                        <i data-lucide="${icon}"></i>
+                            <label class="form-label">Emoji</label>
+                            <div class="chore-emoji-picker" id="choreEmojiPicker">
+                                ${CHORE_EMOJIS.map((emoji, i) => `
+                                    <button type="button" class="chore-emoji-picker__btn ${i === 0 ? 'chore-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                        ${emoji}
                                     </button>
                                 `).join('')}
                             </div>
@@ -1041,21 +1086,36 @@ const Chores = (function() {
 
         bindManageChoresEvents(memberId);
         document.getElementById('newChoreName')?.focus();
+
+        // Also refresh full page view if it's currently open
+        const fullPageChores = document.querySelector('.kid-page--chores');
+        if (fullPageChores) {
+            showFullPage(memberId);
+        }
+
+        // Also refresh the widget if visible
+        const widgetBody = document.getElementById('widget-chores');
+        if (widgetBody) {
+            renderWidget(widgetBody, memberId);
+            if (typeof lucide !== 'undefined') {
+                lucide.createIcons();
+            }
+        }
     }
 
     /**
      * Bind manage chores events
      */
     function bindManageChoresEvents(memberId) {
-        let selectedIcon = CHORE_ICONS[0];
+        let selectedEmoji = CHORE_EMOJIS[0];
 
-        // Icon picker
-        document.querySelectorAll('#choreIconPicker .chore-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#choreEmojiPicker .chore-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#choreIconPicker .chore-icon-picker__btn').forEach(b =>
-                    b.classList.remove('chore-icon-picker__btn--selected'));
-                btn.classList.add('chore-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#choreEmojiPicker .chore-emoji-picker__btn').forEach(b =>
+                    b.classList.remove('chore-emoji-picker__btn--selected'));
+                btn.classList.add('chore-emoji-picker__btn--selected');
+                selectedEmoji = btn.dataset.emoji;
             });
         });
 
@@ -1110,7 +1170,8 @@ const Chores = (function() {
                 id: `chore-${Date.now()}`,
                 name,
                 points,
-                icon: selectedIcon
+                emoji: selectedEmoji,
+                color: CUSTOM_CHORE_COLOR
             };
 
             widgetData.chorePool = [...(widgetData.chorePool || []), newChore];
@@ -1226,11 +1287,11 @@ const Chores = (function() {
                     <input type="number" class="form-input" id="editChorePoints" value="${chore.points}" min="1">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="chore-icon-picker" id="editIconPicker">
-                        ${CHORE_ICONS.map(icon => `
-                            <button type="button" class="chore-icon-picker__btn ${icon === chore.icon ? 'chore-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="chore-emoji-picker" id="editEmojiPicker">
+                        ${CHORE_EMOJIS.map(emoji => `
+                            <button type="button" class="chore-emoji-picker__btn ${emoji === chore.emoji ? 'chore-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
@@ -1248,15 +1309,15 @@ const Chores = (function() {
             lucide.createIcons();
         }
 
-        let selectedIcon = chore.icon || 'check-square';
+        let selectedEmoji = chore.emoji || CHORE_EMOJIS[0];
 
-        // Icon picker
-        document.querySelectorAll('#editIconPicker .chore-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#editEmojiPicker .chore-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#editIconPicker .chore-icon-picker__btn').forEach(b =>
-                    b.classList.remove('chore-icon-picker__btn--selected'));
-                btn.classList.add('chore-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#editEmojiPicker .chore-emoji-picker__btn').forEach(b =>
+                    b.classList.remove('chore-emoji-picker__btn--selected'));
+                btn.classList.add('chore-emoji-picker__btn--selected');
+                selectedEmoji = btn.dataset.emoji;
             });
         });
 
@@ -1275,7 +1336,7 @@ const Chores = (function() {
                     ...widgetData.chorePool[choreIndex],
                     name,
                     points,
-                    icon: selectedIcon
+                    emoji: selectedEmoji
                 };
                 Storage.setWidgetData(memberId, 'chores', widgetData);
             }

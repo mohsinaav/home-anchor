@@ -341,7 +341,7 @@ const ScreenTime = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -768,6 +768,16 @@ const ScreenTime = (function() {
             const updatedData = { ...widgetData, log: updatedLog };
             Storage.setWidgetData(memberId, 'screen-time', updatedData);
             Storage.trackAction(memberId, 'screen-time', 'logged');
+
+            // Log to Activity Monitor
+            Storage.logActivityEvent({
+                memberId: memberId,
+                widgetId: 'screen-time',
+                action: 'logged',
+                details: `Logged ${minutes} min screen time${activity ? ` (${activity})` : ''}`,
+                meta: { minutes, activity, date: today }
+            });
+
             Toast.success(`Logged ${minutes} minutes`);
 
             // Check if over limit
@@ -837,6 +847,16 @@ const ScreenTime = (function() {
 
             Storage.setWidgetData(memberId, 'screen-time', { ...widgetData, log: updatedLog });
             Storage.trackAction(memberId, 'screen-time', 'logged');
+
+            // Log to Activity Monitor
+            Storage.logActivityEvent({
+                memberId: memberId,
+                widgetId: 'screen-time',
+                action: 'logged',
+                details: `Logged ${minutes} min screen time${activity ? ` (${activity})` : ''}`,
+                meta: { minutes, activity, date: today }
+            });
+
             Toast.success(`Logged ${minutes} minutes`);
 
             // Check if over limit

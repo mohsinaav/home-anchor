@@ -10,9 +10,16 @@ const Rewards = (function() {
 
     // Reward icons
     const REWARD_ICONS = [
-        'monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2',
-        'gift', 'pizza', 'candy', 'music', 'party-popper', 'cake',
+        'monitor', 'utensils', 'moon', 'gift', 'film', 'gamepad',
+        'gift', 'utensils', 'gift', 'music', 'party-popper', 'cake',
         'shopping-bag', 'bike', 'star', 'heart', 'sparkles', 'thumbs-up'
+    ];
+
+    // Reward emojis for selection
+    const REWARD_EMOJIS = [
+        '📺', '🎮', '🍽️', '🌙', '🍦', '🎬', '🎁', '🎉',
+        '🍕', '🧸', '🎈', '🛍️', '🚴', '⭐', '💖', '✨',
+        '🎵', '📱', '🍫', '🎂', '🏆', '👑', '🌈', '🎪'
     ];
 
     // Reward colors
@@ -27,11 +34,11 @@ const Rewards = (function() {
 
     // Default rewards
     const DEFAULT_REWARDS = [
-        { id: 'rwd-1', name: '30 min screen time', cost: 20, icon: 'monitor', color: '#3B82F6' },
-        { id: 'rwd-2', name: 'Choose dinner', cost: 30, icon: 'utensils', color: '#10B981' },
-        { id: 'rwd-3', name: 'Stay up 30 min late', cost: 40, icon: 'moon', color: '#8B5CF6' },
-        { id: 'rwd-4', name: 'Ice cream treat', cost: 25, icon: 'ice-cream-cone', color: '#EC4899' },
-        { id: 'rwd-5', name: 'Movie night pick', cost: 50, icon: 'film', color: '#EF4444' }
+        { id: 'rwd-1', name: '30 min screen time', cost: 20, icon: 'monitor', color: '#3B82F6', emoji: '📺' },
+        { id: 'rwd-2', name: 'Choose dinner', cost: 30, icon: 'utensils', color: '#10B981', emoji: '🍽️' },
+        { id: 'rwd-3', name: 'Stay up 30 min late', cost: 40, icon: 'moon', color: '#8B5CF6', emoji: '🌙' },
+        { id: 'rwd-4', name: 'Ice cream treat', cost: 25, icon: 'gift', color: '#EC4899', emoji: '🍦' },
+        { id: 'rwd-5', name: 'Movie night pick', cost: 50, icon: 'film', color: '#EF4444', emoji: '🎬' }
     ];
 
     /**
@@ -95,7 +102,7 @@ const Rewards = (function() {
                                             <i data-lucide="heart-off"></i>
                                         </button>
                                         <div class="reward-wishlist-card__icon" style="background-color: ${reward.color || '#6366F1'}">
-                                            <i data-lucide="${reward.icon || 'gift'}"></i>
+                                            ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                                         </div>
                                         <div class="reward-wishlist-card__info">
                                             <span class="reward-wishlist-card__name">${reward.name}</span>
@@ -132,7 +139,7 @@ const Rewards = (function() {
                                     <i data-lucide="heart"></i>
                                 </button>
                                 <div class="reward-card__icon" style="background-color: ${reward.color || '#6366F1'}">
-                                    <i data-lucide="${reward.icon || 'gift'}"></i>
+                                    ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                                 </div>
                                 <div class="reward-card__info">
                                     <span class="reward-card__name">${reward.name}</span>
@@ -284,6 +291,20 @@ const Rewards = (function() {
         Storage.setWidgetData(memberId, 'rewards', updatedRewardsData);
         Storage.trackAction(memberId, 'rewards', 'redeemed');
 
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'rewards',
+            action: 'redeemed',
+            details: `Redeemed "${reward.name}" for ${reward.cost} points`,
+            meta: { rewardId, rewardName: reward.name, cost: reward.cost }
+        });
+
+        // Update achievements progress
+        if (typeof Achievements !== 'undefined') {
+            Achievements.updateStats(memberId, 'reward', 1);
+        }
+
         Toast.success(`🎉 Redeemed: ${reward.name}!`);
 
         // Re-render both widgets
@@ -361,10 +382,16 @@ const Rewards = (function() {
             <div class="kid-page kid-page--rewards ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
                 <!-- Hero Section -->
                 <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
-                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
+                    <div class="kid-page__hero-header">
+                        <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                            <i data-lucide="arrow-left"></i>
+                            Back
+                        </button>
+                        <button class="btn btn--sm btn--ghost" id="addRewardPageBtn" title="Add new reward">
+                            <i data-lucide="plus-circle"></i>
+                            Add Reward
+                        </button>
+                    </div>
                     <div class="kid-page__hero-content">
                         <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
                             ${isYoungKid ? '🎁 My Rewards!' : 'My Rewards'}
@@ -387,7 +414,7 @@ const Rewards = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -458,7 +485,7 @@ const Rewards = (function() {
                                 <i data-lucide="heart"></i>
                             </button>
                             <div class="rewards-full-card__icon" style="background-color: ${reward.color || '#3B82F6'}">
-                                <i data-lucide="${reward.icon || 'gift'}"></i>
+                                ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                             </div>
                             <div class="rewards-full-card__name">${reward.name}</div>
                             <div class="rewards-full-card__cost">
@@ -511,7 +538,7 @@ const Rewards = (function() {
                                 <i data-lucide="x"></i>
                             </button>
                             <div class="rewards-wishlist-full-card__icon" style="background-color: ${reward.color || '#3B82F6'}">
-                                <i data-lucide="${reward.icon || 'gift'}"></i>
+                                ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                             </div>
                             <div class="rewards-wishlist-full-card__content">
                                 <div class="rewards-wishlist-full-card__name">${reward.name}</div>
@@ -551,6 +578,8 @@ const Rewards = (function() {
         const useKidTheme = typeof KidTheme !== 'undefined';
         const ageGroup = useKidTheme ? KidTheme.getAgeGroup(member) : 'kid';
         const isYoungKid = ageGroup === 'kid' || ageGroup === 'toddler';
+        const isTeen = member && member.type === 'teen';
+        const pointsLabel = isTeen ? 'coins' : 'pts';
 
         if (history.length === 0) {
             return `
@@ -572,7 +601,7 @@ const Rewards = (function() {
             return typeof DateUtils !== 'undefined' ? DateUtils.formatShort(date).toUpperCase() : date;
         };
 
-        // Group by date
+        // Group by date (sorted newest first)
         const groupedHistory = {};
         history.forEach(entry => {
             if (!groupedHistory[entry.date]) {
@@ -582,47 +611,98 @@ const Rewards = (function() {
             groupedHistory[entry.date].push({
                 ...entry,
                 icon: reward?.icon || 'gift',
-                color: reward?.color || '#3B82F6'
+                color: reward?.color || '#3B82F6',
+                emoji: reward?.emoji || null
             });
         });
+        const sortedDates = Object.keys(groupedHistory).sort((a, b) => b.localeCompare(a));
 
         const totalSpent = history.reduce((sum, h) => sum + h.cost, 0);
 
+        // Find top rewards (most frequently redeemed)
+        const rewardCounts = {};
+        history.forEach(entry => {
+            const key = entry.rewardName;
+            if (!rewardCounts[key]) {
+                const reward = rewards.find(r => r.id === entry.rewardId);
+                rewardCounts[key] = { name: key, count: 0, totalCost: 0, icon: reward?.icon || 'gift', color: reward?.color || '#3B82F6', emoji: reward?.emoji || null };
+            }
+            rewardCounts[key].count++;
+            rewardCounts[key].totalCost += entry.cost;
+        });
+        const topRewards = Object.values(rewardCounts).sort((a, b) => b.count - a.count).slice(0, 3);
+
+        // This month stats
+        const thisMonth = today.substring(0, 7); // "YYYY-MM"
+        const thisMonthHistory = history.filter(h => h.date.startsWith(thisMonth));
+        const thisMonthSpent = thisMonthHistory.reduce((sum, h) => sum + h.cost, 0);
+
         return `
             <div class="rewards-history-full">
+                <!-- Summary Cards -->
                 <div class="rewards-history-full__summary">
-                    <div class="rewards-history-full__stat">
-                        ${isYoungKid ? '🎁' : '<i data-lucide="gift"></i>'}
-                        <span>${history.length} ${isYoungKid ? 'redeemed!' : 'rewards redeemed'}</span>
+                    <div class="rewards-history-full__stat rewards-history-full__stat--primary">
+                        <span class="rewards-history-full__stat-number">${history.length}</span>
+                        <span class="rewards-history-full__stat-label">${isYoungKid ? '🎁 Redeemed' : 'Redeemed'}</span>
                     </div>
-                    <div class="rewards-history-full__stat">
-                        ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
-                        <span>${totalSpent} ${isYoungKid ? 'spent!' : 'points spent'}</span>
+                    <div class="rewards-history-full__stat rewards-history-full__stat--spent">
+                        <span class="rewards-history-full__stat-number">${totalSpent}</span>
+                        <span class="rewards-history-full__stat-label">${isYoungKid ? '⭐ Total Spent' : `Total ${pointsLabel}`}</span>
+                    </div>
+                    <div class="rewards-history-full__stat rewards-history-full__stat--month">
+                        <span class="rewards-history-full__stat-number">${thisMonthHistory.length}</span>
+                        <span class="rewards-history-full__stat-label">${isYoungKid ? '📅 This Month' : 'This Month'}</span>
                     </div>
                 </div>
 
-                <div class="rewards-history-full__timeline">
-                    ${Object.entries(groupedHistory).map(([date, entries]) => `
-                        <div class="rewards-history-full__day">
-                            <div class="rewards-history-full__day-label">${getDateLabel(date)}</div>
-                            <div class="rewards-history-full__day-entries">
-                                ${entries.map(entry => `
-                                    <div class="rewards-history-full__entry" style="--reward-color: ${entry.color}">
-                                        <div class="rewards-history-full__entry-icon" style="background-color: ${entry.color}">
-                                            <i data-lucide="${entry.icon}"></i>
-                                        </div>
-                                        <div class="rewards-history-full__entry-info">
-                                            <span class="rewards-history-full__entry-name">${entry.rewardName}</span>
-                                        </div>
-                                        <div class="rewards-history-full__entry-cost">
-                                            ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
-                                            -${entry.cost}
-                                        </div>
-                                    </div>
-                                `).join('')}
+                ${topRewards.length > 1 ? `
+                <!-- Top Rewards -->
+                <div class="rewards-history-full__top">
+                    <h3 class="rewards-history-full__section-title">${isYoungKid ? '🏆 Favorites' : 'Most Redeemed'}</h3>
+                    <div class="rewards-history-full__top-list">
+                        ${topRewards.map((r, i) => `
+                            <div class="rewards-history-full__top-item">
+                                <span class="rewards-history-full__top-rank">${i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                                <div class="rewards-history-full__top-icon" style="background-color: ${r.color}">
+                                    ${r.emoji ? `<span class="reward-emoji">${r.emoji}</span>` : `<i data-lucide="${r.icon}"></i>`}
+                                </div>
+                                <div class="rewards-history-full__top-info">
+                                    <span class="rewards-history-full__top-name">${r.name}</span>
+                                    <span class="rewards-history-full__top-meta">${r.count}x redeemed</span>
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- Timeline -->
+                <div class="rewards-history-full__timeline">
+                    <h3 class="rewards-history-full__section-title">${isYoungKid ? '📜 History' : 'Redemption History'}</h3>
+                    ${sortedDates.map(date => {
+                        const entries = groupedHistory[date];
+                        return `
+                            <div class="rewards-history-full__day">
+                                <div class="rewards-history-full__day-label">${getDateLabel(date)}</div>
+                                <div class="rewards-history-full__day-entries">
+                                    ${entries.map(entry => `
+                                        <div class="rewards-history-full__entry" style="--reward-color: ${entry.color}">
+                                            <div class="rewards-history-full__entry-icon" style="background-color: ${entry.color}">
+                                                ${entry.emoji ? `<span class="reward-emoji">${entry.emoji}</span>` : `<i data-lucide="${entry.icon}"></i>`}
+                                            </div>
+                                            <div class="rewards-history-full__entry-info">
+                                                <span class="rewards-history-full__entry-name">${entry.rewardName}</span>
+                                            </div>
+                                            <div class="rewards-history-full__entry-cost">
+                                                ${isYoungKid ? '⭐' : '<i data-lucide="star"></i>'}
+                                                -${entry.cost}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
                 </div>
             </div>
         `;
@@ -635,6 +715,14 @@ const Rewards = (function() {
         // Back button
         document.getElementById('backToMemberBtn')?.addEventListener('click', () => {
             State.emit('tabChanged', memberId);
+        });
+
+        // Add Reward button (PIN protected)
+        document.getElementById('addRewardPageBtn')?.addEventListener('click', async () => {
+            const verified = await PIN.verify();
+            if (verified) {
+                showManageRewardsModal(memberId);
+            }
         });
 
         // Tab switching
@@ -731,6 +819,20 @@ const Rewards = (function() {
         };
         Storage.setWidgetData(memberId, 'rewards', updatedRewardsData);
 
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'rewards',
+            action: 'redeemed',
+            details: `Redeemed "${reward.name}" for ${reward.cost} points`,
+            meta: { rewardId, rewardName: reward.name, cost: reward.cost }
+        });
+
+        // Update achievements progress
+        if (typeof Achievements !== 'undefined') {
+            Achievements.updateStats(memberId, 'reward', 1);
+        }
+
         Toast.success(`🎉 Redeemed: ${reward.name}!`);
         renderFullPage(container, memberId, member, currentTab);
     }
@@ -758,12 +860,13 @@ const Rewards = (function() {
             if (!groupedHistory[entry.date]) {
                 groupedHistory[entry.date] = [];
             }
-            // Find reward icon
+            // Find reward icon/emoji
             const reward = rewards.find(r => r.id === entry.rewardId);
             groupedHistory[entry.date].push({
                 ...entry,
                 icon: reward?.icon || 'gift',
-                color: reward?.color || '#6366F1'
+                color: reward?.color || '#6366F1',
+                emoji: reward?.emoji || null
             });
         });
 
@@ -800,7 +903,7 @@ const Rewards = (function() {
                                     ${entries.map(entry => `
                                         <div class="rewards-history-entry" style="--reward-color: ${entry.color}">
                                             <div class="rewards-history-entry__icon" style="background-color: ${entry.color}">
-                                                <i data-lucide="${entry.icon}"></i>
+                                                ${entry.emoji ? `<span class="reward-emoji">${entry.emoji}</span>` : `<i data-lucide="${entry.icon}"></i>`}
                                             </div>
                                             <div class="rewards-history-entry__info">
                                                 <span class="rewards-history-entry__name">${entry.rewardName}</span>
@@ -865,7 +968,7 @@ const Rewards = (function() {
                     ` : rewards.map(reward => `
                         <div class="manage-rewards-v2__item" data-reward-id="${reward.id}" style="--reward-color: ${reward.color || '#6366F1'}">
                             <div class="manage-rewards-v2__icon" style="background-color: ${reward.color || '#6366F1'}">
-                                <i data-lucide="${reward.icon || 'gift'}"></i>
+                                ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                             </div>
                             <div class="manage-rewards-v2__info">
                                 <span class="manage-rewards-v2__name">${reward.name}</span>
@@ -903,14 +1006,15 @@ const Rewards = (function() {
                             </div>
                         </div>
                         <div class="form-group">
-                            <label class="form-label">Icon</label>
-                            <div class="reward-icon-picker" id="rewardIconPicker">
-                                ${REWARD_ICONS.map((icon, i) => `
-                                    <button type="button" class="reward-icon-picker__btn ${i === 0 ? 'reward-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                        <i data-lucide="${icon}"></i>
+                            <label class="form-label">Emoji</label>
+                            <div class="emoji-selector" id="rewardEmojiPicker">
+                                ${REWARD_EMOJIS.map((emoji, i) => `
+                                    <button type="button" class="emoji-selector__btn ${i === 0 ? 'emoji-selector__btn--active' : ''}" data-emoji="${emoji}">
+                                        ${emoji}
                                     </button>
                                 `).join('')}
                             </div>
+                            <input type="hidden" id="selectedRewardEmoji" value="${REWARD_EMOJIS[0]}">
                         </div>
                         <div class="form-group">
                             <label class="form-label">Color</label>
@@ -973,16 +1077,17 @@ const Rewards = (function() {
      */
     function bindManageRewardsEvents(memberId) {
         // State for new reward
-        let selectedIcon = REWARD_ICONS[0];
+        let selectedEmoji = REWARD_EMOJIS[0];
         let selectedColor = REWARD_COLORS[0].id;
 
-        // Icon picker
-        document.querySelectorAll('#rewardIconPicker .reward-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#rewardEmojiPicker .emoji-selector__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#rewardIconPicker .reward-icon-picker__btn').forEach(b =>
-                    b.classList.remove('reward-icon-picker__btn--selected'));
-                btn.classList.add('reward-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#rewardEmojiPicker .emoji-selector__btn').forEach(b =>
+                    b.classList.remove('emoji-selector__btn--active'));
+                btn.classList.add('emoji-selector__btn--active');
+                selectedEmoji = btn.dataset.emoji;
+                document.getElementById('selectedRewardEmoji').value = selectedEmoji;
             });
         });
 
@@ -1011,7 +1116,7 @@ const Rewards = (function() {
                 id: `rwd-${Date.now()}`,
                 name,
                 cost,
-                icon: selectedIcon,
+                emoji: selectedEmoji,
                 color: selectedColor
             };
 
@@ -1105,11 +1210,11 @@ const Rewards = (function() {
                     <input type="number" class="form-input" id="editRewardCost" value="${reward.cost}" min="1">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="reward-icon-picker" id="editIconPicker">
-                        ${REWARD_ICONS.map(icon => `
-                            <button type="button" class="reward-icon-picker__btn ${icon === reward.icon ? 'reward-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="emoji-selector" id="editEmojiPicker">
+                        ${REWARD_EMOJIS.map(emoji => `
+                            <button type="button" class="emoji-selector__btn ${emoji === reward.emoji ? 'emoji-selector__btn--active' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
@@ -1137,16 +1242,16 @@ const Rewards = (function() {
             lucide.createIcons();
         }
 
-        let selectedIcon = reward.icon || 'gift';
+        let selectedEmoji = reward.emoji || REWARD_EMOJIS[0];
         let selectedColor = reward.color || '#6366F1';
 
-        // Icon picker
-        document.querySelectorAll('#editIconPicker .reward-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#editEmojiPicker .emoji-selector__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#editIconPicker .reward-icon-picker__btn').forEach(b =>
-                    b.classList.remove('reward-icon-picker__btn--selected'));
-                btn.classList.add('reward-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#editEmojiPicker .emoji-selector__btn').forEach(b =>
+                    b.classList.remove('emoji-selector__btn--active'));
+                btn.classList.add('emoji-selector__btn--active');
+                selectedEmoji = btn.dataset.emoji;
             });
         });
 
@@ -1175,7 +1280,7 @@ const Rewards = (function() {
                     ...rewardsData.rewards[rewardIndex],
                     name,
                     cost,
-                    icon: selectedIcon,
+                    emoji: selectedEmoji,
                     color: selectedColor
                 };
                 Storage.setWidgetData(memberId, 'rewards', rewardsData);

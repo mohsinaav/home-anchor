@@ -1419,7 +1419,7 @@ const Workout = (function() {
                                         <span class="workout-body-card__label">${metric.name}</span>
                                         ${trend ? `
                                             <span class="workout-body-card__trend workout-body-card__trend--${trend.direction}">
-                                                <i data-lucide="${trend.direction === 'up' ? 'trending-up' : trend.direction === 'down' ? 'trending-down' : 'minus'}"></i>
+                                                <i data-lucide="${trend.direction === 'up' ? 'trending-up' : trend.direction === 'down' ? 'arrow-down' : 'minus'}"></i>
                                                 ${Math.abs(trend.diff).toFixed(1)} ${unit}
                                             </span>
                                         ` : ''}
@@ -3342,7 +3342,7 @@ const Workout = (function() {
                                         </div>
                                         ${change ? `
                                             <div class="measurements-metric-card__change measurements-metric-card__change--${change.direction}">
-                                                <i data-lucide="${change.direction === 'up' ? 'trending-up' : change.direction === 'down' ? 'trending-down' : 'minus'}"></i>
+                                                <i data-lucide="${change.direction === 'up' ? 'trending-up' : change.direction === 'down' ? 'arrow-down' : 'minus'}"></i>
                                                 ${Math.abs(change.diff).toFixed(1)}
                                             </div>
                                         ` : ''}

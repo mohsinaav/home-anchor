@@ -938,6 +938,15 @@ const Journal = (function() {
         });
         Storage.trackAction(memberId, 'journal', 'entry');
 
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'journal',
+            action: 'entry',
+            details: `Added journal entry${mood ? ` (mood: ${mood})` : ''}`,
+            meta: { date: today, mood, hasGratitude: gratitude.length > 0 }
+        });
+
         Toast.success('Journal entry saved!');
     }
 

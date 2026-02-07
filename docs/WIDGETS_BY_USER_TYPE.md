@@ -1,353 +1,201 @@
 # Widgets by User Type
 
-This document lists all widgets organized by user type (Adults, Kids, Teens, Toddlers), including their full page view tabs where applicable.
+Complete widget reference for Home Anchor, organized by user type (Adults, Teens, Kids, Toddlers).
 
-**Legend:**
-- ⭐ = Widget has tabbed full page view
-- 📅 = History/Calendar view type (Calendar Grid vs Date-Grouped List)
-- 🔒 = Requires PIN verification to access
+**Legend:** ⭐ Tabbed full page view | 🔒 PIN/Password protected | 📅 Has history/calendar view
 
 ---
 
-## Adult Widgets (10 total)
+## Quick Statistics
 
-### 1. Journal ⭐ 🔒
-- **File**: [js/features/journal.js](../js/features/journal.js)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Write** - Write/edit today's entry
-  2. **History** - Past entries 📅 *Calendar grid view*
-  3. **Stats** - Streaks, mood distribution, monthly progress
-- **Features**: PIN protected, mood tracking, daily prompts
-
-### 2. Gratitude ⭐
-- **File**: [js/features/gratitude.js](../js/features/gratitude.js)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Write** - Write/edit today's gratitude items
-  2. **Week** - Weekly view (7 day cards)
-  3. **Stats** - Streaks, weekly goals, monthly progress
-- **Features**: Gratitude entries, shares data with Journal widget
-
-### 3. Habits ⭐
-- **File**: [js/features/habits.js](../js/features/habits.js)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Calendar** - Monthly habit tracker 📅 *Calendar grid view*
-  2. **Stats** - Monthly statistics, completion rates
-  3. **Archived** - Archived habits (conditional, only if archived habits exist)
-- **Features**: Daily habit tracker with streaks, scheduling, categories, monthly stats
-
-### 4. Workout ⭐
-- **File**: [js/features/workout.js](../js/features/workout.js)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **History** - Weekly workout log
-  2. **Calendar** - Workout frequency heatmap 📅 *Calendar heatmap*
-  3. **Body** - Body measurements tracking
-- **Features**: Workout tracking with sets, reps, weekly history
-
-### 5. Routine ⭐
-- **File**: [js/features/routine.js](../js/features/routine.js)
-- **Full Page Tabs**: ✅ **4 tabs**
-  1. **Due** - Routines due today/soon
-  2. **All** - All routines
-  3. **History** - Completion history 📅 *Date-grouped list*
-  4. **Stats** - Statistics
-- **Features**: Flexible routine tracker with customizable frequencies, time-of-day, categories
-
-### 6. Vision Board ⭐
-- **File**: [js/features/vision-board.js](../js/features/vision-board.js)
-- **Full Page Tabs**: ✅ **4 tabs**
-  1. **Board** - Vision board display with goal cards
-  2. **Goals** - Goal management/list
-  3. **Completed** - Completed goals archive
-  4. **Stats** - Goal statistics
-- **Features**: Goal tracking with image support and progress indicators
-
-### 7. Recipes ⭐
-- **File**: [js/features/recipes.js](../js/features/recipes.js)
-- **Full Page Tabs**: ✅ **4 tabs**
-  1. **All** - All recipes with search and filter
-  2. **Favorites** - Favorite recipes only
-  3. **Categories** - Recipes organized by tags/categories
-  4. **Add** - Add new recipes (manual or bulk import)
-- **Features**: Full recipe manager with ingredients, instructions, tags, prep time
-
-### 8. Grocery ⭐
-- **File**: [js/features/grocery.js](../js/features/grocery.js)
-- **Full Page Tabs**: ✅ **4 tabs**
-  1. **List** - Shopping list items
-  2. **Stores** - Store management and item prices
-  3. **Pantry** - Pantry inventory
-  4. **Stats** - Spending and category statistics
-- **Features**: Shopping list with smart suggestions, pantry tracking, unit conversion
-
-### 9. Meals ⭐
-- **File**: [js/features/meals.js](../js/features/meals.js)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Week** - Weekly meal planner
-  2. **Stats** - Meal statistics and analysis
-  3. **Prep** - Meal prep instructions and planning
-- **Features**: Weekly meal planner with multi-item support
-
-### 10. Circuit Timer
-- **File**: [js/features/circuit-timer.js](../js/features/circuit-timer.js)
-- **Full Page Tabs**: None (fullscreen timer interface, not tabbed)
-- **Features**: Interval workout timer with saved presets
+| Category | Widget Count | With Full Page Tabs |
+|----------|--------------|---------------------|
+| Adult | 10 | 9 |
+| Teen | 12 | 10 |
+| Kid | 10 | 9 |
+| Toddler | 7 | 7 |
+| Family/System | 6 | 1 |
+| **Total** | **45** | **36** |
 
 ---
 
-## Kid & Teen Widgets (9 total)
+## Adult Widgets (10)
 
-### 1. Kid Tasks ⭐
-- **File**: [js/features/kid-tasks.js](../js/features/kid-tasks.js)
-- **User Type**: Kids (age-adaptive styling)
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Tasks** - Task list view
-  2. **History** - Completion history 📅 *Date-grouped list (last 14 days)*
-  3. **Stats** - Statistics and streaks
-- **Features**: Fun, colorful task list with age-adaptive features
-
-### 2. Kid Journal ⭐ 🔒
-- **File**: [js/features/kid-journal.js](../js/features/kid-journal.js)
-- **User Type**: Kids & Teens
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Write** - Journal entry
-  2. **History** - Past entries 📅 *Date-grouped list*
-  3. **Stats** - Writing statistics
-- **Features**: Journal with mood tracking, sticker support, password option for teens
-
-### 3. Points ⭐
-- **File**: [js/features/points.js](../js/features/points.js)
-- **User Type**: Kids & Teens
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **History** - Points history 📅 *Date-grouped list (last 14 days)*
-  2. **Calendar** - Calendar view 📅 *Calendar grid with activity intensity*
-  3. **Leaderboard** - Family leaderboard
-- **Features**: Level system (Beginner→Ultimate for kids, Novice→Legendary for teens)
-
-### 4. Rewards ⭐
-- **File**: [js/features/rewards.js](../js/features/rewards.js)
-- **User Type**: Kids
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Rewards** - Available rewards
-  2. **Wishlist** - Saving for items
-  3. **History** - Redemption history 📅 *Date-grouped timeline*
-- **Features**: Reward redemption system with wishlist
-
-### 5. Chores ⭐
-- **File**: [js/features/chores.js](../js/features/chores.js)
-- **User Type**: Kids
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Today** - Today's chores
-  2. **History** - Completion history 📅 *Date-grouped list (last 14 days)*
-  3. **Pool** - Chore pool management
-- **Features**: Random daily chore picker from pool
-
-### 6. Screen Time ⭐
-- **File**: [js/features/screen-time.js](../js/features/screen-time.js)
-- **User Type**: Kids
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Today** - Today's usage
-  2. **History** - Historical data 📅 *Date-grouped card list (last 14 days)*
-  3. **Stats** - Usage statistics
-- **Features**: Screen time tracking with weekday/weekend limits, timer, points integration
-
-### 7. Kid Workout ⭐
-- **File**: [js/features/kid-workout.js](../js/features/kid-workout.js)
-- **User Type**: Kids
-- **Full Page Tabs**: ✅ **3 tabs**
-  1. **Calendar** - Calendar view 📅 *Calendar grid with activity dots*
-  2. **History** - Activity history 📅 *Date-grouped list*
-  3. **Stats** - Activity statistics
-- **Features**: Kid-friendly workout widget with preset activities
-
-### 8. Achievements
-- **File**: [js/features/achievements.js](../js/features/achievements.js)
-- **User Type**: Kids
-- **Full Page Tabs**: None (badge display widget only)
-- **Features**: Badge system with age-adaptive content
-
-### 9. Accomplishments
-- **File**: [js/features/accomplishments.js](../js/features/accomplishments.js)
-- **User Type**: Kids
-- **Full Page Tabs**: None (achievement log widget only)
-- **Features**: Extra achievements log with categories
+| Widget | File | Full Page Tabs | History View | Key Features |
+|--------|------|----------------|--------------|--------------|
+| **Meal Plan** ⭐ | [meals.js](../js/features/meals.js) | Week, Stats, Prep | - | Weekly meal planner, multi-item support |
+| **Task List** | [tasks.js](../js/features/tasks.js) | None | - | Personal to-do list with subtasks |
+| **Workout** ⭐ | [workout.js](../js/features/workout.js) | History, Calendar 📅, Body | Calendar Heatmap | Sets, reps, body measurements |
+| **Gratitude** ⭐ | [gratitude.js](../js/features/gratitude.js) | Write, Week, Stats | Weekly Cards | Shares data with Journal |
+| **Habits** ⭐ | [habits.js](../js/features/habits.js) | Calendar 📅, Stats, Archived | Calendar Grid | Streaks, scheduling, categories |
+| **Recipes** ⭐ | [recipes.js](../js/features/recipes.js) | All, Favorites, Categories, Add | - | Ingredients, instructions, tags |
+| **Routines** ⭐ | [routine.js](../js/features/routine.js) | Due, All, History 📅, Stats | Date-Grouped List | Custom frequencies, time-of-day |
+| **Vision Board** ⭐ | [vision-board.js](../js/features/vision-board.js) | Board, Goals, Completed, Stats | - | Goal tracking with images |
+| **Journal** ⭐ 🔒 | [journal.js](../js/features/journal.js) | Write, History 📅, Stats | Calendar Grid | PIN protected, mood tracking |
+| **Circuit Timer** | [circuit-timer.js](../js/features/circuit-timer.js) | None (fullscreen) | - | Interval workout timer |
 
 ---
 
-## Toddler Widgets (7 total)
+## Teen Widgets (12)
 
-### 1. Toddler Tasks
-- **File**: [js/features/toddler-tasks.js](../js/features/toddler-tasks.js)
-- **Full Page Tabs**: None (simple task list)
-- **Features**: Simple, visual task list with big checkboxes, toddler-friendly theme
-
-### 2. Toddler Routine
-- **File**: [js/features/toddler-routine.js](../js/features/toddler-routine.js)
-- **Full Page Tabs**: None (visual checklist)
-- **Features**: Visual routine checklist with SVG illustrations
-
-### 3. Daily Log
-- **File**: [js/features/daily-log.js](../js/features/daily-log.js)
-- **Full Page Tabs**: None (daily tracking)
-- **Features**: Tracks meals, naps, diaper changes, mood, activities, potty training
-
-### 4. Activities
-- **File**: [js/features/activities.js](../js/features/activities.js)
-- **Full Page Tabs**: None (activity suggestions)
-- **Features**: Toddler engagement activity suggestions with history
-
-### 5. Milestones
-- **File**: [js/features/milestones.js](../js/features/milestones.js)
-- **Full Page Tabs**: None (milestone tracking)
-- **Features**: Developmental milestones tracker (physical, language, cognitive, social)
-
-### 6. Growth Chart
-- **File**: [js/features/growth-chart.js](../js/features/growth-chart.js)
-- **Full Page Tabs**: None (measurement tracking)
-- **Features**: Height, weight, and custom measurements over time
-
-### 7. Caregiver Handoff
-- **File**: [js/features/caregiver-handoff.js](../js/features/caregiver-handoff.js)
-- **Full Page Tabs**: None (daily summaries)
-- **Features**: Quick daily summaries for caregiver transitions
+| Widget | File | Full Page Tabs | History View | Key Features |
+|--------|------|----------------|--------------|--------------|
+| **My Tasks** | [tasks.js](../js/features/tasks.js) | None | - | Personal task list |
+| **Habits** ⭐ | [habits.js](../js/features/habits.js) | Calendar 📅, Stats, Archived | Calendar Grid | Build positive habits |
+| **Fitness** ⭐ | [workout.js](../js/features/workout.js) | History, Calendar 📅, Body | Calendar Heatmap | Track workouts and progress |
+| **Goals & Dreams** ⭐ | [vision-board.js](../js/features/vision-board.js) | Board, Goals, Completed, Stats | - | Visualize your future |
+| **My Journal** ⭐ 🔒 | [kid-journal.js](../js/features/kid-journal.js) | Write, History 📅, Stats | Date-Grouped List | Private diary with password |
+| **Gratitude** ⭐ | [gratitude.js](../js/features/gratitude.js) | Write, Week, Stats | Weekly Cards | Daily gratitude practice |
+| **Screen Time** ⭐ | [screen-time.js](../js/features/screen-time.js) | Today, History 📅, Stats | Date-Grouped Cards | Manage device usage |
+| **Achievements** ⭐ | [achievements.js](../js/features/achievements.js) | Badges, Progress, Stats | - | Track accomplishments |
+| **Chores** ⭐ | [chores.js](../js/features/chores.js) | Today, History 📅, Pool | Date-Grouped List | Household responsibilities |
+| **Routines** ⭐ | [routine.js](../js/features/routine.js) | Due, All, History 📅, Stats | Date-Grouped List | Track recurring tasks |
+| **Points** ⭐ | [points.js](../js/features/points.js) | History 📅, Calendar 📅, Stats | Both Grid & List | Earn points for goals |
+| **Rewards** ⭐ | [rewards.js](../js/features/rewards.js) | Rewards, Wishlist, History 📅 | Date-Grouped Timeline | Redeem earned points |
 
 ---
 
-## Family & System Widgets (6 total)
+## Kid Widgets (10)
 
-### 1. Schedule
-- **File**: [js/features/schedule.js](../js/features/schedule.js)
-- **User Type**: All family members
-- **Full Page Tabs**: None (timeline view)
-- **Features**: Google Calendar-style timeline view with 30-minute slots
-
-### 2. Family Dashboard
-- **File**: [js/features/family-dashboard.js](../js/features/family-dashboard.js)
-- **User Type**: Admin/Family
-- **Full Page Tabs**: None (admin page)
-- **Features**: Admin page with stats, activity feed, calendar overview
-
-### 3. Settings
-- **File**: [js/features/settings-page.js](../js/features/settings-page.js)
-- **User Type**: Admin
-- **Full Page Tabs**: None (settings management)
-- **Features**: Full settings page with family, appearance, features, security
-
-### 4. Notifications
-- **File**: [js/features/notifications.js](../js/features/notifications.js)
-- **User Type**: Admin/Family
-- **Full Page Tabs**: None (notification system)
-- **Features**: Browser notifications for schedule activities
-
-### 5. Voice Assistant
-- **File**: [js/features/voice-assistant.js](../js/features/voice-assistant.js)
-- **User Type**: All
-- **Full Page Tabs**: None (voice commands)
-- **Features**: Web Speech API voice command functionality
+| Widget | File | Full Page Tabs | History View | Key Features |
+|--------|------|----------------|--------------|--------------|
+| **Points** ⭐ | [points.js](../js/features/points.js) | History 📅, Calendar 📅, Stats | Both Grid & List | Level system (Beginner→Ultimate) |
+| **Rewards** ⭐ | [rewards.js](../js/features/rewards.js) | Rewards, Wishlist, History 📅 | Date-Grouped Timeline | Reward redemption, wishlist |
+| **Achievements** ⭐ | [achievements.js](../js/features/achievements.js) | Badges, Progress, Stats | - | Badge system, age-adaptive |
+| **My Tasks** ⭐ | [kid-tasks.js](../js/features/kid-tasks.js) | Tasks, History 📅, Stats | Date-Grouped List | Fun task list with colors |
+| **Move & Play** ⭐ | [kid-workout.js](../js/features/kid-workout.js) | History 📅, Activities, Stats | Date-Grouped List | Kid-friendly workout activities |
+| **Chores** ⭐ | [chores.js](../js/features/chores.js) | Today, History 📅, Pool | Date-Grouped List | Random daily chore picker |
+| **Memory Book** ⭐ | [memory-book.js](../js/features/memory-book.js) | Timeline 📅 | Timeline View | Polaroid display, category filters, photo memories |
+| **Screen Time** ⭐ | [screen-time.js](../js/features/screen-time.js) | Today, History 📅, Stats | Date-Grouped Cards | Timer, weekday/weekend limits |
+| **Dreams** ⭐ | [vision-board.js](../js/features/vision-board.js) | Board, Goals, Completed, Stats | - | Track dreams and goals |
+| **My Journal** ⭐ 🔒 | [kid-journal.js](../js/features/kid-journal.js) | Write, History 📅, Stats | Date-Grouped List | Mood tracking, stickers |
 
 ---
 
-## Summary Statistics
+## Toddler Widgets (7)
 
-### Widgets by User Type
-- **Adult**: 10 widgets
-- **Kid/Teen**: 9 widgets
-- **Toddler**: 7 widgets
-- **Family/System**: 6 widgets
-- **Total**: 32 widgets
-
-### Widgets with Tabbed Full Page Views: 16 total
-
-**Adult Widgets (9):**
-1. Journal (3 tabs)
-2. Gratitude (3 tabs)
-3. Habits (3 tabs)
-4. Workout (3 tabs)
-5. Routine (4 tabs)
-6. Vision Board (4 tabs)
-7. Recipes (4 tabs)
-8. Grocery (4 tabs)
-9. Meals (3 tabs)
-
-**Kid/Teen Widgets (7):**
-1. Kid Tasks (3 tabs)
-2. Kid Journal (3 tabs)
-3. Points (3 tabs)
-4. Rewards (3 tabs)
-5. Chores (3 tabs)
-6. Screen Time (3 tabs)
-7. Kid Workout (3 tabs)
-
-### History/Calendar View Types
-
-**Calendar Grid Views:**
-- Journal History tab
-- Habits Calendar tab
-- Workout Calendar tab
-- Points Calendar tab
-- Kid Workout Calendar tab
-
-**Date-Grouped List Views:**
-- Routine History tab
-- Kid Tasks History tab
-- Kid Journal History tab
-- Points History tab
-- Rewards History tab
-- Chores History tab
-- Screen Time History tab
-- Kid Workout History tab
-
-**Note:** Points and Kid Workout have BOTH calendar and list views in separate tabs.
+| Widget | File | Full Page Tabs | History View | Key Features |
+|--------|------|----------------|--------------|--------------|
+| **My Routine** ⭐ | [toddler-routine.js](../js/features/toddler-routine.js) | Today, History 📅, Stats | Date-Grouped List | Visual routine with SVG illustrations |
+| **Activities** ⭐ | [activities.js](../js/features/activities.js) | Suggest, Browse, History 📅, Stats | Date-Grouped List | Engagement activity suggestions |
+| **Daily Log** ⭐ | [daily-log.js](../js/features/daily-log.js) | Today, History 📅, Stats | Calendar Grid | Meals, naps, diapers, mood |
+| **My To-Dos** ⭐ | [toddler-tasks.js](../js/features/toddler-tasks.js) | Tasks, History 📅 | Date-Grouped List | Big checkboxes, simple design |
+| **Milestones** ⭐ | [milestones.js](../js/features/milestones.js) | Categories, Coming Up, Timeline 📅, Stats | Timeline View | Physical, language, cognitive, social |
+| **Caregiver Handoff** ⭐ | [caregiver-handoff.js](../js/features/caregiver-handoff.js) | Today, History 📅, Notes | Date-Grouped List | Daily summaries for caregivers |
+| **Growth Chart** ⭐ | [growth-chart.js](../js/features/growth-chart.js) | Chart, History 📅, Add | Date-Grouped List | Height, weight, head circumference |
 
 ---
 
-## Complete Widget Reference Table
+## Family & System Widgets (6)
 
-| Widget Name | User Type | Full Page Tabs | History/Calendar View | Key Features |
-|-------------|-----------|----------------|----------------------|--------------|
-| **ADULT WIDGETS** |
-| Journal 🔒 | Adult | Write, History 📅, Stats | Calendar Grid | PIN protected, mood tracking, daily prompts |
-| Gratitude | Adult | Write, Week, Stats | Weekly Cards | Shares data with Journal, gratitude entries |
-| Habits | Adult | Calendar 📅, Stats, Archived | Calendar Grid | Streaks, scheduling, categories, monthly stats |
-| Workout | Adult | History, Calendar 📅, Body | Calendar Heatmap | Sets, reps, weekly history, body measurements |
-| Routine | Adult | Due, All, History 📅, Stats | Date-Grouped List | Customizable frequencies, time-of-day, categories |
-| Vision Board | Adult | Board, Goals, Completed, Stats | - | Goal tracking with images, progress indicators |
-| Recipes | Adult | All, Favorites, Categories, Add | - | Ingredients, instructions, tags, prep time |
-| Grocery | Adult | List, Stores, Pantry, Stats | - | Smart suggestions, pantry tracking, unit conversion |
-| Meals | Adult | Week, Stats, Prep | - | Weekly meal planner, multi-item support |
-| Circuit Timer | Adult | None | - | Interval workout timer, saved presets |
-| **KID/TEEN WIDGETS** |
-| Kid Tasks | Kid | Tasks, History 📅, Stats | Date-Grouped List | Age-adaptive styling, fun colors, streaks |
-| Kid Journal 🔒 | Kid/Teen | Write, History 📅, Stats | Date-Grouped List | Mood tracking, stickers, password for teens |
-| Points | Kid/Teen | History 📅, Calendar 📅, Leaderboard | Both Grid & List | Level system, ranks, family leaderboard |
-| Rewards | Kid | Rewards, Wishlist, History 📅 | Date-Grouped Timeline | Reward redemption, wishlist, points integration |
-| Chores | Kid | Today, History 📅, Pool | Date-Grouped List | Random daily picker, chore pool management |
-| Screen Time | Kid | Today, History 📅, Stats | Date-Grouped Cards | Timer, weekday/weekend limits, points penalties |
-| Kid Workout | Kid | Calendar 📅, History 📅, Stats | Both Grid & List | Preset activities, activity tracking |
-| Achievements | Kid | None | - | Badge system, age-adaptive content |
-| Accomplishments | Kid | None | - | Achievement log, categories |
-| **TODDLER WIDGETS** |
-| Toddler Tasks | Toddler | None | - | Big checkboxes, simple visual design |
-| Toddler Routine | Toddler | None | - | SVG illustrations, visual checklist |
-| Daily Log | Toddler | None | - | Meals, naps, diapers, mood, potty training |
-| Activities | Toddler | None | - | Activity suggestions with history |
-| Milestones | Toddler | None | - | Developmental tracking (physical, language, cognitive, social) |
-| Growth Chart | Toddler | None | - | Height, weight, custom measurements |
-| Caregiver Handoff | Toddler | None | - | Daily summaries for caregiver transitions |
-| **FAMILY/SYSTEM WIDGETS** |
-| Schedule | Family | None | - | Google Calendar-style timeline, 30-min slots |
-| Family Dashboard | Admin | None | - | Stats, activity feed, calendar overview |
-| Settings | Admin | None | - | Family, appearance, features, security |
-| Notifications | Admin | None | - | Browser notifications for activities |
-| Voice Assistant | All | None | - | Web Speech API voice commands |
-
-### Table Legend
-- 🔒 = PIN/Password protected
-- 📅 = Has calendar or history view
-- **Date-Grouped List** = Shows entries grouped by date (last 7-14 days)
-- **Calendar Grid** = Monthly calendar with date cells
-- **Calendar Heatmap** = Visual frequency/intensity map
-- **Both Grid & List** = Has separate tabs for both views
+| Widget | File | User Type | Key Features |
+|--------|------|-----------|--------------|
+| **Shopping List** ⭐ | [grocery.js](../js/features/grocery.js) | Family | List, Stores, Pantry, Stats tabs; smart suggestions, pantry tracking |
+| **Schedule** | [schedule.js](../js/features/schedule.js) | All | Google Calendar-style timeline, 30-min slots |
+| **Family Dashboard** | [family-dashboard.js](../js/features/family-dashboard.js) | Admin | Stats, activity feed, calendar overview |
+| **Settings** | [settings-page.js](../js/features/settings-page.js) | Admin | Family, appearance, features, security |
+| **Notifications** | [notifications.js](../js/features/notifications.js) | Admin | Browser notifications for activities |
+| **Voice Assistant** | [voice-assistant.js](../js/features/voice-assistant.js) | All | Web Speech API voice commands |
 
 ---
 
-*Last Updated: 2026-01-25*
+## Shared Widgets Across User Types
+
+Some widgets are available to multiple user types with age-appropriate styling:
+
+| Widget | Adult | Teen | Kid | Toddler |
+|--------|:-----:|:----:|:---:|:-------:|
+| Task List / Tasks | ✓ | ✓ | ✓* | ✓* |
+| Habits | ✓ | ✓ | - | - |
+| Workout / Fitness | ✓ | ✓ | ✓* | - |
+| Vision Board / Dreams | ✓ | ✓ | ✓ | - |
+| Gratitude | ✓ | ✓ | - | - |
+| Routines | ✓ | ✓ | - | ✓* |
+| Journal | ✓* | ✓ | ✓ | - |
+| Points | - | ✓ | ✓ | - |
+| Rewards | - | ✓ | ✓ | - |
+| Achievements | - | ✓ | ✓ | - |
+| Screen Time | - | ✓ | ✓ | - |
+| Chores | - | ✓ | ✓ | - |
+
+*Different widget variant (kid-tasks, kid-workout, toddler-tasks, toddler-routine, kid-journal)
+
+---
+
+## History/Calendar View Types
+
+| View Type | Widgets |
+|-----------|---------|
+| **Calendar Grid** | Journal, Habits, Workout, Points Calendar, Daily Log |
+| **Date-Grouped List** | Routine, Kid Tasks, Kid Journal, Points History, Rewards, Chores, Screen Time, Kid Workout, Toddler Tasks, Toddler Routine, Activities, Growth Chart, Caregiver Handoff |
+| **Timeline View** | Milestones, Memory Book |
+| **Calendar Heatmap** | Workout Calendar |
+| **Weekly Cards** | Gratitude Week |
+
+---
+
+## Widget Color Theming
+
+### Color Palette by User Type
+
+| User Type | Inactive Tab Shade | Active Tab Shade | Style |
+|-----------|-------------------|------------------|-------|
+| Adult | -100 (soft/muted) | -500 (vibrant) | Professional |
+| Teen | -300 (playful) | -500 (vibrant) | Energetic |
+| Kid | -300 (playful) | -500 (vibrant) | Fun |
+| Toddler | -400 (bold) | -500 (vibrant) | Easy to see |
+
+### Adult Widget Colors
+
+| Widget | Color Family | Inactive | Active | Gradient |
+|--------|--------------|----------|--------|----------|
+| Journal | Violet | `#EDE9FE` | `#8B5CF6` | violet-500→400 |
+| Gratitude | Amber | `#FEF3C7` | `#F59E0B` | amber-500→400 |
+| Habits | Green | `#DCFCE7` | `#22C55E` | green-500→400 |
+| Workout | Orange | `#FFEDD5` | `#F97316` | orange-500→400 |
+| Routines | Sky | `#E0F2FE` | `#0EA5E9` | sky-500→400 |
+| Vision Board | Teal | `#CCFBF1` | `#14B8A6` | teal-500→400 |
+| Recipes | Pink | `#FCE7F3` | `#EC4899` | pink-500→400 |
+| Meal Plan | Cyan | `#CFFAFE` | `#06B6D4` | cyan-500→400 |
+| Circuit Timer | Red | `#FEE2E2` | `#EF4444` | red-500→400 |
+
+### Kid & Teen Widget Colors
+
+| Widget | Color Family | Inactive | Active | Gradient |
+|--------|--------------|----------|--------|----------|
+| Kid Tasks | Orange | `#FDBA74` | `#F97316` | orange-500→400 |
+| Kid Journal | Rose | `#FDA4AF` | `#F43F5E` | rose-500→400 |
+| Points | Yellow | `#FDE047` | `#EAB308` | yellow-500→400 |
+| Rewards | Fuchsia | `#F0ABFC` | `#D946EF` | fuchsia-500→400 |
+| Chores | Lime | `#BEF264` | `#84CC16` | lime-500→400 |
+| Screen Time | Blue | `#93C5FD` | `#3B82F6` | blue-500→400 |
+| Kid Workout | Emerald | `#6EE7B7` | `#10B981` | emerald-500→400 |
+| Achievements | Amber | `#FCD34D` | `#F59E0B` | amber-500→400 |
+| Memory Book | Violet | `#C4B5FD` | `#8B5CF6` | violet-500→400 |
+
+### Toddler Widget Colors
+
+| Widget | Color Family | Inactive | Active | Gradient |
+|--------|--------------|----------|--------|----------|
+| Toddler Tasks | Yellow | `#FACC15` | `#EAB308` | yellow-500→400 |
+| Toddler Routine | Sky | `#38BDF8` | `#0EA5E9` | sky-500→400 |
+| Daily Log | Indigo | `#818CF8` | `#6366F1` | indigo-500→400 |
+| Activities | Emerald | `#34D399` | `#10B981` | emerald-500→400 |
+| Milestones | Rose | `#FB7185` | `#F43F5E` | rose-500→400 |
+| Growth Chart | Violet | `#A78BFA` | `#8B5CF6` | violet-500→400 |
+| Caregiver Handoff | Teal | `#2DD4BF` | `#14B8A6` | teal-500→400 |
+
+---
+
+## CSS File Locations
+
+| Style Type | File | Lines |
+|------------|------|-------|
+| Inactive/Active Tabs | [css/kids-widgets.css](../css/kids-widgets.css) | 800-1050 |
+| Grid Header Gradients | [css/widgets.css](../css/widgets.css) | 305-442 |
+| Full Page Banners | [css/widgets.css](../css/widgets.css) | Various |
+| Collapsed Icon Tints | [css/kids-widgets.css](../css/kids-widgets.css) | 560-620 |
+
+---
+
+*Last Updated: 2026-02-06*

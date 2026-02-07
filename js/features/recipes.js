@@ -50,7 +50,7 @@ const Recipes = (function() {
             instructions: 'Melt chocolate and butter. Whisk eggs with sugar. Combine and bake at 425°F for 12 minutes.',
             tags: ['Dessert'],
             color: '#EC4899',
-            icon: 'cake-slice',
+            icon: 'cake',
             calories: 380,
             carbs: 28,
             fat: 26,
@@ -716,6 +716,12 @@ const Recipes = (function() {
                             ${recipe.tags.map(tag => `<span class="recipe-tag">${tag}</span>`).join('')}
                         </div>
                     ` : ''}
+                    <div class="recipe-card__footer">
+                        <button class="recipe-card__meal-plan-btn" data-action="add-to-meal-plan" data-id="${recipe.id}">
+                            <i data-lucide="calendar-plus"></i>
+                            Add to Meal Plan
+                        </button>
+                    </div>
                 </div>
             </div>
         `).join('');
@@ -818,6 +824,14 @@ const Recipes = (function() {
             });
         });
 
+        // Add to meal plan
+        container.querySelectorAll('[data-action="add-to-meal-plan"]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                showAddToMealPlanModal(memberId, btn.dataset.id);
+            });
+        });
+
         // Category more buttons
         container.querySelectorAll('.recipes-category__more').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -846,6 +860,10 @@ const Recipes = (function() {
                         <button class="btn btn--ghost recipe-detail__favorite ${recipe.favorite ? 'recipe-detail__favorite--active' : ''}" data-action="toggle-favorite">
                             <i data-lucide="heart"></i>
                             ${recipe.favorite ? 'Favorited' : 'Favorite'}
+                        </button>
+                        <button class="btn btn--secondary" data-action="add-to-meal-plan" data-id="${recipe.id}">
+                            <i data-lucide="calendar-plus"></i>
+                            Add to Meal Plan
                         </button>
                         <button class="btn btn--secondary" data-action="edit">
                             <i data-lucide="pencil"></i>
@@ -988,6 +1006,10 @@ const Recipes = (function() {
 
         container.querySelector('[data-action="add-to-grocery"]')?.addEventListener('click', () => {
             addIngredientsToGrocery(memberId, recipe);
+        });
+
+        container.querySelector('[data-action="add-to-meal-plan"]')?.addEventListener('click', () => {
+            showAddToMealPlanModal(memberId, recipeId);
         });
 
         // Favorite toggle in detail page
@@ -1345,6 +1367,117 @@ const Recipes = (function() {
         });
         if (added > 0) { Storage.setWidgetData(memberId, 'grocery', groceryData); Toast.success(`Added ${added} items to shopping list`); }
         else { Toast.info('All ingredients already in shopping list'); }
+    }
+
+    function showAddToMealPlanModal(memberId, recipeId) {
+        const widgetData = getWidgetData(memberId);
+        const recipe = widgetData.recipes.find(r => r.id === recipeId);
+        if (!recipe) return;
+
+        const weekStart = DateUtils.getWeekStart(new Date());
+        const todayStr = DateUtils.today();
+        const days = [];
+        for (let i = 0; i < 7; i++) {
+            const date = DateUtils.addDays(weekStart, i);
+            const dateStr = DateUtils.formatISO(date);
+            days.push({
+                dateStr,
+                dayName: DateUtils.getDayName(date, true),
+                dayNum: date.getDate(),
+                isToday: dateStr === todayStr
+            });
+        }
+
+        const tagStr = (recipe.tags || []).join(' ').toLowerCase();
+        let defaultMeal = 'dinner';
+        if (tagStr.includes('breakfast') || tagStr.includes('brunch')) defaultMeal = 'breakfast';
+        else if (tagStr.includes('lunch') || tagStr.includes('salad') || tagStr.includes('sandwich')) defaultMeal = 'lunch';
+        else if (tagStr.includes('snack') || tagStr.includes('dessert') || tagStr.includes('appetizer')) defaultMeal = 'snacks';
+
+        const mealTypes = [
+            { value: 'breakfast', label: 'Breakfast', icon: 'sunrise' },
+            { value: 'lunch', label: 'Lunch', icon: 'sun' },
+            { value: 'snacks', label: 'Snacks', icon: 'cookie' },
+            { value: 'dinner', label: 'Dinner', icon: 'moon' }
+        ];
+
+        const content = `
+            <div class="meal-plan-picker">
+                <div class="meal-plan-picker__section">
+                    <label class="form-label">Select Day</label>
+                    <div class="meal-plan-picker__days">
+                        ${days.map(d => `
+                            <button type="button" class="meal-plan-picker__day ${d.isToday ? 'meal-plan-picker__day--selected meal-plan-picker__day--today' : ''}"
+                                    data-date="${d.dateStr}">
+                                <span class="meal-plan-picker__day-name">${d.dayName}</span>
+                                <span class="meal-plan-picker__day-num">${d.dayNum}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="meal-plan-picker__section">
+                    <label class="form-label">Select Meal</label>
+                    <div class="meal-plan-picker__meals">
+                        ${mealTypes.map(m => `
+                            <button type="button" class="meal-plan-picker__meal ${m.value === defaultMeal ? 'meal-plan-picker__meal--selected' : ''}"
+                                    data-meal="${m.value}">
+                                <i data-lucide="${m.icon}"></i>
+                                <span>${m.label}</span>
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: `Add "${recipe.name}" to Meal Plan`,
+            content,
+            footer: `
+                <button class="btn btn--secondary" data-modal-cancel>Cancel</button>
+                <button class="btn btn--primary" id="confirmAddToMealPlanBtn">
+                    <i data-lucide="calendar-plus"></i>
+                    Add to Plan
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        document.querySelectorAll('.meal-plan-picker__day').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.meal-plan-picker__day').forEach(b => b.classList.remove('meal-plan-picker__day--selected'));
+                btn.classList.add('meal-plan-picker__day--selected');
+            });
+        });
+
+        document.querySelectorAll('.meal-plan-picker__meal').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.meal-plan-picker__meal').forEach(b => b.classList.remove('meal-plan-picker__meal--selected'));
+                btn.classList.add('meal-plan-picker__meal--selected');
+            });
+        });
+
+        document.getElementById('confirmAddToMealPlanBtn')?.addEventListener('click', () => {
+            const selectedDay = document.querySelector('.meal-plan-picker__day--selected')?.dataset.date;
+            const selectedMeal = document.querySelector('.meal-plan-picker__meal--selected')?.dataset.meal;
+
+            if (!selectedDay) { Toast.error('Please select a day'); return; }
+            if (!selectedMeal) { Toast.error('Please select a meal type'); return; }
+
+            const added = Meals.addRecipeToMealPlan(memberId, selectedDay, selectedMeal, recipe.name, 'adult');
+            const dayLabel = DateUtils.getDayName(DateUtils.parseLocalDate(selectedDay), false);
+            const mealLabel = selectedMeal.charAt(0).toUpperCase() + selectedMeal.slice(1);
+
+            if (added) {
+                Toast.success(`Added "${recipe.name}" to ${dayLabel} ${mealLabel}`);
+            } else {
+                Toast.info(`"${recipe.name}" is already in ${dayLabel} ${mealLabel}`);
+            }
+            Modal.close();
+        });
     }
 
     function getRecipesForMealPlan(memberId) {

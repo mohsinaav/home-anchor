@@ -49,6 +49,8 @@ const KidJournal = (function() {
 
     // Track current calendar month for teen history view
     let teenHistoryCalendarDate = new Date();
+    // Track current calendar month for kid history view
+    let kidHistoryCalendarDate = new Date();
 
     /**
      * Get widget data with defaults
@@ -566,6 +568,15 @@ const KidJournal = (function() {
             saveWidgetData(memberId, widgetData);
             Storage.trackAction(memberId, 'kid-journal', 'entry');
 
+            // Log to Activity Monitor
+            Storage.logActivityEvent({
+                memberId: memberId,
+                widgetId: 'kid-journal',
+                action: 'entry',
+                details: `Added journal entry${selectedMood ? ` (mood: ${selectedMood})` : ''}`,
+                meta: { entryId: newEntry.id, mood: selectedMood, hasStickers: selectedStickers.length > 0 }
+            });
+
             // Award points for daily journal entry based on member type
             const member = Storage.getMember(memberId);
             const settings = Storage.getSettings();
@@ -821,7 +832,7 @@ const KidJournal = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === currentView ? 'kid-page__tab--active' : ''}" data-view="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -1488,6 +1499,15 @@ const KidJournal = (function() {
                 saveWidgetData(memberId, widgetData);
                 Storage.trackAction(memberId, 'kid-journal', 'entry');
 
+                // Log to Activity Monitor
+                Storage.logActivityEvent({
+                    memberId: memberId,
+                    widgetId: 'kid-journal',
+                    action: 'entry',
+                    details: `Added journal entry${selectedMood ? ` (mood: ${selectedMood})` : ''}`,
+                    meta: { entryId: newEntry.id, mood: selectedMood, hasStickers: selectedStickers.length > 0 }
+                });
+
                 // Award points
                 const settings = Storage.getSettings();
                 const pointsConfig = settings.pointsConfig || {};
@@ -1874,7 +1894,7 @@ const KidJournal = (function() {
      * Render calendar view
      */
     function renderCalendarView(entries, memberId) {
-        const now = new Date();
+        const now = kidHistoryCalendarDate;
         const year = now.getFullYear();
         const month = now.getMonth();
 
@@ -2237,6 +2257,19 @@ const KidJournal = (function() {
                         Toast.success('Entry deleted');
                     }
                 }
+            });
+        });
+
+        // Calendar month navigation
+        container.querySelectorAll('[data-calendar-nav]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const direction = btn.dataset.calendarNav;
+                if (direction === 'prev') {
+                    kidHistoryCalendarDate.setMonth(kidHistoryCalendarDate.getMonth() - 1);
+                } else {
+                    kidHistoryCalendarDate.setMonth(kidHistoryCalendarDate.getMonth() + 1);
+                }
+                renderFullPage(container, memberId, member, currentView);
             });
         });
 

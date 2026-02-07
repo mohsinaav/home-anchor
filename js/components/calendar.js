@@ -110,10 +110,17 @@ const Calendar = (function() {
                     </div>
                     <div class="calendar__actions">
                         <button class="calendar__today-btn" id="calToday">Today</button>
+                        <button class="btn btn--ghost btn--sm" id="exportEventsBtn" title="Export to .ics file">
+                            <i data-lucide="upload"></i>
+                        </button>
+                        <button class="btn btn--ghost btn--sm" id="importEventsBtn" title="Import from .ics file">
+                            <i data-lucide="download"></i>
+                        </button>
                         <button class="btn btn--primary btn--sm" id="addEventBtn">
                             <i data-lucide="plus"></i>
                             Add Event
                         </button>
+                        <input type="file" id="importIcsInput" accept=".ics" style="display: none">
                     </div>
                 </div>
 
@@ -208,6 +215,26 @@ const Calendar = (function() {
         // Add event button
         document.getElementById('addEventBtn')?.addEventListener('click', () => {
             showAddEventModal();
+        });
+
+        // Import events button
+        document.getElementById('importEventsBtn')?.addEventListener('click', () => {
+            document.getElementById('importIcsInput')?.click();
+        });
+
+        // Export events button
+        document.getElementById('exportEventsBtn')?.addEventListener('click', () => {
+            handleIcsExport();
+        });
+
+        // Handle ICS file selection
+        document.getElementById('importIcsInput')?.addEventListener('change', (e) => {
+            const file = e.target.files?.[0];
+            if (file) {
+                handleIcsImport(file);
+                // Reset input so same file can be selected again
+                e.target.value = '';
+            }
         });
 
         // Day click - show events on mobile, add event on desktop
@@ -688,6 +715,205 @@ const Calendar = (function() {
                     Tabs.switchTo(memberId);
                 }
             });
+        });
+    }
+
+    /**
+     * Handle ICS file import
+     */
+    function handleIcsImport(file) {
+        if (!file.name.toLowerCase().endsWith('.ics')) {
+            Toast.error('Please select a valid .ics file');
+            return;
+        }
+
+        const reader = new FileReader();
+
+        reader.onload = (e) => {
+            try {
+                if (typeof ICSParser === 'undefined') {
+                    Toast.error('ICS parser not loaded');
+                    return;
+                }
+
+                const events = ICSParser.parse(e.target.result);
+
+                if (events.length === 0) {
+                    Toast.info('No upcoming events found in this file');
+                    return;
+                }
+
+                showImportPreviewModal(events);
+            } catch (error) {
+                console.error('ICS parse error:', error);
+                Toast.error('Failed to parse calendar file');
+            }
+        };
+
+        reader.onerror = () => {
+            Toast.error('Failed to read file');
+        };
+
+        reader.readAsText(file);
+    }
+
+    /**
+     * Handle ICS file export
+     */
+    function handleIcsExport() {
+        if (typeof ICSParser === 'undefined') {
+            Toast.error('ICS parser not loaded');
+            return;
+        }
+
+        const events = Storage.getCalendarEvents();
+
+        if (events.length === 0) {
+            Toast.info('No events to export');
+            return;
+        }
+
+        // Generate filename with date
+        const today = DateUtils.today();
+        const filename = `home-anchor-calendar-${today}.ics`;
+
+        ICSParser.downloadICS(events, filename);
+        Toast.success(`Exported ${events.length} event${events.length !== 1 ? 's' : ''}`);
+    }
+
+    /**
+     * Show import preview modal
+     */
+    function showImportPreviewModal(events) {
+        const members = Storage.getMembers();
+
+        // Group events by date for better display
+        const eventsByDate = {};
+        events.forEach(event => {
+            if (!eventsByDate[event.date]) {
+                eventsByDate[event.date] = [];
+            }
+            eventsByDate[event.date].push(event);
+        });
+
+        const sortedDates = Object.keys(eventsByDate).sort();
+
+        const content = `
+            <div class="import-preview">
+                <div class="import-preview__summary">
+                    <i data-lucide="calendar-check"></i>
+                    <span>Found <strong>${events.length}</strong> event${events.length !== 1 ? 's' : ''} to import</span>
+                </div>
+
+                <div class="import-preview__options">
+                    <div class="form-group">
+                        <label class="form-label">Assign to Family Member</label>
+                        <select class="form-input form-select" id="importMemberSelect">
+                            <option value="">All Members (no assignment)</option>
+                            ${members.map(m => `<option value="${m.id}">${m.name}</option>`).join('')}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="import-preview__list">
+                    ${sortedDates.slice(0, 10).map(date => `
+                        <div class="import-preview__date-group">
+                            <div class="import-preview__date-header">
+                                ${ICSParser.formatDateDisplay(date)}
+                            </div>
+                            ${eventsByDate[date].map(event => `
+                                <div class="import-preview__event">
+                                    <input type="checkbox" class="import-preview__checkbox" data-event-index="${events.indexOf(event)}" checked>
+                                    <div class="import-preview__event-info">
+                                        <span class="import-preview__event-title">${event.title}</span>
+                                        <span class="import-preview__event-time">${ICSParser.formatTimeDisplay(event.time)}${event.endTime ? ' - ' + ICSParser.formatTimeDisplay(event.endTime) : ''}</span>
+                                    </div>
+                                    ${event.isRecurring ? '<span class="import-preview__recurring" title="Recurring event"><i data-lucide="repeat"></i></span>' : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    `).join('')}
+                    ${sortedDates.length > 10 ? `
+                        <div class="import-preview__more">
+                            ... and ${sortedDates.length - 10} more dates
+                        </div>
+                    ` : ''}
+                </div>
+
+                <div class="import-preview__actions">
+                    <label class="import-preview__select-all">
+                        <input type="checkbox" id="importSelectAll" checked>
+                        <span>Select All</span>
+                    </label>
+                </div>
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Import Calendar Events',
+            content,
+            size: 'medium',
+            footer: `
+                <button class="btn btn--secondary" data-modal-cancel>Cancel</button>
+                <button class="btn btn--primary" id="confirmImportBtn">
+                    <i data-lucide="download"></i>
+                    Import ${events.length} Events
+                </button>
+            `
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Select all toggle
+        document.getElementById('importSelectAll')?.addEventListener('change', (e) => {
+            document.querySelectorAll('.import-preview__checkbox').forEach(cb => {
+                cb.checked = e.target.checked;
+            });
+            updateImportButtonCount();
+        });
+
+        // Individual checkbox change
+        document.querySelectorAll('.import-preview__checkbox').forEach(cb => {
+            cb.addEventListener('change', updateImportButtonCount);
+        });
+
+        // Update button count
+        function updateImportButtonCount() {
+            const checkedCount = document.querySelectorAll('.import-preview__checkbox:checked').length;
+            const btn = document.getElementById('confirmImportBtn');
+            if (btn) {
+                btn.innerHTML = `<i data-lucide="download"></i> Import ${checkedCount} Event${checkedCount !== 1 ? 's' : ''}`;
+                btn.disabled = checkedCount === 0;
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }
+        }
+
+        // Confirm import
+        document.getElementById('confirmImportBtn')?.addEventListener('click', () => {
+            const memberId = document.getElementById('importMemberSelect')?.value || null;
+            const selectedIndexes = [];
+
+            document.querySelectorAll('.import-preview__checkbox:checked').forEach(cb => {
+                selectedIndexes.push(parseInt(cb.dataset.eventIndex));
+            });
+
+            if (selectedIndexes.length === 0) {
+                Toast.error('Please select at least one event to import');
+                return;
+            }
+
+            const selectedEvents = selectedIndexes.map(i => events[i]);
+            const count = Storage.importCalendarEvents(selectedEvents, memberId);
+
+            Modal.close();
+            render(container);
+            Toast.success(`Successfully imported ${count} event${count !== 1 ? 's' : ''}`);
+        });
+
+        document.querySelector('[data-modal-cancel]')?.addEventListener('click', () => {
+            Modal.close();
         });
     }
 

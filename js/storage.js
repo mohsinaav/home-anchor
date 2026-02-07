@@ -49,7 +49,7 @@ const Storage = (function() {
             { id: 'kid-tasks', name: 'My Tasks', description: 'Fun task list for kids', icon: 'check-square', default: false },
             { id: 'kid-workout', name: 'Move & Play', description: 'Fun workout activities for kids', icon: 'heart-pulse', default: false },
             { id: 'chores', name: 'Chores', description: 'Chore picker/assigner', icon: 'list-checks', default: false },
-            { id: 'accomplishments', name: 'Accomplishments', description: 'Extra achievements log', icon: 'trophy', default: false },
+            { id: 'memory-book', name: 'Memory Book', description: 'Capture special moments', icon: 'book-heart', default: false },
             { id: 'screen-time', name: 'Screen Time', description: 'Screen time tracker', icon: 'tv', default: false },
             { id: 'vision-board', name: 'Dreams', description: 'Track your dreams and goals', icon: 'sparkles', default: false },
             { id: 'kid-journal', name: 'My Journal', description: 'Write and reflect on your day', icon: 'book-open', default: false }
@@ -82,6 +82,16 @@ const Storage = (function() {
     // DEFAULT DATA STRUCTURE - Empty start
     // =========================================================================
 
+    // Activity categories for the Activity Monitor
+    const ACTIVITY_CATEGORIES = {
+        'points-rewards': { name: 'Points & Rewards', icon: 'trophy', color: '#F59E0B', widgets: ['points', 'rewards'] },
+        'tasks-chores': { name: 'Tasks & Chores', icon: 'check-square', color: '#10B981', widgets: ['task-list', 'kid-tasks', 'toddler-tasks', 'chores'] },
+        'habits-routines': { name: 'Habits & Routines', icon: 'repeat', color: '#8B5CF6', widgets: ['habits', 'routine', 'toddler-routine'] },
+        'daily-tracking': { name: 'Daily Tracking', icon: 'bar-chart-2', color: '#3B82F6', widgets: ['daily-log', 'screen-time', 'workout', 'kid-workout'] },
+        'journal-notes': { name: 'Journal & Notes', icon: 'book-open', color: '#EC4899', widgets: ['journal', 'kid-journal', 'gratitude'] },
+        'achievements': { name: 'Achievements', icon: 'award', color: '#EF4444', widgets: ['achievements', 'milestones'] }
+    };
+
     const getDefaultData = () => ({
         meta: {
             version: VERSION,
@@ -107,6 +117,9 @@ const Storage = (function() {
             voiceAssistant: {
                 enabled: true,
                 ttsEnabled: false
+            },
+            activityMonitor: {
+                retentionDays: 30
             }
         },
         // Only Home tab by default - no members
@@ -128,7 +141,9 @@ const Storage = (function() {
         // Schedules per member
         schedules: {},
         // Widget data per member
-        widgetData: {}
+        widgetData: {},
+        // Central activity log for Activity Monitor
+        activityLog: []
     });
 
     // =========================================================================
@@ -489,7 +504,7 @@ const Storage = (function() {
             'rewards': { rewards: [], redemptionHistory: [] },
             'achievements': { badges: [], unlocked: [] },
             'chores': { chores: [], assignments: {} },
-            'accomplishments': { entries: [] },
+            'memory-book': { items: [] },
             'screen-time': { limits: {}, log: {} },
             'activities': { suggestions: [], custom: [], log: {} },
             'daily-log': { entries: {} },
@@ -995,6 +1010,199 @@ const Storage = (function() {
     }
 
     // =========================================================================
+    // ACTIVITY MONITOR - Central Activity Logging
+    // =========================================================================
+
+    /**
+     * Log an activity event to the central activity log
+     * @param {Object} event - Activity event object
+     * @param {string} event.memberId - Member ID who performed the action
+     * @param {string} event.widgetId - Widget ID where action occurred
+     * @param {string} event.action - Action type (e.g., 'completed', 'earned', 'logged')
+     * @param {string} event.details - Human-readable description
+     * @param {Object} event.meta - Optional additional metadata
+     */
+    function logActivityEvent(event) {
+        const data = getAll();
+        const member = getMember(event.memberId);
+
+        if (!member) return null;
+
+        // Ensure activityLog array exists
+        if (!data.activityLog) {
+            data.activityLog = [];
+        }
+
+        // Determine category based on widget
+        const category = getCategoryForWidget(event.widgetId);
+
+        const newEvent = {
+            id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+            memberId: event.memberId,
+            memberName: member.name,
+            memberType: member.type,
+            widgetId: event.widgetId,
+            category: category,
+            action: event.action,
+            details: event.details,
+            meta: event.meta || {},
+            timestamp: new Date().toISOString()
+        };
+
+        data.activityLog.unshift(newEvent); // Add to beginning (newest first)
+
+        // Cleanup old events based on retention setting
+        const settings = getSettings();
+        const retentionDays = settings.activityMonitor?.retentionDays || 30;
+        const cutoffDate = new Date();
+        cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+
+        data.activityLog = data.activityLog.filter(evt => {
+            return new Date(evt.timestamp) > cutoffDate;
+        });
+
+        saveAll(data);
+        return newEvent;
+    }
+
+    /**
+     * Get category for a widget ID
+     */
+    function getCategoryForWidget(widgetId) {
+        for (const [categoryId, categoryData] of Object.entries(ACTIVITY_CATEGORIES)) {
+            if (categoryData.widgets.includes(widgetId)) {
+                return categoryId;
+            }
+        }
+        return 'other';
+    }
+
+    /**
+     * Get all activity log entries with optional filters
+     * @param {Object} filters - Optional filters
+     * @param {string} filters.memberId - Filter by member
+     * @param {string} filters.category - Filter by category
+     * @param {string} filters.widgetId - Filter by widget
+     * @param {string} filters.startDate - Filter from date (ISO string)
+     * @param {string} filters.endDate - Filter to date (ISO string)
+     * @param {number} filters.limit - Max number of results
+     */
+    function getActivityLog(filters = {}) {
+        const data = getAll();
+        let log = data.activityLog || [];
+
+        // Apply filters
+        if (filters.memberId) {
+            log = log.filter(e => e.memberId === filters.memberId);
+        }
+        if (filters.category) {
+            log = log.filter(e => e.category === filters.category);
+        }
+        if (filters.widgetId) {
+            log = log.filter(e => e.widgetId === filters.widgetId);
+        }
+        if (filters.startDate) {
+            const start = new Date(filters.startDate);
+            log = log.filter(e => new Date(e.timestamp) >= start);
+        }
+        if (filters.endDate) {
+            const end = new Date(filters.endDate);
+            end.setHours(23, 59, 59, 999);
+            log = log.filter(e => new Date(e.timestamp) <= end);
+        }
+        if (filters.limit) {
+            log = log.slice(0, filters.limit);
+        }
+
+        return log;
+    }
+
+    /**
+     * Get activity log grouped by date
+     */
+    function getActivityLogGroupedByDate(filters = {}) {
+        const log = getActivityLog(filters);
+        const grouped = {};
+
+        log.forEach(event => {
+            const dateKey = event.timestamp.split('T')[0];
+            if (!grouped[dateKey]) {
+                grouped[dateKey] = [];
+            }
+            grouped[dateKey].push(event);
+        });
+
+        return grouped;
+    }
+
+    /**
+     * Get activity statistics
+     */
+    function getActivityStats(filters = {}) {
+        const log = getActivityLog(filters);
+        const stats = {
+            total: log.length,
+            byMember: {},
+            byCategory: {},
+            byWidget: {},
+            today: 0,
+            thisWeek: 0
+        };
+
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        log.forEach(event => {
+            // By member
+            if (!stats.byMember[event.memberName]) {
+                stats.byMember[event.memberName] = 0;
+            }
+            stats.byMember[event.memberName]++;
+
+            // By category
+            if (!stats.byCategory[event.category]) {
+                stats.byCategory[event.category] = 0;
+            }
+            stats.byCategory[event.category]++;
+
+            // By widget
+            if (!stats.byWidget[event.widgetId]) {
+                stats.byWidget[event.widgetId] = 0;
+            }
+            stats.byWidget[event.widgetId]++;
+
+            // Today
+            if (event.timestamp.startsWith(today)) {
+                stats.today++;
+            }
+
+            // This week
+            if (new Date(event.timestamp) >= weekAgo) {
+                stats.thisWeek++;
+            }
+        });
+
+        return stats;
+    }
+
+    /**
+     * Clear activity log (admin function)
+     */
+    function clearActivityLog() {
+        const data = getAll();
+        data.activityLog = [];
+        saveAll(data);
+    }
+
+    /**
+     * Get activity categories configuration
+     */
+    function getActivityCategories() {
+        return ACTIVITY_CATEGORIES;
+    }
+
+    // =========================================================================
     // EXPORT / IMPORT / RESET
     // =========================================================================
 
@@ -1339,6 +1547,15 @@ const Storage = (function() {
         // Usage Tracking
         trackAction,
         generateUsageReport,
-        getWeekKey
+        getWeekKey,
+
+        // Activity Monitor
+        logActivityEvent,
+        getActivityLog,
+        getActivityLogGroupedByDate,
+        getActivityStats,
+        clearActivityLog,
+        getActivityCategories,
+        ACTIVITY_CATEGORIES
     };
 })();

@@ -81,6 +81,11 @@
     color: var(--gray-900);
 }
 
+.btn--danger-hover:hover:not(:disabled) {
+    background-color: var(--red-50);
+    color: var(--red-600);
+}
+
 .btn--danger {
     background-color: var(--error);
     color: var(--white);
@@ -1257,6 +1262,13 @@ textarea.form-input {
 .widget-card__control-btn--danger:hover {
     background-color: rgba(239, 68, 68, 0.1);
     color: var(--danger);
+}
+
+/* Always show widget controls on mobile since hover isn't available */
+@media (max-width: 768px) {
+    .widget-card__controls {
+        opacity: 1;
+    }
 }
 
 .widget-card__body {

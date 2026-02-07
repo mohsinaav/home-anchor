@@ -631,7 +631,7 @@ const KidTasks = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -793,7 +793,9 @@ const KidTasks = (function() {
                     <div class="kid-tasks-history__days">
                         ${sortedDates.map(date => {
                             const dayTasks = groupedByDate[date];
-                            const dateObj = new Date(date);
+                            // Parse date as local time (not UTC) to avoid off-by-one day issue
+                            const [year, month, day] = date.split('-').map(Number);
+                            const dateObj = new Date(year, month - 1, day);
                             const dayName = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
                             const dayNum = dateObj.getDate();
                             const monthShort = dateObj.toLocaleDateString('en-US', { month: 'short' });
@@ -898,7 +900,7 @@ const KidTasks = (function() {
                             <span class="kid-tasks-stats__comparison ${thisMonthCompleted >= lastMonthCompleted ? 'kid-tasks-stats__comparison--up' : 'kid-tasks-stats__comparison--down'}">
                                 ${isYoungKid
                                     ? (thisMonthCompleted >= lastMonthCompleted ? '📈 +' : '📉 ') + (thisMonthCompleted - lastMonthCompleted)
-                                    : `<i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'trending-down'}"></i> ${thisMonthCompleted >= lastMonthCompleted ? '+' : ''}${thisMonthCompleted - lastMonthCompleted}`
+                                    : `<i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'arrow-down'}"></i> ${thisMonthCompleted >= lastMonthCompleted ? '+' : ''}${thisMonthCompleted - lastMonthCompleted}`
                                 } vs last month
                             </span>
                         ` : ''}

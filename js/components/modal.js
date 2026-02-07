@@ -62,6 +62,7 @@ const Modal = (function() {
             title = 'Modal',
             content = '',
             footer = null,
+            buttons = null, // Array of { text, variant, onClick }
             onConfirm = null,
             onCancel = null,
             size = 'default', // 'small', 'default', 'large'
@@ -87,9 +88,26 @@ const Modal = (function() {
             }
         }
 
-        // Set footer
+        // Set footer - support both footer string/element and buttons array
         if (footerEl) {
-            if (footer === null) {
+            if (buttons && Array.isArray(buttons) && buttons.length > 0) {
+                // Create buttons from array
+                footerEl.style.display = 'flex';
+                footerEl.innerHTML = '';
+                buttons.forEach(btn => {
+                    const buttonEl = document.createElement('button');
+                    buttonEl.className = `btn btn--${btn.variant || 'secondary'}`;
+                    buttonEl.textContent = btn.text || 'Button';
+                    buttonEl.addEventListener('click', () => {
+                        if (btn.onClick) {
+                            btn.onClick(close);
+                        } else {
+                            close();
+                        }
+                    });
+                    footerEl.appendChild(buttonEl);
+                });
+            } else if (footer === null) {
                 footerEl.style.display = 'none';
             } else if (typeof footer === 'string') {
                 footerEl.style.display = 'flex';
@@ -99,6 +117,11 @@ const Modal = (function() {
                 footerEl.innerHTML = '';
                 footerEl.appendChild(footer);
             }
+
+            // Auto-bind cancel buttons with data-modal-cancel attribute
+            footerEl.querySelectorAll('[data-modal-cancel]').forEach(btn => {
+                btn.addEventListener('click', close);
+            });
         }
 
         // Show/hide close button

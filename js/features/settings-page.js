@@ -153,19 +153,6 @@ const SettingsPage = (function() {
                             </div>
                         </button>
                         <div class="settings-category__body">
-                            <!-- Points Configuration -->
-                            <section class="settings-section" id="pointsConfigSettings">
-                                <div class="settings-section__header">
-                                    <h3 class="settings-section__title">
-                                        <i data-lucide="star"></i>
-                                        Points Configuration
-                                    </h3>
-                                </div>
-                                <div class="settings-section__content">
-                                    ${renderPointsConfigSettings(settings)}
-                                </div>
-                            </section>
-
                             <!-- Meal Planning -->
                             <section class="settings-section" id="mealSettings">
                                 <div class="settings-section__header">
@@ -659,53 +646,6 @@ const SettingsPage = (function() {
         `;
     }
 
-    function renderPointsConfigSettings(settings) {
-        const pointsConfig = settings.pointsConfig || {};
-        const journalPoints = pointsConfig.journalPoints !== undefined ? pointsConfig.journalPoints : 5;
-        const kidTaskPoints = pointsConfig.kidTaskPoints !== undefined ? pointsConfig.kidTaskPoints : 3;
-        const teenTaskPoints = pointsConfig.teenTaskPoints !== undefined ? pointsConfig.teenTaskPoints : 5;
-
-        return `
-            <div class="points-config-settings">
-                <div class="setting-info" style="margin-bottom: var(--space-4);">
-                    <i data-lucide="info"></i>
-                    <p>Configure how many points are awarded for completing various activities. These points are automatically added to kids' and teens' point balances.</p>
-                </div>
-
-                <div class="setting-group">
-                    <div class="setting-row">
-                        <div class="setting-row__info">
-                            <label class="setting-label">Journal Entry Points</label>
-                            <p class="setting-description">Points awarded when adults complete a journal entry (for tracking their own points).</p>
-                        </div>
-                        <input type="number" class="form-input form-input--sm" id="journalPointsInput" value="${journalPoints}" min="0" max="50" style="width: 80px;">
-                    </div>
-
-                    <div class="setting-row">
-                        <div class="setting-row__info">
-                            <label class="setting-label">Kid Task Points</label>
-                            <p class="setting-description">Default points awarded when kids complete a task from their task list.</p>
-                        </div>
-                        <input type="number" class="form-input form-input--sm" id="kidTaskPointsInput" value="${kidTaskPoints}" min="0" max="50" style="width: 80px;">
-                    </div>
-
-                    <div class="setting-row">
-                        <div class="setting-row__info">
-                            <label class="setting-label">Teen Task Points</label>
-                            <p class="setting-description">Default points awarded when teens complete a task from their task list.</p>
-                        </div>
-                        <input type="number" class="form-input form-input--sm" id="teenTaskPointsInput" value="${teenTaskPoints}" min="0" max="50" style="width: 80px;">
-                    </div>
-                </div>
-
-                <button class="btn btn--primary" id="savePointsConfigBtn" style="margin-top: var(--space-4);">
-                    <i data-lucide="save"></i>
-                    Save Points Configuration
-                </button>
-            </div>
-        `;
-    }
-
     // =========================================================================
     // KIDS & TODDLERS MANAGEMENT SECTION
     // =========================================================================
@@ -734,7 +674,7 @@ const SettingsPage = (function() {
 
         // Reset tab if switching between kid/toddler and current tab doesn't apply
         const kidTabs = ['points', 'chores', 'screen-time', 'rewards'];
-        const toddlerTabs = ['routine', 'milestones', 'daily-log'];
+        const toddlerTabs = ['routine', 'activities', 'milestones', 'growth'];
 
         if (isToddler && kidTabs.includes(kidsManagementTab)) {
             kidsManagementTab = 'routine';
@@ -759,6 +699,10 @@ const SettingsPage = (function() {
                 <i data-lucide="gift"></i>
                 Rewards
             </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'move-play' ? 'kids-management__tab--active' : ''}" data-kids-tab="move-play">
+                <i data-lucide="activity"></i>
+                Move & Play
+            </button>
         `;
 
         const renderToddlerTabs = () => `
@@ -766,18 +710,22 @@ const SettingsPage = (function() {
                 <i data-lucide="clock"></i>
                 Routine
             </button>
+            <button class="kids-management__tab ${kidsManagementTab === 'activities' ? 'kids-management__tab--active' : ''}" data-kids-tab="activities">
+                <i data-lucide="shapes"></i>
+                Activities
+            </button>
             <button class="kids-management__tab ${kidsManagementTab === 'milestones' ? 'kids-management__tab--active' : ''}" data-kids-tab="milestones">
                 <i data-lucide="award"></i>
                 Milestones
             </button>
-            <button class="kids-management__tab ${kidsManagementTab === 'daily-log' ? 'kids-management__tab--active' : ''}" data-kids-tab="daily-log">
-                <i data-lucide="book-open"></i>
-                Daily Log
+            <button class="kids-management__tab ${kidsManagementTab === 'growth' ? 'kids-management__tab--active' : ''}" data-kids-tab="growth">
+                <i data-lucide="ruler"></i>
+                Growth
             </button>
         `;
 
         const dangerZoneText = isToddler
-            ? `Reset all progress for ${selectedMember?.name || 'this toddler'}. This clears routine history, milestones, and daily logs.`
+            ? `Reset all progress for ${selectedMember?.name || 'this toddler'}. This clears routine history, activities, and milestones.`
             : `Reset all progress for ${selectedMember?.name || 'this child'}. This clears points, chores history, screen time log, and achievements.`;
 
         return `
@@ -844,13 +792,17 @@ const SettingsPage = (function() {
                 return renderKidsScreenTimeTab(memberId);
             case 'rewards':
                 return renderKidsRewardsTab(memberId);
+            case 'move-play':
+                return renderKidsMovePlayTab(memberId);
             // Toddler tabs
             case 'routine':
                 return renderToddlerRoutineTab(memberId);
+            case 'activities':
+                return renderToddlerActivitiesTab(memberId);
             case 'milestones':
                 return renderToddlerMilestonesTab(memberId);
-            case 'daily-log':
-                return renderToddlerDailyLogTab(memberId);
+            case 'growth':
+                return renderToddlerGrowthTab(memberId);
             default:
                 return isToddler ? renderToddlerRoutineTab(memberId) : renderKidsPointsTab(memberId);
         }
@@ -860,8 +812,19 @@ const SettingsPage = (function() {
      * Render Points Management Tab
      */
     function renderKidsPointsTab(memberId) {
-        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0 };
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { balance: 0, activities: [] };
         const balance = pointsData.balance || 0;
+        const activities = pointsData.activities || [];
+
+        // Category labels - must match points.js ACTIVITY_CATEGORIES
+        const CATEGORY_LABELS = {
+            'hygiene': { name: 'Hygiene', color: '#3B82F6' },
+            'chores': { name: 'Chores', color: '#10B981' },
+            'school': { name: 'School', color: '#8B5CF6' },
+            'health': { name: 'Health', color: '#EF4444' },
+            'kindness': { name: 'Kindness', color: '#EC4899' },
+            'custom': { name: 'Other', color: '#F59E0B' }
+        };
 
         return `
             <div class="kids-tab-content kids-tab-content--points">
@@ -897,6 +860,69 @@ const SettingsPage = (function() {
                             </button>
                         </div>
                     </div>
+                </div>
+
+                <!-- Activities List -->
+                <div class="kids-points-activities">
+                    <div class="kids-points-activities__header">
+                        <h4>Point Activities (${activities.length})</h4>
+                        <button class="btn btn--primary btn--sm" id="kidsAddPointActivityBtn">
+                            <i data-lucide="plus"></i> Add Activity
+                        </button>
+                    </div>
+                    ${activities.length === 0 ? `
+                        <p class="kids-points-activities__empty">No activities yet. Add activities that can earn points!</p>
+                    ` : `
+                        <div class="kids-points-activities__grid">
+                            ${activities.map(activity => {
+                                const catInfo = CATEGORY_LABELS[activity.category] || { name: 'Other', color: '#6B7280' };
+                                return `
+                                    <div class="kids-points-activity-item" data-activity-id="${activity.id}" style="--activity-color: ${catInfo.color}">
+                                        <div class="kids-points-activity-item__icon">
+                                            ${activity.emoji ? `<span class="activity-emoji">${activity.emoji}</span>` : `<i data-lucide="${activity.icon || 'star'}"></i>`}
+                                        </div>
+                                        <div class="kids-points-activity-item__info">
+                                            <span class="kids-points-activity-item__name">${activity.name}</span>
+                                            <span class="kids-points-activity-item__meta">
+                                                <i data-lucide="star"></i> ${activity.points} pts · ${catInfo.name}
+                                            </span>
+                                        </div>
+                                        <div class="kids-points-activity-item__actions">
+                                            <button class="btn btn--ghost btn--sm" data-edit-point-activity="${activity.id}" title="Edit">
+                                                <i data-lucide="pencil"></i>
+                                            </button>
+                                            <button class="btn btn--ghost btn--sm btn--danger-hover" data-delete-point-activity="${activity.id}" title="Delete">
+                                                <i data-lucide="trash-2"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `}
+                </div>
+
+                <!-- Default Points Configuration -->
+                <div class="kids-points-config">
+                    <h4><i data-lucide="settings"></i> Default Points Settings</h4>
+                    <p class="kids-points-config__description">Configure default points awarded for completing tasks (applies to all kids).</p>
+                    <div class="kids-points-config__grid">
+                        <div class="kids-points-config__item">
+                            <label class="form-label">Kid Task Points</label>
+                            <input type="number" class="form-input form-input--sm" id="kidTaskPointsInput" value="${Storage.getSettings().pointsConfig?.kidTaskPoints || 3}" min="0" max="50">
+                        </div>
+                        <div class="kids-points-config__item">
+                            <label class="form-label">Teen Task Points</label>
+                            <input type="number" class="form-input form-input--sm" id="teenTaskPointsInput" value="${Storage.getSettings().pointsConfig?.teenTaskPoints || 5}" min="0" max="50">
+                        </div>
+                        <div class="kids-points-config__item">
+                            <label class="form-label">Journal Entry Points</label>
+                            <input type="number" class="form-input form-input--sm" id="journalPointsInput" value="${Storage.getSettings().pointsConfig?.journalPoints || 5}" min="0" max="50">
+                        </div>
+                    </div>
+                    <button class="btn btn--primary btn--sm" id="savePointsConfigBtn" style="margin-top: var(--space-3);">
+                        <i data-lucide="save"></i> Save Settings
+                    </button>
                 </div>
             </div>
         `;
@@ -935,11 +961,11 @@ const SettingsPage = (function() {
                     ${pool.length === 0 ? `
                         <p class="kids-chores-pool__empty">No chores in pool yet. Add some chores to get started!</p>
                     ` : `
-                        <div class="kids-chores-pool__list">
+                        <div class="kids-chores-grid">
                             ${pool.map(chore => `
-                                <div class="kids-chore-item" data-chore-id="${chore.id}">
-                                    <div class="kids-chore-item__icon">
-                                        <i data-lucide="${chore.icon || 'check-square'}"></i>
+                                <div class="kids-chore-item" data-chore-id="${chore.id}" style="--chore-color: ${chore.color || '#10B981'}">
+                                    <div class="kids-chore-item__icon" style="background-color: ${chore.color || '#10B981'}">
+                                        ${chore.emoji ? `<span class="chore-emoji">${chore.emoji}</span>` : `<i data-lucide="${chore.icon || 'check-square'}"></i>`}
                                     </div>
                                     <div class="kids-chore-item__info">
                                         <span class="kids-chore-item__name">${chore.name}</span>
@@ -1059,7 +1085,7 @@ const SettingsPage = (function() {
                             ${rewards.map(reward => `
                                 <div class="kids-reward-item" data-reward-id="${reward.id}" style="--reward-color: ${reward.color || '#3B82F6'}">
                                     <div class="kids-reward-item__icon" style="background-color: ${reward.color || '#3B82F6'}">
-                                        <i data-lucide="${reward.icon || 'gift'}"></i>
+                                        ${reward.emoji ? `<span class="reward-emoji">${reward.emoji}</span>` : `<i data-lucide="${reward.icon || 'gift'}"></i>`}
                                     </div>
                                     <div class="kids-reward-item__info">
                                         <span class="kids-reward-item__name">${reward.name}</span>
@@ -1085,11 +1111,157 @@ const SettingsPage = (function() {
     }
 
     /**
+     * Render Move & Play Management Tab
+     */
+    function renderKidsMovePlayTab(memberId) {
+        // Use KidWorkout module to get data
+        const workoutData = typeof KidWorkout !== 'undefined'
+            ? KidWorkout.getWidgetData(memberId)
+            : Storage.getWidgetData(memberId, 'kid-workout') || { activities: [], settings: { weeklyGoal: 5 } };
+
+        const activities = workoutData.activities || [];
+        const weeklyGoal = workoutData.settings?.weeklyGoal || 5;
+
+        // Activity emojis mapping
+        const ACTIVITY_EMOJIS = typeof KidWorkout !== 'undefined' ? KidWorkout.ACTIVITY_EMOJIS : {
+            'swimming': '🏊', 'bike-ride': '🚴', 'soccer': '⚽', 'dance': '💃',
+            'jump-rope': '🪢', 'playground': '🛝', 'tag': '🏃', 'basketball': '🏀',
+            'stretching': '🧘', 'yoga': '🧘', 'hiking': '🥾', 'skating': '⛸️'
+        };
+
+        // Category colors
+        const CATEGORY_COLORS = {
+            'active': '#F59E0B',
+            'sports': '#3B82F6',
+            'outdoor': '#10B981',
+            'dance': '#EC4899',
+            'custom': '#8B5CF6'
+        };
+
+        return `
+            <div class="kids-tab-content kids-tab-content--move-play">
+                <!-- Settings -->
+                <div class="kids-move-play-config">
+                    <div class="setting-row">
+                        <div class="setting-row__label">
+                            <span class="setting-row__title">Weekly Goal</span>
+                            <span class="setting-row__hint">How many days per week to be active</span>
+                        </div>
+                        <div class="setting-row__control">
+                            <input type="range" class="form-range" id="kidsMovePlayWeeklyGoal"
+                                min="1" max="7" value="${weeklyGoal}">
+                            <span class="form-range__value">${weeklyGoal} days</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activities List -->
+                <div class="kids-move-play-list">
+                    <div class="kids-move-play-list__header">
+                        <h4>Activities (${activities.length})</h4>
+                        <button class="btn btn--primary btn--sm" id="kidsAddMovePlayBtn">
+                            <i data-lucide="plus"></i> Add Activity
+                        </button>
+                    </div>
+                    ${activities.length === 0 ? `
+                        <p class="kids-move-play-list__empty">No activities yet. Add some fun activities to track!</p>
+                    ` : `
+                        <div class="kids-move-play-grid">
+                            ${activities.map(activity => {
+                                const emoji = activity.emoji || ACTIVITY_EMOJIS[activity.id] || '🏃';
+                                const color = CATEGORY_COLORS[activity.category] || '#8B5CF6';
+                                return `
+                                    <div class="kids-move-play-item" data-activity-id="${activity.id}" style="--activity-color: ${color}">
+                                        <div class="kids-move-play-item__icon">
+                                            <span class="kids-move-play-item__emoji">${emoji}</span>
+                                        </div>
+                                        <div class="kids-move-play-item__info">
+                                            <span class="kids-move-play-item__name">${activity.name}</span>
+                                            <span class="kids-move-play-item__meta">
+                                                ${activity.duration}m · ${activity.points} pts
+                                            </span>
+                                        </div>
+                                        <div class="kids-move-play-item__actions">
+                                            <button class="btn btn--ghost btn--sm" data-edit-move-play="${activity.id}" title="Edit">
+                                                <i data-lucide="pencil"></i>
+                                            </button>
+                                            <button class="btn btn--ghost btn--sm btn--danger-hover" data-delete-move-play="${activity.id}" title="Delete">
+                                                <i data-lucide="trash-2"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                    `}
+                </div>
+
+                <!-- Actions -->
+                <div class="kids-move-play-actions">
+                    <button class="btn btn--secondary btn--sm" id="kidsResetMovePlayBtn">
+                        <i data-lucide="rotate-ccw"></i> Reset to Defaults
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
      * Render Toddler Routine Tab
      */
     function renderToddlerRoutineTab(memberId) {
         const routineData = Storage.getWidgetData(memberId, 'toddler-routine') || { routines: [] };
         const routines = routineData.routines || [];
+
+        // Emoji mapping for routine imageKeys and common titles
+        const ROUTINE_EMOJIS = {
+            'wake-up': '🌅',
+            'brush-teeth': '🦷',
+            'brush-teeth-night': '🦷',
+            'get-dressed': '👕',
+            'breakfast': '🥣',
+            'wash-hands': '🧼',
+            'lunch': '🍽️',
+            'nap-time': '😴',
+            'snack': '🍎',
+            'dinner': '🍝',
+            'bath-time': '🛁',
+            'pajamas': '👶',
+            'story-time': '📖',
+            'bedtime': '🌙',
+            'potty': '🚽',
+            'eye-patching': '👁️',
+            'independent-play': '🧸'
+        };
+
+        // Get emoji for routine
+        const getRoutineEmoji = (routine) => {
+            // Check imageKey first
+            if (routine.imageKey && ROUTINE_EMOJIS[routine.imageKey]) {
+                return ROUTINE_EMOJIS[routine.imageKey];
+            }
+            // Check emoji property
+            if (routine.emoji) {
+                return routine.emoji;
+            }
+            // Fallback based on title
+            const title = (routine.title || routine.name || '').toLowerCase();
+            for (const [key, emoji] of Object.entries(ROUTINE_EMOJIS)) {
+                if (title.includes(key.replace(/-/g, ' ')) || title.includes(key.replace(/-/g, ''))) {
+                    return emoji;
+                }
+            }
+            return '⏰'; // Default emoji
+        };
+
+        // Category colors
+        const CATEGORY_COLORS = {
+            'morning': '#F59E0B',
+            'afternoon': '#3B82F6',
+            'evening': '#8B5CF6',
+            'bedtime': '#6366F1',
+            'anytime': '#10B981'
+        };
 
         return `
             <div class="kids-tab-content kids-tab-content--routine">
@@ -1104,13 +1276,16 @@ const SettingsPage = (function() {
                         <p class="toddler-empty-message">No routines set up yet. Add daily routines like meals, naps, and activities!</p>
                     ` : `
                         <div class="toddler-routine-list">
-                            ${routines.map(routine => `
+                            ${routines.map(routine => {
+                                const emoji = getRoutineEmoji(routine);
+                                const color = CATEGORY_COLORS[routine.category] || routine.color || '#6366F1';
+                                return `
                                 <div class="toddler-routine-item" data-routine-id="${routine.id}">
-                                    <div class="toddler-routine-item__icon" style="background-color: ${routine.color || '#6366F1'}">
-                                        <i data-lucide="${routine.icon || 'clock'}"></i>
+                                    <div class="toddler-routine-item__icon" style="background-color: ${color}">
+                                        <span class="routine-emoji">${emoji}</span>
                                     </div>
                                     <div class="toddler-routine-item__info">
-                                        <span class="toddler-routine-item__name">${routine.name}</span>
+                                        <span class="toddler-routine-item__name">${routine.title || routine.name || 'Untitled'}</span>
                                         <span class="toddler-routine-item__time">${routine.time || 'No time set'}</span>
                                     </div>
                                     <div class="toddler-routine-item__actions">
@@ -1122,7 +1297,7 @@ const SettingsPage = (function() {
                                         </button>
                                     </div>
                                 </div>
-                            `).join('')}
+                            `;}).join('')}
                         </div>
                     `}
                 </div>
@@ -1136,37 +1311,106 @@ const SettingsPage = (function() {
     }
 
     /**
+     * Render Toddler Activities Tab
+     */
+    function renderToddlerActivitiesTab(memberId) {
+        const activitiesData = Storage.getWidgetData(memberId, 'activities') || {};
+        const customActivities = activitiesData.customActivities || {};
+
+        // Default categories
+        const categories = {
+            sensory: { name: 'Sensory Play', icon: 'hand', color: '#EC4899' },
+            motor: { name: 'Motor Skills', icon: 'move', color: '#8B5CF6' },
+            creative: { name: 'Creative', icon: 'palette', color: '#10B981' },
+            learning: { name: 'Learning', icon: 'book-open', color: '#F59E0B' },
+            outdoor: { name: 'Outdoor', icon: 'sun', color: '#3B82F6' }
+        };
+
+        const totalCustom = Object.values(customActivities).reduce((sum, arr) => sum + (arr?.length || 0), 0);
+
+        return `
+            <div class="kids-tab-content kids-tab-content--activities">
+                <div class="toddler-activities-settings">
+                    <div class="toddler-activities-header">
+                        <h4>Activity Suggestions (${totalCustom} custom)</h4>
+                        <button class="btn btn--primary btn--sm" id="toddlerAddActivityBtn">
+                            <i data-lucide="plus"></i> Add Activity
+                        </button>
+                    </div>
+                    <p class="setting-description">Add custom activities to each category. These will appear in daily suggestions.</p>
+
+                    <div class="toddler-activities-categories">
+                        ${Object.entries(categories).map(([key, cat]) => {
+                            const customs = customActivities[key] || [];
+                            return `
+                                <div class="toddler-activity-category" data-category="${key}">
+                                    <div class="toddler-activity-category__header" style="--cat-color: ${cat.color}">
+                                        <i data-lucide="${cat.icon}"></i>
+                                        <span>${cat.name}</span>
+                                        <span class="toddler-activity-category__count">${customs.length} custom</span>
+                                    </div>
+                                    ${customs.length > 0 ? `
+                                        <div class="toddler-activity-category__list">
+                                            ${customs.map((activity, idx) => `
+                                                <div class="toddler-activity-item">
+                                                    <span class="toddler-activity-item__name">${activity}</span>
+                                                    <button class="btn btn--ghost btn--sm" data-delete-activity="${key}:${idx}" title="Remove">
+                                                        <i data-lucide="x"></i>
+                                                    </button>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div class="toddler-activities-actions">
+                        <button class="btn btn--ghost btn--sm" id="toddlerResetActivitiesBtn">
+                            <i data-lucide="refresh-cw"></i> Reset to Defaults
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /**
      * Render Toddler Milestones Tab
      */
     function renderToddlerMilestonesTab(memberId) {
         const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
         const milestones = milestonesData.milestones || [];
-        const achievedCount = milestones.filter(m => m.achieved).length;
 
         return `
             <div class="kids-tab-content kids-tab-content--milestones">
                 <div class="toddler-milestones-settings">
                     <div class="toddler-milestones-header">
-                        <h4>Milestones (${achievedCount}/${milestones.length} achieved)</h4>
+                        <h4>Milestones to Track (${milestones.length})</h4>
                         <button class="btn btn--primary btn--sm" id="toddlerAddMilestoneBtn">
                             <i data-lucide="plus"></i> Add Milestone
                         </button>
                     </div>
+                    <p class="setting-description">Define developmental milestones to track. Mark them as achieved in the widget.</p>
                     ${milestones.length === 0 ? `
-                        <p class="toddler-empty-message">No milestones tracked yet. Add developmental milestones to celebrate!</p>
+                        <p class="toddler-empty-message">No milestones set up yet. Add developmental milestones to track!</p>
                     ` : `
                         <div class="toddler-milestones-list">
                             ${milestones.map(milestone => `
-                                <div class="toddler-milestone-item ${milestone.achieved ? 'toddler-milestone-item--achieved' : ''}" data-milestone-id="${milestone.id}">
-                                    <div class="toddler-milestone-item__check">
-                                        <input type="checkbox" ${milestone.achieved ? 'checked' : ''} data-toggle-milestone="${milestone.id}">
+                                <div class="toddler-milestone-item" data-milestone-id="${milestone.id}">
+                                    <div class="toddler-milestone-item__icon">
+                                        <i data-lucide="${milestone.achieved ? 'check-circle' : 'circle'}"></i>
                                     </div>
                                     <div class="toddler-milestone-item__info">
                                         <span class="toddler-milestone-item__name">${milestone.name}</span>
-                                        ${milestone.achievedDate ? `<span class="toddler-milestone-item__date">Achieved: ${milestone.achievedDate}</span>` : ''}
+                                        ${milestone.category ? `<span class="toddler-milestone-item__category">${milestone.category}</span>` : ''}
                                     </div>
                                     <div class="toddler-milestone-item__actions">
-                                        <button class="btn btn--ghost btn--sm" data-delete-milestone="${milestone.id}">
+                                        <button class="btn btn--ghost btn--sm" data-edit-milestone="${milestone.id}" title="Edit">
+                                            <i data-lucide="pencil"></i>
+                                        </button>
+                                        <button class="btn btn--ghost btn--sm" data-delete-milestone="${milestone.id}" title="Delete">
                                             <i data-lucide="trash-2"></i>
                                         </button>
                                     </div>
@@ -1180,68 +1424,60 @@ const SettingsPage = (function() {
     }
 
     /**
-     * Render Toddler Daily Log Tab
+     * Render Toddler Growth Tab
      */
-    function renderToddlerDailyLogTab(memberId) {
-        const logData = Storage.getWidgetData(memberId, 'daily-log') || { entries: [] };
-        const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
-        const todayEntry = logData.entries?.find(e => e.date === today) || {};
+    function renderToddlerGrowthTab(memberId) {
+        const DEFAULT_FIELDS = [
+            { id: 'height', name: 'Height', unit: { metric: 'cm', imperial: 'in' }, color: '#6366F1' },
+            { id: 'weight', name: 'Weight', unit: { metric: 'kg', imperial: 'lbs' }, color: '#22C55E' },
+            { id: 'head', name: 'Head Circumference', unit: { metric: 'cm', imperial: 'in' }, color: '#F59E0B' }
+        ];
+
+        const growthData = Storage.getWidgetData(memberId, 'growth-chart') || {};
+        const fields = growthData.fields || DEFAULT_FIELDS;
+        const customCount = fields.filter(f => !DEFAULT_FIELDS.some(d => d.id === f.id)).length;
 
         return `
-            <div class="kids-tab-content kids-tab-content--daily-log">
-                <div class="toddler-daily-log-settings">
-                    <h4>Today's Log</h4>
-
-                    <div class="toddler-log-section">
-                        <label class="form-label">
-                            <i data-lucide="moon"></i> Sleep
-                        </label>
-                        <div class="toddler-log-row">
-                            <input type="text" class="form-input" id="toddlerSleepLog"
-                                   placeholder="e.g., 8pm-6am, nap 1-3pm"
-                                   value="${todayEntry.sleep || ''}">
-                        </div>
-                    </div>
-
-                    <div class="toddler-log-section">
-                        <label class="form-label">
-                            <i data-lucide="utensils"></i> Meals
-                        </label>
-                        <div class="toddler-log-row">
-                            <textarea class="form-input" id="toddlerMealsLog" rows="2"
-                                      placeholder="e.g., Breakfast: oatmeal, Lunch: pasta...">${todayEntry.meals || ''}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="toddler-log-section">
-                        <label class="form-label">
-                            <i data-lucide="smile"></i> Mood
-                        </label>
-                        <div class="toddler-mood-selector">
-                            ${['😊', '😐', '😢', '😴', '🤒'].map(mood => `
-                                <button type="button" class="toddler-mood-btn ${todayEntry.mood === mood ? 'toddler-mood-btn--active' : ''}" data-mood="${mood}">
-                                    ${mood}
-                                </button>
-                            `).join('')}
-                        </div>
-                    </div>
-
-                    <div class="toddler-log-section">
-                        <label class="form-label">
-                            <i data-lucide="file-text"></i> Notes
-                        </label>
-                        <div class="toddler-log-row">
-                            <textarea class="form-input" id="toddlerNotesLog" rows="3"
-                                      placeholder="Any notes about the day...">${todayEntry.notes || ''}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="toddler-log-actions">
-                        <button class="btn btn--primary" id="toddlerSaveLogBtn">
-                            <i data-lucide="save"></i> Save Today's Log
+            <div class="kids-tab-content kids-tab-content--growth">
+                <div class="toddler-growth-settings">
+                    <div class="toddler-growth-header">
+                        <h4>Measurement Fields (${fields.length})</h4>
+                        <button class="btn btn--primary btn--sm" id="toddlerAddFieldBtn">
+                            <i data-lucide="plus"></i> Add Field
                         </button>
-                        <button class="btn btn--ghost" id="toddlerClearLogBtn">
-                            <i data-lucide="trash-2"></i> Clear All Logs
+                    </div>
+                    <p class="setting-description">Configure what measurements to track. Default fields cannot be removed. ${customCount > 0 ? `(${customCount} custom)` : ''}</p>
+
+                    <div class="toddler-growth-fields">
+                        ${fields.map((field, idx) => {
+                            const isDefault = DEFAULT_FIELDS.some(d => d.id === field.id);
+                            return `
+                                <div class="toddler-growth-field" data-field-id="${field.id}">
+                                    <div class="toddler-growth-field__color" style="background-color: ${field.color}"></div>
+                                    <div class="toddler-growth-field__info">
+                                        <span class="toddler-growth-field__name">${field.name}</span>
+                                        <span class="toddler-growth-field__unit">${field.unit.metric} / ${field.unit.imperial}</span>
+                                    </div>
+                                    <div class="toddler-growth-field__actions">
+                                        ${!isDefault ? `
+                                            <button class="btn btn--ghost btn--sm" data-edit-field="${idx}" title="Edit">
+                                                <i data-lucide="pencil"></i>
+                                            </button>
+                                            <button class="btn btn--ghost btn--sm" data-delete-field="${idx}" title="Delete">
+                                                <i data-lucide="trash-2"></i>
+                                            </button>
+                                        ` : `
+                                            <span class="toddler-growth-field__badge">Default</span>
+                                        `}
+                                    </div>
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+
+                    <div class="toddler-growth-actions">
+                        <button class="btn btn--ghost btn--sm" id="toddlerResetFieldsBtn">
+                            <i data-lucide="refresh-cw"></i> Reset to Defaults
                         </button>
                     </div>
                 </div>
@@ -1302,6 +1538,29 @@ const SettingsPage = (function() {
             } else {
                 Toast.error('Please enter a valid amount');
             }
+        });
+
+        // Points - Add activity button
+        container.querySelector('#kidsAddPointActivityBtn')?.addEventListener('click', () => {
+            showAddPointActivityModal(selectedKidId, container);
+        });
+
+        // Points - Edit activity buttons
+        container.querySelectorAll('[data-edit-point-activity]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditPointActivityModal(selectedKidId, btn.dataset.editPointActivity, container);
+            });
+        });
+
+        // Points - Delete activity buttons
+        container.querySelectorAll('[data-delete-point-activity]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this activity?', 'Delete Activity');
+                if (confirmed) {
+                    deletePointActivity(selectedKidId, btn.dataset.deletePointActivity);
+                    refreshKidsManagementSection(container);
+                }
+            });
         });
 
         // Chores per day slider
@@ -1439,6 +1698,57 @@ const SettingsPage = (function() {
             });
         });
 
+        // Move & Play - Add activity button
+        container.querySelector('#kidsAddMovePlayBtn')?.addEventListener('click', () => {
+            showAddMovePlayActivityModal(selectedKidId, container);
+        });
+
+        // Move & Play - Edit activity buttons
+        container.querySelectorAll('[data-edit-move-play]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditMovePlayActivityModal(selectedKidId, btn.dataset.editMovePlay, container);
+            });
+        });
+
+        // Move & Play - Delete activity buttons
+        container.querySelectorAll('[data-delete-move-play]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Are you sure you want to delete this activity?', 'Delete Activity');
+                if (confirmed) {
+                    deleteMovePlayActivity(selectedKidId, btn.dataset.deleteMovePlay);
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Move & Play - Weekly goal slider
+        container.querySelector('#kidsMovePlayWeeklyGoal')?.addEventListener('input', (e) => {
+            const value = parseInt(e.target.value);
+            const display = e.target.nextElementSibling;
+            if (display) display.textContent = `${value} days`;
+        });
+
+        container.querySelector('#kidsMovePlayWeeklyGoal')?.addEventListener('change', (e) => {
+            const value = parseInt(e.target.value);
+            const workoutData = Storage.getWidgetData(selectedKidId, 'kid-workout') || { settings: {} };
+            workoutData.settings = workoutData.settings || {};
+            workoutData.settings.weeklyGoal = value;
+            Storage.setWidgetData(selectedKidId, 'kid-workout', workoutData);
+            Toast.success('Weekly goal updated');
+        });
+
+        // Move & Play - Reset to defaults
+        container.querySelector('#kidsResetMovePlayBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.confirm(
+                'This will reset all activities to the default set. Custom activities will be removed.',
+                'Reset Activities'
+            );
+            if (confirmed) {
+                resetMovePlayToDefaults(selectedKidId);
+                refreshKidsManagementSection(container);
+            }
+        });
+
         // Reset all progress
         container.querySelector('#resetKidProgressBtn')?.addEventListener('click', async () => {
             const member = Storage.getMember(selectedKidId);
@@ -1496,11 +1806,10 @@ const SettingsPage = (function() {
             showAddToddlerMilestoneModal(selectedKidId, container);
         });
 
-        // Toggle milestone checkboxes
-        container.querySelectorAll('[data-toggle-milestone]').forEach(checkbox => {
-            checkbox.addEventListener('change', () => {
-                toggleToddlerMilestone(selectedKidId, checkbox.dataset.toggleMilestone, checkbox.checked);
-                refreshKidsManagementSection(container);
+        // Edit milestone buttons
+        container.querySelectorAll('[data-edit-milestone]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditToddlerMilestoneModal(selectedKidId, btn.dataset.editMilestone, container);
             });
         });
 
@@ -1515,49 +1824,71 @@ const SettingsPage = (function() {
             });
         });
 
-        // Mood selector buttons
-        container.querySelectorAll('.toddler-mood-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                // Remove active from all mood buttons
-                container.querySelectorAll('.toddler-mood-btn').forEach(b => b.classList.remove('toddler-mood-btn--active'));
-                btn.classList.add('toddler-mood-btn--active');
+        // === ACTIVITIES TAB EVENTS ===
+
+        // Add activity button
+        container.querySelector('#toddlerAddActivityBtn')?.addEventListener('click', () => {
+            showAddToddlerActivityModal(selectedKidId, container);
+        });
+
+        // Delete activity buttons
+        container.querySelectorAll('[data-delete-activity]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const [category, indexStr] = btn.dataset.deleteActivity.split(':');
+                const index = parseInt(indexStr);
+                const confirmed = await Modal.confirm('Remove this custom activity?', 'Remove Activity');
+                if (confirmed) {
+                    deleteToddlerActivity(selectedKidId, category, index);
+                    refreshKidsManagementSection(container);
+                }
             });
         });
 
-        // Save daily log button
-        container.querySelector('#toddlerSaveLogBtn')?.addEventListener('click', () => {
-            const today = typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0];
-            const logData = Storage.getWidgetData(selectedKidId, 'daily-log') || { entries: [] };
-
-            const sleep = container.querySelector('#toddlerSleepLog')?.value?.trim() || '';
-            const meals = container.querySelector('#toddlerMealsLog')?.value?.trim() || '';
-            const notes = container.querySelector('#toddlerNotesLog')?.value?.trim() || '';
-            const moodBtn = container.querySelector('.toddler-mood-btn--active');
-            const mood = moodBtn?.dataset?.mood || '';
-
-            // Find or create today's entry
-            let todayEntry = logData.entries?.find(e => e.date === today);
-            if (!todayEntry) {
-                todayEntry = { date: today };
-                logData.entries = logData.entries || [];
-                logData.entries.push(todayEntry);
+        // Reset activities to defaults
+        container.querySelector('#toddlerResetActivitiesBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.dangerConfirm('Remove all custom activities and reset to defaults?', 'Reset Activities');
+            if (confirmed) {
+                const activitiesData = Storage.getWidgetData(selectedKidId, 'activities') || {};
+                activitiesData.customActivities = {};
+                Storage.setWidgetData(selectedKidId, 'activities', activitiesData);
+                Toast.success('Activities reset to defaults');
+                refreshKidsManagementSection(container);
             }
-
-            todayEntry.sleep = sleep;
-            todayEntry.meals = meals;
-            todayEntry.notes = notes;
-            todayEntry.mood = mood;
-
-            Storage.setWidgetData(selectedKidId, 'daily-log', logData);
-            Toast.success('Daily log saved');
         });
 
-        // Clear all logs button
-        container.querySelector('#toddlerClearLogBtn')?.addEventListener('click', async () => {
-            const confirmed = await Modal.dangerConfirm('Clear all daily log entries? This cannot be undone.', 'Clear All Logs');
+        // === GROWTH TAB EVENTS ===
+
+        // Add growth field button
+        container.querySelector('#toddlerAddFieldBtn')?.addEventListener('click', () => {
+            showAddGrowthFieldModal(selectedKidId, container);
+        });
+
+        // Edit growth field buttons
+        container.querySelectorAll('[data-edit-field]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                showEditGrowthFieldModal(selectedKidId, parseInt(btn.dataset.editField), container);
+            });
+        });
+
+        // Delete growth field buttons
+        container.querySelectorAll('[data-delete-field]').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                const confirmed = await Modal.confirm('Remove this custom measurement field?', 'Remove Field');
+                if (confirmed) {
+                    deleteGrowthField(selectedKidId, parseInt(btn.dataset.deleteField));
+                    refreshKidsManagementSection(container);
+                }
+            });
+        });
+
+        // Reset growth fields to defaults
+        container.querySelector('#toddlerResetFieldsBtn')?.addEventListener('click', async () => {
+            const confirmed = await Modal.dangerConfirm('Remove all custom measurement fields and reset to defaults?', 'Reset Fields');
             if (confirmed) {
-                Storage.setWidgetData(selectedKidId, 'daily-log', { entries: [] });
-                Toast.success('All logs cleared');
+                const growthData = Storage.getWidgetData(selectedKidId, 'growth-chart') || {};
+                delete growthData.fields;
+                Storage.setWidgetData(selectedKidId, 'growth-chart', growthData);
+                Toast.success('Measurement fields reset to defaults');
                 refreshKidsManagementSection(container);
             }
         });
@@ -1610,6 +1941,16 @@ const SettingsPage = (function() {
         choresData.chorePool = (choresData.chorePool || []).filter(c => c.id !== choreId);
         Storage.setWidgetData(memberId, 'chores', choresData);
         Toast.success('Chore deleted');
+    }
+
+    /**
+     * Delete a point activity
+     */
+    function deletePointActivity(memberId, activityId) {
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { activities: [] };
+        pointsData.activities = (pointsData.activities || []).filter(a => a.id !== activityId);
+        Storage.setWidgetData(memberId, 'points', pointsData);
+        Toast.success('Activity deleted');
     }
 
     /**
@@ -1671,20 +2012,6 @@ const SettingsPage = (function() {
         routineData.routines = (routineData.routines || []).filter(r => r.id !== routineId);
         Storage.setWidgetData(memberId, 'toddler-routine', routineData);
         Toast.success('Routine deleted');
-    }
-
-    /**
-     * Toggle a toddler milestone
-     */
-    function toggleToddlerMilestone(memberId, milestoneId, achieved) {
-        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
-        const milestone = milestonesData.milestones?.find(m => m.id === milestoneId);
-        if (milestone) {
-            milestone.achieved = achieved;
-            milestone.achievedDate = achieved ? (typeof DateUtils !== 'undefined' ? DateUtils.today() : new Date().toISOString().split('T')[0]) : null;
-            Storage.setWidgetData(memberId, 'milestones', milestonesData);
-            Toast.success(achieved ? 'Milestone achieved! 🎉' : 'Milestone unmarked');
-        }
     }
 
     /**
@@ -1765,7 +2092,7 @@ const SettingsPage = (function() {
                         routineData.routines = routineData.routines || [];
                         routineData.routines.push({
                             id: `routine-${Date.now()}`,
-                            name,
+                            title: name,
                             time,
                             icon,
                             color
@@ -1795,7 +2122,7 @@ const SettingsPage = (function() {
             <form id="editToddlerRoutineForm">
                 <div class="form-group">
                     <label class="form-label">Routine Name</label>
-                    <input type="text" class="form-input" id="routineNameInput" value="${routine.name}" required>
+                    <input type="text" class="form-input" id="routineNameInput" value="${routine.title || routine.name || ''}" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Time (optional)</label>
@@ -1848,7 +2175,7 @@ const SettingsPage = (function() {
                             return;
                         }
 
-                        routine.name = name;
+                        routine.title = name;
                         routine.time = time;
                         routine.icon = icon;
                         routine.color = color;
@@ -1932,10 +2259,533 @@ const SettingsPage = (function() {
     }
 
     /**
+     * Show Edit Toddler Milestone Modal
+     */
+    function showEditToddlerMilestoneModal(memberId, milestoneId, container) {
+        const milestonesData = Storage.getWidgetData(memberId, 'milestones') || { milestones: [] };
+        const milestone = milestonesData.milestones?.find(m => m.id === milestoneId);
+        if (!milestone) return;
+
+        const content = `
+            <form id="editToddlerMilestoneForm">
+                <div class="form-group">
+                    <label class="form-label">Milestone</label>
+                    <input type="text" class="form-input" id="editMilestoneNameInput" value="${milestone.name || ''}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category (optional)</label>
+                    <select class="form-input" id="editMilestoneCategoryInput">
+                        <option value="">Select category...</option>
+                        <option value="motor" ${milestone.category === 'motor' ? 'selected' : ''}>Motor Skills</option>
+                        <option value="language" ${milestone.category === 'language' ? 'selected' : ''}>Language</option>
+                        <option value="social" ${milestone.category === 'social' ? 'selected' : ''}>Social & Emotional</option>
+                        <option value="cognitive" ${milestone.category === 'cognitive' ? 'selected' : ''}>Cognitive</option>
+                        <option value="self-care" ${milestone.category === 'self-care' ? 'selected' : ''}>Self-Care</option>
+                    </select>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Milestone',
+            content,
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Save',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#editMilestoneNameInput')?.value?.trim();
+                        const category = document.querySelector('#editMilestoneCategoryInput')?.value || '';
+
+                        if (!name) {
+                            Toast.error('Please enter a milestone');
+                            return;
+                        }
+
+                        const milestoneIndex = milestonesData.milestones.findIndex(m => m.id === milestoneId);
+                        if (milestoneIndex >= 0) {
+                            milestonesData.milestones[milestoneIndex].name = name;
+                            milestonesData.milestones[milestoneIndex].category = category;
+                            Storage.setWidgetData(memberId, 'milestones', milestonesData);
+                            Toast.success('Milestone updated');
+                        }
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Show Add Toddler Activity Modal
+     */
+    function showAddToddlerActivityModal(memberId, container) {
+        const categories = {
+            sensory: 'Sensory Play',
+            motor: 'Motor Skills',
+            creative: 'Creative',
+            learning: 'Learning',
+            outdoor: 'Outdoor'
+        };
+
+        const content = `
+            <form id="addToddlerActivityForm">
+                <div class="form-group">
+                    <label class="form-label">Activity Name</label>
+                    <input type="text" class="form-input" id="activityNameInput" placeholder="e.g., Play with blocks" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-input" id="activityCategoryInput" required>
+                        ${Object.entries(categories).map(([key, name]) => `
+                            <option value="${key}">${name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Custom Activity',
+            content,
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Add Activity',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#activityNameInput')?.value?.trim();
+                        const category = document.querySelector('#activityCategoryInput')?.value;
+
+                        if (!name) {
+                            Toast.error('Please enter an activity name');
+                            return;
+                        }
+
+                        const activitiesData = Storage.getWidgetData(memberId, 'activities') || {};
+                        activitiesData.customActivities = activitiesData.customActivities || {};
+                        activitiesData.customActivities[category] = activitiesData.customActivities[category] || [];
+                        activitiesData.customActivities[category].push(name);
+                        Storage.setWidgetData(memberId, 'activities', activitiesData);
+                        Toast.success('Activity added');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Delete a toddler custom activity
+     */
+    function deleteToddlerActivity(memberId, category, index) {
+        const activitiesData = Storage.getWidgetData(memberId, 'activities') || {};
+        if (activitiesData.customActivities?.[category]) {
+            activitiesData.customActivities[category].splice(index, 1);
+            Storage.setWidgetData(memberId, 'activities', activitiesData);
+            Toast.success('Activity removed');
+        }
+    }
+
+    /**
+     * Delete a growth chart field
+     */
+    function deleteGrowthField(memberId, fieldIndex) {
+        const DEFAULT_FIELDS = [
+            { id: 'height', name: 'Height', unit: { metric: 'cm', imperial: 'in' }, color: '#6366F1' },
+            { id: 'weight', name: 'Weight', unit: { metric: 'kg', imperial: 'lbs' }, color: '#22C55E' },
+            { id: 'head', name: 'Head Circumference', unit: { metric: 'cm', imperial: 'in' }, color: '#F59E0B' }
+        ];
+
+        const growthData = Storage.getWidgetData(memberId, 'growth-chart') || {};
+        const fields = growthData.fields || DEFAULT_FIELDS;
+
+        // Check if trying to delete a default field
+        const fieldToDelete = fields[fieldIndex];
+        if (fieldToDelete && DEFAULT_FIELDS.some(d => d.id === fieldToDelete.id)) {
+            Toast.error('Cannot delete default measurement fields');
+            return;
+        }
+
+        fields.splice(fieldIndex, 1);
+        growthData.fields = fields;
+        Storage.setWidgetData(memberId, 'growth-chart', growthData);
+        Toast.success('Measurement field deleted');
+    }
+
+    /**
+     * Show Add Growth Field Modal
+     */
+    function showAddGrowthFieldModal(memberId, container) {
+        const fieldColors = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316', '#84CC16'];
+
+        const content = `
+            <form id="addGrowthFieldForm">
+                <div class="form-group">
+                    <label class="form-label">Field Name</label>
+                    <input type="text" class="form-input" id="fieldNameInput" placeholder="e.g., Chest Circumference" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Metric Unit</label>
+                    <input type="text" class="form-input" id="fieldMetricInput" placeholder="e.g., cm" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imperial Unit</label>
+                    <input type="text" class="form-input" id="fieldImperialInput" placeholder="e.g., in" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${fieldColors.map((color, i) => `
+                            <label class="color-option">
+                                <input type="radio" name="fieldColor" value="${color}" ${i === 0 ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Measurement Field',
+            content,
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Add Field',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#fieldNameInput')?.value?.trim();
+                        const metric = document.querySelector('#fieldMetricInput')?.value?.trim();
+                        const imperial = document.querySelector('#fieldImperialInput')?.value?.trim();
+                        const color = document.querySelector('input[name="fieldColor"]:checked')?.value || '#6366F1';
+
+                        if (!name) {
+                            Toast.error('Please enter a field name');
+                            return;
+                        }
+                        if (!metric || !imperial) {
+                            Toast.error('Please enter both metric and imperial units');
+                            return;
+                        }
+
+                        const DEFAULT_FIELDS = [
+                            { id: 'height', name: 'Height', unit: { metric: 'cm', imperial: 'in' }, color: '#6366F1' },
+                            { id: 'weight', name: 'Weight', unit: { metric: 'kg', imperial: 'lbs' }, color: '#22C55E' },
+                            { id: 'head', name: 'Head Circumference', unit: { metric: 'cm', imperial: 'in' }, color: '#F59E0B' }
+                        ];
+
+                        const growthData = Storage.getWidgetData(memberId, 'growth-chart') || {};
+                        growthData.fields = growthData.fields || [...DEFAULT_FIELDS];
+
+                        growthData.fields.push({
+                            id: `custom-${Date.now()}`,
+                            name,
+                            unit: { metric, imperial },
+                            color
+                        });
+
+                        Storage.setWidgetData(memberId, 'growth-chart', growthData);
+                        Toast.success('Measurement field added');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Show Edit Growth Field Modal
+     */
+    function showEditGrowthFieldModal(memberId, fieldIndex, container) {
+        const DEFAULT_FIELDS = [
+            { id: 'height', name: 'Height', unit: { metric: 'cm', imperial: 'in' }, color: '#6366F1' },
+            { id: 'weight', name: 'Weight', unit: { metric: 'kg', imperial: 'lbs' }, color: '#22C55E' },
+            { id: 'head', name: 'Head Circumference', unit: { metric: 'cm', imperial: 'in' }, color: '#F59E0B' }
+        ];
+
+        const growthData = Storage.getWidgetData(memberId, 'growth-chart') || {};
+        const fields = growthData.fields || DEFAULT_FIELDS;
+        const field = fields[fieldIndex];
+
+        if (!field) return;
+
+        // Don't allow editing default fields
+        if (DEFAULT_FIELDS.some(d => d.id === field.id)) {
+            Toast.error('Cannot edit default measurement fields');
+            return;
+        }
+
+        const fieldColors = ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#3B82F6', '#8B5CF6', '#EF4444', '#14B8A6', '#F97316', '#84CC16'];
+
+        const content = `
+            <form id="editGrowthFieldForm">
+                <div class="form-group">
+                    <label class="form-label">Field Name</label>
+                    <input type="text" class="form-input" id="fieldNameInput" value="${field.name}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Metric Unit</label>
+                    <input type="text" class="form-input" id="fieldMetricInput" value="${field.unit.metric}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Imperial Unit</label>
+                    <input type="text" class="form-input" id="fieldImperialInput" value="${field.unit.imperial}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${fieldColors.map(color => `
+                            <label class="color-option">
+                                <input type="radio" name="fieldColor" value="${color}" ${color === field.color ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Measurement Field',
+            content,
+            buttons: [
+                { text: 'Cancel', onClick: (close) => close() },
+                {
+                    text: 'Save Changes',
+                    variant: 'primary',
+                    onClick: (close) => {
+                        const name = document.querySelector('#fieldNameInput')?.value?.trim();
+                        const metric = document.querySelector('#fieldMetricInput')?.value?.trim();
+                        const imperial = document.querySelector('#fieldImperialInput')?.value?.trim();
+                        const color = document.querySelector('input[name="fieldColor"]:checked')?.value || '#6366F1';
+
+                        if (!name) {
+                            Toast.error('Please enter a field name');
+                            return;
+                        }
+                        if (!metric || !imperial) {
+                            Toast.error('Please enter both metric and imperial units');
+                            return;
+                        }
+
+                        fields[fieldIndex] = {
+                            ...field,
+                            name,
+                            unit: { metric, imperial },
+                            color
+                        };
+
+                        growthData.fields = fields;
+                        Storage.setWidgetData(memberId, 'growth-chart', growthData);
+                        Toast.success('Measurement field updated');
+                        close();
+                        refreshKidsManagementSection(container);
+                    }
+                }
+            ]
+        });
+    }
+
+    /**
+     * Show Add Point Activity Modal
+     */
+    function showAddPointActivityModal(memberId, container) {
+        const activityEmojis = [
+            '🦷', '🚿', '🛁', '🧼', '🛏️', '🧹', '🍽️', '🗑️',
+            '📚', '✏️', '📖', '🎨', '🎵', '🏃', '💪', '🥗',
+            '🍎', '💧', '😊', '🤝', '💝', '🐕', '🌟', '✨'
+        ];
+        const categories = [
+            { id: 'hygiene', name: 'Hygiene', color: '#3B82F6' },
+            { id: 'chores', name: 'Chores', color: '#10B981' },
+            { id: 'school', name: 'School', color: '#8B5CF6' },
+            { id: 'health', name: 'Health', color: '#EF4444' },
+            { id: 'kindness', name: 'Kindness', color: '#EC4899' },
+            { id: 'custom', name: 'Other', color: '#F59E0B' }
+        ];
+
+        const content = `
+            <form id="addPointActivityForm">
+                <div class="form-group">
+                    <label class="form-label">Activity Name</label>
+                    <input type="text" class="form-input" id="activityNameInput" placeholder="e.g., Brush teeth" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Points</label>
+                    <input type="number" class="form-input" id="activityPointsInput" value="5" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="activityCategoryInput">
+                        ${categories.map((cat, i) => `
+                            <option value="${cat.id}" ${i === 0 ? 'selected' : ''}>${cat.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Emoji</label>
+                    <div class="activity-emoji-picker" id="settingsActivityEmojiPicker">
+                        ${activityEmojis.map((emoji, i) => `
+                            <button type="button" class="activity-emoji-picker__btn ${i === 0 ? 'activity-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="activityEmojiInput" value="${activityEmojis[0]}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Add Point Activity',
+            content,
+            footer: Modal.createFooter('Cancel', 'Add Activity')
+        });
+
+        // Emoji selection
+        document.querySelectorAll('#settingsActivityEmojiPicker .activity-emoji-picker__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#settingsActivityEmojiPicker .activity-emoji-picker__btn').forEach(b => b.classList.remove('activity-emoji-picker__btn--selected'));
+                btn.classList.add('activity-emoji-picker__btn--selected');
+                document.getElementById('activityEmojiInput').value = btn.dataset.emoji;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('activityNameInput')?.value.trim();
+            const points = parseInt(document.getElementById('activityPointsInput')?.value) || 5;
+            const emoji = document.getElementById('activityEmojiInput')?.value || '🌟';
+            const category = document.getElementById('activityCategoryInput')?.value || 'custom';
+
+            if (!name) {
+                Toast.error('Please enter an activity name');
+                return false;
+            }
+
+            const pointsData = Storage.getWidgetData(memberId, 'points') || { activities: [] };
+            pointsData.activities = pointsData.activities || [];
+            pointsData.activities.push({
+                id: `act-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+                name,
+                points,
+                emoji,
+                category
+            });
+            Storage.setWidgetData(memberId, 'points', pointsData);
+            Toast.success('Activity added');
+            refreshKidsManagementSection(container);
+            return true;
+        });
+    }
+
+    /**
+     * Show Edit Point Activity Modal
+     */
+    function showEditPointActivityModal(memberId, activityId, container) {
+        const pointsData = Storage.getWidgetData(memberId, 'points') || { activities: [] };
+        const activity = (pointsData.activities || []).find(a => a.id === activityId);
+        if (!activity) return;
+
+        const activityEmojis = [
+            '🦷', '🚿', '🛁', '🧼', '🛏️', '🧹', '🍽️', '🗑️',
+            '📚', '✏️', '📖', '🎨', '🎵', '🏃', '💪', '🥗',
+            '🍎', '💧', '😊', '🤝', '💝', '🐕', '🌟', '✨'
+        ];
+        const categories = [
+            { id: 'hygiene', name: 'Hygiene', color: '#3B82F6' },
+            { id: 'chores', name: 'Chores', color: '#10B981' },
+            { id: 'school', name: 'School', color: '#8B5CF6' },
+            { id: 'health', name: 'Health', color: '#EF4444' },
+            { id: 'kindness', name: 'Kindness', color: '#EC4899' },
+            { id: 'custom', name: 'Other', color: '#F59E0B' }
+        ];
+
+        const content = `
+            <form id="editPointActivityForm">
+                <div class="form-group">
+                    <label class="form-label">Activity Name</label>
+                    <input type="text" class="form-input" id="activityNameInput" value="${activity.name}" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Points</label>
+                    <input type="number" class="form-input" id="activityPointsInput" value="${activity.points}" min="1" max="100">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Category</label>
+                    <select class="form-select" id="activityCategoryInput">
+                        ${categories.map(cat => `
+                            <option value="${cat.id}" ${cat.id === activity.category ? 'selected' : ''}>${cat.name}</option>
+                        `).join('')}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Emoji</label>
+                    <div class="activity-emoji-picker" id="settingsEditActivityEmojiPicker">
+                        ${activityEmojis.map(emoji => `
+                            <button type="button" class="activity-emoji-picker__btn ${emoji === activity.emoji ? 'activity-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
+                            </button>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" id="activityEmojiInput" value="${activity.emoji || activityEmojis[0]}">
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: 'Edit Activity',
+            content,
+            footer: Modal.createFooter('Cancel', 'Save Changes')
+        });
+
+        // Emoji selection
+        document.querySelectorAll('#settingsEditActivityEmojiPicker .activity-emoji-picker__btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#settingsEditActivityEmojiPicker .activity-emoji-picker__btn').forEach(b => b.classList.remove('activity-emoji-picker__btn--selected'));
+                btn.classList.add('activity-emoji-picker__btn--selected');
+                document.getElementById('activityEmojiInput').value = btn.dataset.emoji;
+            });
+        });
+
+        Modal.bindFooterEvents(() => {
+            const name = document.getElementById('activityNameInput')?.value.trim();
+            const points = parseInt(document.getElementById('activityPointsInput')?.value) || 5;
+            const emoji = document.getElementById('activityEmojiInput')?.value || '🌟';
+            const category = document.getElementById('activityCategoryInput')?.value || 'custom';
+
+            if (!name) {
+                Toast.error('Please enter an activity name');
+                return false;
+            }
+
+            // Update the activity
+            const idx = pointsData.activities.findIndex(a => a.id === activityId);
+            if (idx !== -1) {
+                pointsData.activities[idx] = { ...pointsData.activities[idx], name, points, emoji, category };
+                Storage.setWidgetData(memberId, 'points', pointsData);
+                Toast.success('Activity updated');
+                refreshKidsManagementSection(container);
+            }
+            return true;
+        });
+    }
+
+    /**
      * Show Add Chore Modal
      */
     function showAddChoreModal(memberId, container) {
-        const choreIcons = ['bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower-2', 'box', 'shirt', 'droplets', 'broom', 'dog', 'cat', 'leaf', 'sun'];
+        const choreEmojis = [
+            '🛏️', '🧹', '🍽️', '🐕', '🗑️', '✨', '🌱', '🧸',
+            '👕', '💨', '💧', '🧺', '🐾', '🐟', '🚗', '🚴',
+            '🍃', '🌞', '🌙', '⭐', '📦', '🧽', '🪣', '🧤'
+        ];
+        const choreColors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#EF4444', '#14B8A6', '#6366F1'];
 
         const content = `
             <form id="addChoreForm">
@@ -1948,15 +2798,26 @@ const SettingsPage = (function() {
                     <input type="number" class="form-input" id="chorePointsInput" value="5" min="1" max="100">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="icon-selector">
-                        ${choreIcons.map((icon, i) => `
-                            <button type="button" class="icon-selector__btn ${i === 0 ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="chore-emoji-picker" id="settingsChoreEmojiPicker">
+                        ${choreEmojis.map((emoji, i) => `
+                            <button type="button" class="chore-emoji-picker__btn ${i === 0 ? 'chore-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
-                    <input type="hidden" id="choreIconInput" value="${choreIcons[0]}">
+                    <input type="hidden" id="choreEmojiInput" value="${choreEmojis[0]}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${choreColors.map((color, i) => `
+                            <label class="color-option">
+                                <input type="radio" name="choreColor" value="${color}" ${i === 0 ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
                 </div>
             </form>
         `;
@@ -1967,21 +2828,20 @@ const SettingsPage = (function() {
             footer: Modal.createFooter('Cancel', 'Add Chore')
         });
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-
-        // Icon selection
-        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+        // Emoji selection
+        document.querySelectorAll('#settingsChoreEmojiPicker .chore-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
-                btn.classList.add('icon-selector__btn--active');
-                document.getElementById('choreIconInput').value = btn.dataset.icon;
+                document.querySelectorAll('#settingsChoreEmojiPicker .chore-emoji-picker__btn').forEach(b => b.classList.remove('chore-emoji-picker__btn--selected'));
+                btn.classList.add('chore-emoji-picker__btn--selected');
+                document.getElementById('choreEmojiInput').value = btn.dataset.emoji;
             });
         });
 
         Modal.bindFooterEvents(() => {
             const name = document.getElementById('choreNameInput')?.value.trim();
             const points = parseInt(document.getElementById('chorePointsInput')?.value) || 5;
-            const icon = document.getElementById('choreIconInput')?.value || 'check-square';
+            const emoji = document.getElementById('choreEmojiInput')?.value || '🧹';
+            const color = document.querySelector('input[name="choreColor"]:checked')?.value || '#8B5CF6';
 
             if (!name) {
                 Toast.error('Please enter a chore name');
@@ -1994,7 +2854,8 @@ const SettingsPage = (function() {
                 id: `chore-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                 name,
                 points,
-                icon
+                emoji,
+                color
             });
             Storage.setWidgetData(memberId, 'chores', choresData);
             Toast.success('Chore added');
@@ -2011,7 +2872,12 @@ const SettingsPage = (function() {
         const chore = (choresData.chorePool || []).find(c => c.id === choreId);
         if (!chore) return;
 
-        const choreIcons = ['bed', 'home', 'utensils', 'heart', 'trash', 'sparkles', 'flower-2', 'box', 'shirt', 'droplets', 'broom', 'dog', 'cat', 'leaf', 'sun'];
+        const choreEmojis = [
+            '🛏️', '🧹', '🍽️', '🐕', '🗑️', '✨', '🌱', '🧸',
+            '👕', '💨', '💧', '🧺', '🐾', '🐟', '🚗', '🚴',
+            '🍃', '🌞', '🌙', '⭐', '📦', '🧽', '🪣', '🧤'
+        ];
+        const choreColors = ['#8B5CF6', '#3B82F6', '#10B981', '#F59E0B', '#EC4899', '#EF4444', '#14B8A6', '#6366F1'];
 
         const content = `
             <form id="editChoreForm">
@@ -2024,15 +2890,26 @@ const SettingsPage = (function() {
                     <input type="number" class="form-input" id="chorePointsInput" value="${chore.points}" min="1" max="100">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="icon-selector">
-                        ${choreIcons.map(icon => `
-                            <button type="button" class="icon-selector__btn ${icon === chore.icon ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="chore-emoji-picker" id="settingsEditChoreEmojiPicker">
+                        ${choreEmojis.map(emoji => `
+                            <button type="button" class="chore-emoji-picker__btn ${emoji === chore.emoji ? 'chore-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
-                    <input type="hidden" id="choreIconInput" value="${chore.icon || 'check-square'}">
+                    <input type="hidden" id="choreEmojiInput" value="${chore.emoji || choreEmojis[0]}">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Color</label>
+                    <div class="color-selector">
+                        ${choreColors.map(color => `
+                            <label class="color-option">
+                                <input type="radio" name="choreColor" value="${color}" ${color === (chore.color || '#8B5CF6') ? 'checked' : ''}>
+                                <span class="color-option__display" style="background-color: ${color}"></span>
+                            </label>
+                        `).join('')}
+                    </div>
                 </div>
             </form>
         `;
@@ -2043,20 +2920,20 @@ const SettingsPage = (function() {
             footer: Modal.createFooter('Cancel', 'Save Changes')
         });
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-
-        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+        // Emoji selection
+        document.querySelectorAll('#settingsEditChoreEmojiPicker .chore-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
-                btn.classList.add('icon-selector__btn--active');
-                document.getElementById('choreIconInput').value = btn.dataset.icon;
+                document.querySelectorAll('#settingsEditChoreEmojiPicker .chore-emoji-picker__btn').forEach(b => b.classList.remove('chore-emoji-picker__btn--selected'));
+                btn.classList.add('chore-emoji-picker__btn--selected');
+                document.getElementById('choreEmojiInput').value = btn.dataset.emoji;
             });
         });
 
         Modal.bindFooterEvents(() => {
             const name = document.getElementById('choreNameInput')?.value.trim();
             const points = parseInt(document.getElementById('chorePointsInput')?.value) || 5;
-            const icon = document.getElementById('choreIconInput')?.value || 'check-square';
+            const emoji = document.getElementById('choreEmojiInput')?.value || '🧹';
+            const color = document.querySelector('input[name="choreColor"]:checked')?.value || '#8B5CF6';
 
             if (!name) {
                 Toast.error('Please enter a chore name');
@@ -2065,7 +2942,7 @@ const SettingsPage = (function() {
 
             const index = choresData.chorePool.findIndex(c => c.id === choreId);
             if (index !== -1) {
-                choresData.chorePool[index] = { ...choresData.chorePool[index], name, points, icon };
+                choresData.chorePool[index] = { ...choresData.chorePool[index], name, points, emoji, color };
                 Storage.setWidgetData(memberId, 'chores', choresData);
                 Toast.success('Chore updated');
                 refreshKidsManagementSection(container);
@@ -2078,7 +2955,11 @@ const SettingsPage = (function() {
      * Show Add Reward Modal
      */
     function showAddRewardModal(memberId, container) {
-        const rewardIcons = ['monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2', 'gift', 'pizza', 'candy', 'music', 'party-popper', 'cake', 'shopping-bag', 'bike', 'star'];
+        const rewardEmojis = [
+            '📺', '🎮', '🍽️', '🌙', '🍦', '🎬', '🎁', '🎉',
+            '🍕', '🧸', '🎈', '🛍️', '🚴', '⭐', '💖', '✨',
+            '🎵', '📱', '🍫', '🎂', '🏆', '👑', '🌈', '🎪'
+        ];
         const rewardColors = ['#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B'];
 
         const content = `
@@ -2092,15 +2973,15 @@ const SettingsPage = (function() {
                     <input type="number" class="form-input" id="rewardCostInput" value="20" min="1" max="1000">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="icon-selector">
-                        ${rewardIcons.map((icon, i) => `
-                            <button type="button" class="icon-selector__btn ${i === 0 ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="reward-emoji-picker" id="settingsRewardEmojiPicker">
+                        ${rewardEmojis.map((emoji, i) => `
+                            <button type="button" class="reward-emoji-picker__btn ${i === 0 ? 'reward-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
-                    <input type="hidden" id="rewardIconInput" value="${rewardIcons[0]}">
+                    <input type="hidden" id="rewardEmojiInput" value="${rewardEmojis[0]}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Color</label>
@@ -2122,14 +3003,12 @@ const SettingsPage = (function() {
             footer: Modal.createFooter('Cancel', 'Add Reward')
         });
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-
-        // Icon selection
-        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+        // Emoji selection
+        document.querySelectorAll('#settingsRewardEmojiPicker .reward-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
-                btn.classList.add('icon-selector__btn--active');
-                document.getElementById('rewardIconInput').value = btn.dataset.icon;
+                document.querySelectorAll('#settingsRewardEmojiPicker .reward-emoji-picker__btn').forEach(b => b.classList.remove('reward-emoji-picker__btn--selected'));
+                btn.classList.add('reward-emoji-picker__btn--selected');
+                document.getElementById('rewardEmojiInput').value = btn.dataset.emoji;
             });
         });
 
@@ -2145,7 +3024,7 @@ const SettingsPage = (function() {
         Modal.bindFooterEvents(() => {
             const name = document.getElementById('rewardNameInput')?.value.trim();
             const cost = parseInt(document.getElementById('rewardCostInput')?.value) || 20;
-            const icon = document.getElementById('rewardIconInput')?.value || 'gift';
+            const emoji = document.getElementById('rewardEmojiInput')?.value || '🎁';
             const color = document.getElementById('rewardColorInput')?.value || '#3B82F6';
 
             if (!name) {
@@ -2159,7 +3038,7 @@ const SettingsPage = (function() {
                 id: `reward-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
                 name,
                 cost,
-                icon,
+                emoji,
                 color
             });
             Storage.setWidgetData(memberId, 'rewards', rewardsData);
@@ -2177,7 +3056,11 @@ const SettingsPage = (function() {
         const reward = (rewardsData.rewards || []).find(r => r.id === rewardId);
         if (!reward) return;
 
-        const rewardIcons = ['monitor', 'utensils', 'moon', 'ice-cream-cone', 'film', 'gamepad-2', 'gift', 'pizza', 'candy', 'music', 'party-popper', 'cake', 'shopping-bag', 'bike', 'star'];
+        const rewardEmojis = [
+            '📺', '🎮', '🍽️', '🌙', '🍦', '🎬', '🎁', '🎉',
+            '🍕', '🧸', '🎈', '🛍️', '🚴', '⭐', '💖', '✨',
+            '🎵', '📱', '🍫', '🎂', '🏆', '👑', '🌈', '🎪'
+        ];
         const rewardColors = ['#3B82F6', '#10B981', '#8B5CF6', '#EF4444', '#EC4899', '#F59E0B'];
 
         const content = `
@@ -2191,15 +3074,15 @@ const SettingsPage = (function() {
                     <input type="number" class="form-input" id="rewardCostInput" value="${reward.cost}" min="1" max="1000">
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Icon</label>
-                    <div class="icon-selector">
-                        ${rewardIcons.map(icon => `
-                            <button type="button" class="icon-selector__btn ${icon === reward.icon ? 'icon-selector__btn--active' : ''}" data-icon="${icon}">
-                                <i data-lucide="${icon}"></i>
+                    <label class="form-label">Emoji</label>
+                    <div class="reward-emoji-picker" id="settingsEditRewardEmojiPicker">
+                        ${rewardEmojis.map(emoji => `
+                            <button type="button" class="reward-emoji-picker__btn ${emoji === reward.emoji ? 'reward-emoji-picker__btn--selected' : ''}" data-emoji="${emoji}">
+                                ${emoji}
                             </button>
                         `).join('')}
                     </div>
-                    <input type="hidden" id="rewardIconInput" value="${reward.icon || 'gift'}">
+                    <input type="hidden" id="rewardEmojiInput" value="${reward.emoji || rewardEmojis[0]}">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Color</label>
@@ -2221,16 +3104,16 @@ const SettingsPage = (function() {
             footer: Modal.createFooter('Cancel', 'Save Changes')
         });
 
-        if (typeof lucide !== 'undefined') lucide.createIcons();
-
-        document.querySelectorAll('.icon-selector__btn').forEach(btn => {
+        // Emoji selection
+        document.querySelectorAll('#settingsEditRewardEmojiPicker .reward-emoji-picker__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('.icon-selector__btn').forEach(b => b.classList.remove('icon-selector__btn--active'));
-                btn.classList.add('icon-selector__btn--active');
-                document.getElementById('rewardIconInput').value = btn.dataset.icon;
+                document.querySelectorAll('#settingsEditRewardEmojiPicker .reward-emoji-picker__btn').forEach(b => b.classList.remove('reward-emoji-picker__btn--selected'));
+                btn.classList.add('reward-emoji-picker__btn--selected');
+                document.getElementById('rewardEmojiInput').value = btn.dataset.emoji;
             });
         });
 
+        // Color selection
         document.querySelectorAll('.color-selector__btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.color-selector__btn').forEach(b => b.classList.remove('color-selector__btn--active'));
@@ -2242,7 +3125,7 @@ const SettingsPage = (function() {
         Modal.bindFooterEvents(() => {
             const name = document.getElementById('rewardNameInput')?.value.trim();
             const cost = parseInt(document.getElementById('rewardCostInput')?.value) || 20;
-            const icon = document.getElementById('rewardIconInput')?.value || 'gift';
+            const emoji = document.getElementById('rewardEmojiInput')?.value || '🎁';
             const color = document.getElementById('rewardColorInput')?.value || '#3B82F6';
 
             if (!name) {
@@ -2252,13 +3135,248 @@ const SettingsPage = (function() {
 
             const index = rewardsData.rewards.findIndex(r => r.id === rewardId);
             if (index !== -1) {
-                rewardsData.rewards[index] = { ...rewardsData.rewards[index], name, cost, icon, color };
+                rewardsData.rewards[index] = { ...rewardsData.rewards[index], name, cost, emoji, color };
                 Storage.setWidgetData(memberId, 'rewards', rewardsData);
                 Toast.success('Reward updated');
                 refreshKidsManagementSection(container);
             }
             return true;
         });
+    }
+
+    /**
+     * Show Add Move & Play Activity Modal
+     */
+    function showAddMovePlayActivityModal(memberId, container) {
+        const emojiOptions = ['🏃', '🏊', '🚴', '⚽', '🏀', '💃', '🧘', '🥾', '⛸️', '🎾', '🏓', '🎯', '🤸', '🏋️', '🚶', '🛹', '⚾', '🏈', '🎳', '🧗', '🤾', '🏇', '🥊', '🤼', '🛝', '🪢'];
+        const categories = [
+            { id: 'active', name: 'Active Play', color: '#F59E0B' },
+            { id: 'sports', name: 'Sports', color: '#3B82F6' },
+            { id: 'outdoor', name: 'Outdoor', color: '#10B981' },
+            { id: 'dance', name: 'Dance & Move', color: '#EC4899' },
+            { id: 'custom', name: 'Other', color: '#8B5CF6' }
+        ];
+
+        Modal.open({
+            title: 'Add Activity',
+            content: `
+                <form id="addMovePlayForm" class="modal-form">
+                    <div class="form-group">
+                        <label class="form-label">Emoji</label>
+                        <div class="emoji-selector" id="emojiSelector">
+                            ${emojiOptions.map((e, i) => `
+                                <button type="button" class="emoji-selector__btn ${i === 0 ? 'emoji-selector__btn--active' : ''}" data-emoji="${e}">${e}</button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" name="emoji" id="selectedEmoji" value="${emojiOptions[0]}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Activity Name</label>
+                        <input type="text" name="name" class="form-input" placeholder="e.g., Trampoline" required maxlength="30">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Duration (minutes)</label>
+                            <input type="number" name="duration" class="form-input" value="15" min="5" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Points</label>
+                            <input type="number" name="points" class="form-input" value="10" min="1" max="50" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <div class="category-selector">
+                            ${categories.map((cat, i) => `
+                                <label class="category-selector__item">
+                                    <input type="radio" name="category" value="${cat.id}" ${i === 0 ? 'checked' : ''}>
+                                    <span class="category-selector__label" style="--cat-color: ${cat.color}">${cat.name}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </form>
+            `,
+            buttons: [
+                { text: 'Cancel', variant: 'secondary', onClick: (close) => close() },
+                { text: 'Add Activity', variant: 'primary', onClick: (close) => {
+                    const form = document.getElementById('addMovePlayForm');
+                    const name = form.querySelector('[name="name"]').value.trim();
+                    const duration = parseInt(form.querySelector('[name="duration"]').value) || 15;
+                    const points = parseInt(form.querySelector('[name="points"]').value) || 10;
+                    const emoji = form.querySelector('#selectedEmoji').value;
+                    const category = form.querySelector('[name="category"]:checked')?.value || 'custom';
+
+                    if (!name) {
+                        Toast.error('Please enter an activity name');
+                        return;
+                    }
+
+                    // Add activity using KidWorkout module
+                    if (typeof KidWorkout !== 'undefined') {
+                        KidWorkout.addCustomActivity(memberId, { name, duration, points, emoji, category });
+                    } else {
+                        const workoutData = Storage.getWidgetData(memberId, 'kid-workout') || { activities: [] };
+                        workoutData.activities = workoutData.activities || [];
+                        workoutData.activities.push({
+                            id: `custom-${Date.now()}`,
+                            name, duration, points, emoji, category,
+                            isCustom: true
+                        });
+                        Storage.setWidgetData(memberId, 'kid-workout', workoutData);
+                    }
+
+                    Toast.success(`"${name}" added!`);
+                    close();
+                    refreshKidsManagementSection(container);
+                }}
+            ]
+        });
+
+        // Bind emoji selection after modal opens
+        setTimeout(() => {
+            document.querySelectorAll('#emojiSelector .emoji-selector__btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#emojiSelector .emoji-selector__btn').forEach(b => b.classList.remove('emoji-selector__btn--active'));
+                    btn.classList.add('emoji-selector__btn--active');
+                    document.querySelector('#selectedEmoji').value = btn.dataset.emoji;
+                });
+            });
+        }, 100);
+    }
+
+    /**
+     * Show Edit Move & Play Activity Modal
+     */
+    function showEditMovePlayActivityModal(memberId, activityId, container) {
+        const workoutData = typeof KidWorkout !== 'undefined'
+            ? KidWorkout.getWidgetData(memberId)
+            : Storage.getWidgetData(memberId, 'kid-workout') || { activities: [] };
+
+        const activity = workoutData.activities?.find(a => a.id === activityId);
+        if (!activity) {
+            Toast.error('Activity not found');
+            return;
+        }
+
+        const emojiOptions = ['🏃', '🏊', '🚴', '⚽', '🏀', '💃', '🧘', '🥾', '⛸️', '🎾', '🏓', '🎯', '🤸', '🏋️', '🚶', '🛹', '⚾', '🏈', '🎳', '🧗', '🤾', '🏇', '🥊', '🤼', '🛝', '🪢'];
+        const categories = [
+            { id: 'active', name: 'Active Play', color: '#F59E0B' },
+            { id: 'sports', name: 'Sports', color: '#3B82F6' },
+            { id: 'outdoor', name: 'Outdoor', color: '#10B981' },
+            { id: 'dance', name: 'Dance & Move', color: '#EC4899' },
+            { id: 'custom', name: 'Other', color: '#8B5CF6' }
+        ];
+
+        const currentEmoji = activity.emoji || '🏃';
+
+        Modal.open({
+            title: 'Edit Activity',
+            content: `
+                <form id="editMovePlayForm" class="modal-form">
+                    <div class="form-group">
+                        <label class="form-label">Emoji</label>
+                        <div class="emoji-selector" id="emojiSelector">
+                            ${emojiOptions.map(e => `
+                                <button type="button" class="emoji-selector__btn ${e === currentEmoji ? 'emoji-selector__btn--active' : ''}" data-emoji="${e}">${e}</button>
+                            `).join('')}
+                        </div>
+                        <input type="hidden" name="emoji" id="selectedEmoji" value="${currentEmoji}">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Activity Name</label>
+                        <input type="text" name="name" class="form-input" value="${activity.name}" required maxlength="30">
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Duration (minutes)</label>
+                            <input type="number" name="duration" class="form-input" value="${activity.duration || 15}" min="5" max="120" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Points</label>
+                            <input type="number" name="points" class="form-input" value="${activity.points || 10}" min="1" max="50" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Category</label>
+                        <div class="category-selector">
+                            ${categories.map(cat => `
+                                <label class="category-selector__item">
+                                    <input type="radio" name="category" value="${cat.id}" ${cat.id === activity.category ? 'checked' : ''}>
+                                    <span class="category-selector__label" style="--cat-color: ${cat.color}">${cat.name}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                    </div>
+                </form>
+            `,
+            buttons: [
+                { text: 'Cancel', variant: 'secondary', onClick: (close) => close() },
+                { text: 'Save Changes', variant: 'primary', onClick: (close) => {
+                    const form = document.getElementById('editMovePlayForm');
+                    const name = form.querySelector('[name="name"]').value.trim();
+                    const duration = parseInt(form.querySelector('[name="duration"]').value) || 15;
+                    const points = parseInt(form.querySelector('[name="points"]').value) || 10;
+                    const emoji = form.querySelector('#selectedEmoji').value;
+                    const category = form.querySelector('[name="category"]:checked')?.value || activity.category;
+
+                    if (!name) {
+                        Toast.error('Please enter an activity name');
+                        return;
+                    }
+
+                    // Update activity
+                    if (typeof KidWorkout !== 'undefined') {
+                        KidWorkout.updateActivity(memberId, activityId, { name, duration, points, emoji, category });
+                    } else {
+                        const data = Storage.getWidgetData(memberId, 'kid-workout') || { activities: [] };
+                        const index = data.activities.findIndex(a => a.id === activityId);
+                        if (index !== -1) {
+                            data.activities[index] = { ...data.activities[index], name, duration, points, emoji, category };
+                            Storage.setWidgetData(memberId, 'kid-workout', data);
+                        }
+                    }
+
+                    Toast.success('Activity updated');
+                    close();
+                    refreshKidsManagementSection(container);
+                }}
+            ]
+        });
+
+        // Bind emoji selection after modal opens
+        setTimeout(() => {
+            document.querySelectorAll('#emojiSelector .emoji-selector__btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('#emojiSelector .emoji-selector__btn').forEach(b => b.classList.remove('emoji-selector__btn--active'));
+                    btn.classList.add('emoji-selector__btn--active');
+                    document.querySelector('#selectedEmoji').value = btn.dataset.emoji;
+                });
+            });
+        }, 100);
+    }
+
+    /**
+     * Delete Move & Play Activity
+     */
+    function deleteMovePlayActivity(memberId, activityId) {
+        if (typeof KidWorkout !== 'undefined') {
+            KidWorkout.deleteActivity(memberId, activityId);
+        } else {
+            const data = Storage.getWidgetData(memberId, 'kid-workout') || { activities: [] };
+            data.activities = (data.activities || []).filter(a => a.id !== activityId);
+            Storage.setWidgetData(memberId, 'kid-workout', data);
+        }
+        Toast.success('Activity deleted');
+    }
+
+    /**
+     * Reset Move & Play to defaults
+     */
+    function resetMovePlayToDefaults(memberId) {
+        // Clear the stored data to trigger reload of defaults
+        Storage.setWidgetData(memberId, 'kid-workout', null);
+        Toast.success('Activities reset to defaults');
     }
 
     function renderHelpSettings(settings) {
@@ -2621,7 +3739,7 @@ const SettingsPage = (function() {
             }
         });
 
-        // Category toggle buttons
+        // Category toggle buttons (accordion behavior - only one open at a time)
         container.querySelectorAll('[data-toggle-category]').forEach(btn => {
             btn.addEventListener('click', () => {
                 const categoryName = btn.dataset.toggleCategory;
@@ -2629,6 +3747,19 @@ const SettingsPage = (function() {
 
                 if (categoryEl) {
                     const isExpanded = categoryEl.classList.contains('settings-category--expanded');
+
+                    // Collapse all other categories first (accordion behavior)
+                    container.querySelectorAll('.settings-category--expanded').forEach(openCategory => {
+                        if (openCategory !== categoryEl) {
+                            openCategory.classList.remove('settings-category--expanded');
+                            const openCategoryName = openCategory.dataset.category;
+                            if (openCategoryName) {
+                                expandedCategories[openCategoryName] = false;
+                            }
+                        }
+                    });
+
+                    // Toggle the clicked category
                     categoryEl.classList.toggle('settings-category--expanded');
                     expandedCategories[categoryName] = !isExpanded;
 
@@ -2786,6 +3917,7 @@ const SettingsPage = (function() {
             // Load backup history
             loadBackupHistory();
         }
+
 
         // Export data
         container.querySelector('#exportDataBtn')?.addEventListener('click', () => {
@@ -3208,6 +4340,20 @@ const SettingsPage = (function() {
                         <input type="number" class="form-input" id="memberAge" min="1" max="17" value="${member.age || 8}">
                     </div>
                 ` : ''}
+                ${member.type === 'toddler' ? `
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-input" id="memberGender">
+                            <option value="">Not specified</option>
+                            <option value="boy" ${member.gender === 'boy' ? 'selected' : ''}>Boy</option>
+                            <option value="girl" ${member.gender === 'girl' ? 'selected' : ''}>Girl</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Birthdate <span style="color: var(--text-muted); font-weight: normal;">(for milestone tracking)</span></label>
+                        <input type="date" class="form-input" id="memberBirthdate" value="${member.birthdate || ''}">
+                    </div>
+                ` : ''}
             </form>
         `;
 
@@ -3324,6 +4470,15 @@ const SettingsPage = (function() {
 
             if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
                 updates.age = parseInt(age) || 8;
+            }
+
+            if (member.type === 'toddler') {
+                const gender = document.getElementById('memberGender')?.value;
+                const birthdate = document.getElementById('memberBirthdate')?.value;
+                updates.gender = gender || null;
+                if (birthdate) {
+                    updates.birthdate = birthdate;
+                }
             }
 
             Storage.updateMember(memberId, updates);

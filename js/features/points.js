@@ -62,24 +62,31 @@ const Points = (function() {
     const ACTIVITY_ICONS = [
         'bed', 'smile', 'book', 'home', 'book-open', 'dumbbell', 'apple',
         'heart', 'star', 'sun', 'moon', 'droplets', 'shirt', 'utensils',
-        'trash-2', 'dog', 'music', 'palette', 'gamepad-2', 'bike'
+        'trash-2', 'paw-print', 'music', 'palette', 'gamepad', 'bike'
+    ];
+
+    // Activity emojis for selection
+    const ACTIVITY_EMOJIS = [
+        '🦷', '🚿', '🛁', '🧼', '🛏️', '🧹', '🍽️', '🗑️',
+        '📚', '✏️', '📖', '🎨', '🎵', '🏃', '💪', '🥗',
+        '🍎', '💧', '😊', '🤝', '💝', '🐕', '🌟', '✨'
     ];
 
     // Default activities by category
     const DEFAULT_ACTIVITIES = {
         hygiene: [
-            { id: 'act-brush-am', name: 'Brush teeth (AM)', points: 3, icon: 'smile' },
-            { id: 'act-brush-pm', name: 'Brush teeth (PM)', points: 3, icon: 'smile' },
-            { id: 'act-shower', name: 'Take shower', points: 5, icon: 'droplets' }
+            { id: 'act-brush-am', name: 'Brush teeth (AM)', points: 3, icon: 'smile', emoji: '🦷' },
+            { id: 'act-brush-pm', name: 'Brush teeth (PM)', points: 3, icon: 'smile', emoji: '🦷' },
+            { id: 'act-shower', name: 'Take shower', points: 5, icon: 'droplets', emoji: '🚿' }
         ],
         chores: [
-            { id: 'act-bed', name: 'Make bed', points: 5, icon: 'bed' },
-            { id: 'act-dishes', name: 'Help with dishes', points: 8, icon: 'home' },
-            { id: 'act-room', name: 'Clean room', points: 10, icon: 'home' }
+            { id: 'act-bed', name: 'Make bed', points: 5, icon: 'bed', emoji: '🛏️' },
+            { id: 'act-dishes', name: 'Help with dishes', points: 8, icon: 'home', emoji: '🍽️' },
+            { id: 'act-room', name: 'Clean room', points: 10, icon: 'home', emoji: '🧹' }
         ],
         school: [
-            { id: 'act-homework', name: 'Do homework', points: 10, icon: 'book' },
-            { id: 'act-read', name: 'Read for 20 min', points: 7, icon: 'book-open' }
+            { id: 'act-homework', name: 'Do homework', points: 10, icon: 'book', emoji: '✏️' },
+            { id: 'act-read', name: 'Read for 20 min', points: 7, icon: 'book-open', emoji: '📖' }
         ],
         health: [],
         kindness: [],
@@ -299,7 +306,7 @@ const Points = (function() {
                                     ${isFullyCompleted ? 'disabled' : ''}
                                 >
                                     <div class="points-activity--kid__icon" style="background-color: ${category.color}">
-                                        <i data-lucide="${activity.icon || 'star'}"></i>
+                                        ${activity.emoji ? `<span class="activity-emoji">${activity.emoji}</span>` : `<i data-lucide="${activity.icon || 'star'}"></i>`}
                                     </div>
                                     <span class="points-activity--kid__name">${activity.name}</span>
                                     <span class="points-activity--kid__points">+${activity.points}</span>
@@ -480,6 +487,15 @@ const Points = (function() {
         Storage.setWidgetData(memberId, 'points', updatedData);
         Storage.trackAction(memberId, 'points', 'completed');
 
+        // Log to Activity Monitor
+        Storage.logActivityEvent({
+            memberId: memberId,
+            widgetId: 'points',
+            action: 'earned',
+            details: `Earned ${totalPoints} points for "${activity.name}"${bonusLabel ? ' (' + bonusLabel + ')' : ''}`,
+            meta: { activityId, activityName: activity.name, points: totalPoints, basePoints, bonus: bonusPoints - basePoints }
+        });
+
         // Update achievements
         if (typeof Achievements !== 'undefined' && Achievements.updateStats) {
             Achievements.updateStats(memberId, 'points', activity.points);
@@ -602,6 +618,9 @@ const Points = (function() {
 
     // Track current tab in full page view
     let currentFullPageTab = 'history';
+    // Track current calendar month for points calendar
+    let pointsCalendarMonth = new Date().getMonth();
+    let pointsCalendarYear = new Date().getFullYear();
 
     /**
      * Show full page view (standardized format with hero section)
@@ -705,7 +724,7 @@ const Points = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === tab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             ${isYoungKid && t.emoji ? `<span class="emoji-icon">${t.emoji}</span>` : `<i data-lucide="${t.icon}"></i>`}
@@ -825,6 +844,8 @@ const Points = (function() {
     function renderCalendarTab(memberId, member, widgetData, history, isTeen, isYoungKid) {
         const today = new Date();
         const todayStr = DateUtils.today();
+        const nowDate = new Date();
+        const isCurrentMonth = pointsCalendarMonth === nowDate.getMonth() && pointsCalendarYear === nowDate.getFullYear();
 
         // Group history by date
         const groupedHistory = {};
@@ -836,8 +857,8 @@ const Points = (function() {
         });
 
         // Generate monthly calendar grid
-        const calendarMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const daysInMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+        const calendarMonth = new Date(pointsCalendarYear, pointsCalendarMonth, 1);
+        const daysInMonth = new Date(pointsCalendarYear, pointsCalendarMonth + 1, 0).getDate();
         const firstDayOfWeek = calendarMonth.getDay();
         const monthName = calendarMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
 
@@ -847,7 +868,7 @@ const Points = (function() {
             calendarDays.push({ empty: true });
         }
         for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(today.getFullYear(), today.getMonth(), day);
+            const date = new Date(pointsCalendarYear, pointsCalendarMonth, day);
             const dateStr = DateUtils.formatISO(date);
             const dayActivities = groupedHistory[dateStr] || [];
             const dayPoints = dayActivities.filter(a => a.type === 'earned').reduce((sum, a) => sum + a.points, 0);
@@ -876,7 +897,13 @@ const Points = (function() {
             <div class="points-calendar-tab">
                 <div class="points-calendar">
                     <div class="points-calendar__header">
+                        <button class="btn btn--ghost btn--sm" id="pointsCalPrev">
+                            <i data-lucide="chevron-left"></i>
+                        </button>
                         <h3 class="points-calendar__month">${isYoungKid ? '📅 ' : ''}${monthName}</h3>
+                        <button class="btn btn--ghost btn--sm" id="pointsCalNext" ${isCurrentMonth ? 'disabled' : ''}>
+                            <i data-lucide="chevron-right"></i>
+                        </button>
                     </div>
                     <div class="points-calendar__weekdays">
                         <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
@@ -1171,9 +1198,31 @@ const Points = (function() {
             });
         });
 
-        // Calendar day clicks (only if on calendar tab)
+        // Calendar tab events (nav + day clicks)
         if (tab === 'calendar') {
             const isTeen = member && member.type === 'teen';
+
+            // Month navigation
+            container.querySelector('#pointsCalPrev')?.addEventListener('click', () => {
+                pointsCalendarMonth--;
+                if (pointsCalendarMonth < 0) {
+                    pointsCalendarMonth = 11;
+                    pointsCalendarYear--;
+                }
+                renderFullPage(container, memberId, member, 'calendar');
+            });
+
+            container.querySelector('#pointsCalNext')?.addEventListener('click', () => {
+                const now = new Date();
+                if (pointsCalendarMonth === now.getMonth() && pointsCalendarYear === now.getFullYear()) return;
+                pointsCalendarMonth++;
+                if (pointsCalendarMonth > 11) {
+                    pointsCalendarMonth = 0;
+                    pointsCalendarYear++;
+                }
+                renderFullPage(container, memberId, member, 'calendar');
+            });
+
             bindCalendarDayClicks(container, widgetData, history, isTeen);
         }
     }
@@ -1257,14 +1306,10 @@ const Points = (function() {
 
                     detailsContainer.style.display = 'block';
 
-                    if (typeof lucide !== 'undefined') {
-                        lucide.createIcons();
-                    }
-
-                    // Auto-scroll to the details section
-                    setTimeout(() => {
-                        detailsContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
+                    // Scroll detail panel into view without smooth animation to avoid jank
+                    requestAnimationFrame(() => {
+                        detailsContainer.scrollIntoView({ block: 'nearest' });
+                    });
                 });
             }
         });
@@ -1295,8 +1340,8 @@ const Points = (function() {
             <div class="add-bonus-modal">
                 <div class="form-group">
                     <label class="form-label">${pointsLabel} to Add/Remove</label>
-                    <input type="number" class="form-input" id="bonusPoints" value="10" min="-100" max="100" required>
-                    <p class="form-hint">Use positive numbers to add or negative (e.g., -10) to deduct ${pointsLabelLower}</p>
+                    <input type="number" class="form-input" id="bonusPoints" value="10" min="-1000" max="1000" step="1" required>
+                    <p class="form-hint">Enter -1000 to +1000. Use negative (e.g., -10) to deduct ${pointsLabelLower}</p>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Reason</label>
@@ -1331,13 +1376,30 @@ const Points = (function() {
         }, 100);
 
         Modal.bindFooterEvents(() => {
-            const points = parseInt(document.getElementById('bonusPoints')?.value) || 0;
+            const rawValue = document.getElementById('bonusPoints')?.value || '';
             const reason = document.getElementById('bonusReason')?.value?.trim();
             const date = document.getElementById('bonusDate')?.value || today;
             const addedBy = document.getElementById('bonusAddedBy')?.value || 'Parent';
 
+            // Validate points input - must be a simple integer within range
+            const MAX_POINTS = 1000;
+            const MIN_POINTS = -1000;
+
+            // Check for scientific notation or invalid formats
+            if (/[eE]/.test(rawValue) || rawValue.includes('.')) {
+                Toast.error('Please enter a whole number without decimals or scientific notation');
+                return false;
+            }
+
+            const points = parseInt(rawValue) || 0;
+
             if (points === 0) {
                 Toast.error(`Please enter a non-zero value`);
+                return false;
+            }
+
+            if (points > MAX_POINTS || points < MIN_POINTS) {
+                Toast.error(`${pointsLabel} must be between ${MIN_POINTS} and ${MAX_POINTS}`);
                 return false;
             }
 
@@ -1596,7 +1658,7 @@ const Points = (function() {
                             ` : byCategory[category.id].map(activity => `
                                 <div class="activity-manage-item" data-activity-id="${activity.id}">
                                     <div class="activity-manage-item__icon" style="--activity-color: ${category.color}; background-color: ${category.color}">
-                                        <i data-lucide="${activity.icon || 'star'}"></i>
+                                        ${activity.emoji ? `<span class="activity-emoji">${activity.emoji}</span>` : `<i data-lucide="${activity.icon || 'star'}"></i>`}
                                     </div>
                                     <div class="activity-manage-item__info">
                                         <span class="activity-manage-item__name">
@@ -1640,14 +1702,15 @@ const Points = (function() {
                     </div>
                     <div class="add-activity-form__row">
                         <div class="add-activity-form__field">
-                            <label class="add-activity-form__label">Icon</label>
-                            <div class="activity-icon-picker" id="activityIconPicker">
-                                ${ACTIVITY_ICONS.map((icon, i) => `
-                                    <button type="button" class="activity-icon-picker__btn ${i === 0 ? 'activity-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                        <i data-lucide="${icon}"></i>
+                            <label class="add-activity-form__label">Emoji</label>
+                            <div class="emoji-selector" id="activityEmojiPicker">
+                                ${ACTIVITY_EMOJIS.map((emoji, i) => `
+                                    <button type="button" class="emoji-selector__btn ${i === 0 ? 'emoji-selector__btn--active' : ''}" data-emoji="${emoji}">
+                                        ${emoji}
                                     </button>
                                 `).join('')}
                             </div>
+                            <input type="hidden" id="selectedActivityEmoji" value="${ACTIVITY_EMOJIS[0]}">
                         </div>
                     </div>
                     <div class="add-activity-form__row">
@@ -1747,16 +1810,17 @@ const Points = (function() {
      */
     function bindManageActivitiesEvents(memberId) {
         // State for new activity
-        let selectedIcon = ACTIVITY_ICONS[0];
+        let selectedEmoji = ACTIVITY_EMOJIS[0];
         let selectedCategory = ACTIVITY_CATEGORIES[0].id;
 
-        // Icon picker
-        document.querySelectorAll('#activityIconPicker .activity-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#activityEmojiPicker .emoji-selector__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#activityIconPicker .activity-icon-picker__btn').forEach(b =>
-                    b.classList.remove('activity-icon-picker__btn--selected'));
-                btn.classList.add('activity-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#activityEmojiPicker .emoji-selector__btn').forEach(b =>
+                    b.classList.remove('emoji-selector__btn--active'));
+                btn.classList.add('emoji-selector__btn--active');
+                selectedEmoji = btn.dataset.emoji;
+                document.getElementById('selectedActivityEmoji').value = selectedEmoji;
             });
         });
 
@@ -1852,7 +1916,7 @@ const Points = (function() {
                 id: `act-${Date.now()}`,
                 name,
                 points,
-                icon: selectedIcon,
+                emoji: selectedEmoji,
                 category: selectedCategory,
                 timeOfDay,
                 maxPerDay,
@@ -1994,11 +2058,11 @@ const Points = (function() {
                 </div>
                 <div class="add-activity-form__row">
                     <div class="add-activity-form__field">
-                        <label class="add-activity-form__label">Icon</label>
-                        <div class="activity-icon-picker" id="editIconPicker">
-                            ${ACTIVITY_ICONS.map(icon => `
-                                <button type="button" class="activity-icon-picker__btn ${icon === activity.icon ? 'activity-icon-picker__btn--selected' : ''}" data-icon="${icon}">
-                                    <i data-lucide="${icon}"></i>
+                        <label class="add-activity-form__label">Emoji</label>
+                        <div class="emoji-selector" id="editEmojiPicker">
+                            ${ACTIVITY_EMOJIS.map(emoji => `
+                                <button type="button" class="emoji-selector__btn ${emoji === activity.emoji ? 'emoji-selector__btn--active' : ''}" data-emoji="${emoji}">
+                                    ${emoji}
                                 </button>
                             `).join('')}
                         </div>
@@ -2034,16 +2098,16 @@ const Points = (function() {
             lucide.createIcons();
         }
 
-        let selectedIcon = activity.icon;
+        let selectedEmoji = activity.emoji || ACTIVITY_EMOJIS[0];
         let selectedCategory = activity.category;
 
-        // Icon picker
-        document.querySelectorAll('#editIconPicker .activity-icon-picker__btn').forEach(btn => {
+        // Emoji picker
+        document.querySelectorAll('#editEmojiPicker .emoji-selector__btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#editIconPicker .activity-icon-picker__btn').forEach(b =>
-                    b.classList.remove('activity-icon-picker__btn--selected'));
-                btn.classList.add('activity-icon-picker__btn--selected');
-                selectedIcon = btn.dataset.icon;
+                document.querySelectorAll('#editEmojiPicker .emoji-selector__btn').forEach(b =>
+                    b.classList.remove('emoji-selector__btn--active'));
+                btn.classList.add('emoji-selector__btn--active');
+                selectedEmoji = btn.dataset.emoji;
             });
         });
 
@@ -2079,7 +2143,7 @@ const Points = (function() {
                     ...data.activities[activityIndex],
                     name,
                     points,
-                    icon: selectedIcon,
+                    emoji: selectedEmoji,
                     category: selectedCategory
                 };
                 Storage.setWidgetData(memberId, 'points', data);
@@ -2112,7 +2176,8 @@ const Points = (function() {
             return {
                 ...tc,
                 name: activity?.name || historyEntry?.activityName || 'Unknown Activity',
-                icon: activity?.icon || historyEntry?.activityIcon || 'star'
+                icon: activity?.icon || historyEntry?.activityIcon || 'star',
+                emoji: activity?.emoji || historyEntry?.activityEmoji || null
             };
         });
 
@@ -2124,7 +2189,7 @@ const Points = (function() {
                         <label class="reset-today-modal__item">
                             <input type="checkbox" value="${item.activityId}" data-points="${item.points}">
                             <div class="reset-today-modal__item-info">
-                                <i data-lucide="${item.icon}"></i>
+                                ${item.emoji ? `<span class="activity-emoji">${item.emoji}</span>` : `<i data-lucide="${item.icon}"></i>`}
                                 <span class="reset-today-modal__item-name">${item.name}</span>
                             </div>
                             <span class="reset-today-modal__item-points">-${item.points} pts</span>
@@ -2153,6 +2218,7 @@ const Points = (function() {
         // Reset all button
         document.getElementById('resetAllBtn')?.addEventListener('click', () => {
             const totalPoints = todayCompleted.reduce((sum, tc) => sum + tc.points, 0);
+            const totalActivities = todayCompleted.length;
 
             const updatedData = {
                 ...widgetData,
@@ -2162,6 +2228,13 @@ const Points = (function() {
             };
 
             Storage.setWidgetData(memberId, 'points', updatedData);
+
+            // Deduct from achievements stats
+            if (typeof Achievements !== 'undefined' && Achievements.updateStats) {
+                Achievements.updateStats(memberId, 'points', -totalPoints);
+                Achievements.updateStats(memberId, 'activity', -totalActivities);
+            }
+
             Toast.success(`Reset all activities for today (-${totalPoints} points)`);
             Modal.close();
 
@@ -2187,6 +2260,8 @@ const Points = (function() {
                 totalDeducted += parseInt(cb.dataset.points) || 0;
             });
 
+            const totalActivities = selectedItems.length;
+
             const updatedData = {
                 ...widgetData,
                 balance: Math.max(0, (widgetData.balance || 0) - totalDeducted),
@@ -2199,6 +2274,13 @@ const Points = (function() {
             };
 
             Storage.setWidgetData(memberId, 'points', updatedData);
+
+            // Deduct from achievements stats
+            if (typeof Achievements !== 'undefined' && Achievements.updateStats) {
+                Achievements.updateStats(memberId, 'points', -totalDeducted);
+                Achievements.updateStats(memberId, 'activity', -totalActivities);
+            }
+
             Toast.success(`Unmarked ${selectedItems.length} activities (-${totalDeducted} points)`);
 
             // Refresh widget
@@ -2239,6 +2321,56 @@ const Points = (function() {
         return summary;
     }
 
+    /**
+     * Add points programmatically from external modules (e.g., Achievements)
+     * @param {string} memberId - The member ID
+     * @param {number} points - Points to add (positive to add, negative to deduct)
+     * @param {string} reason - Reason for the points
+     * @param {string} source - Source module (e.g., 'Achievements', 'Habits')
+     */
+    function addPoints(memberId, points, reason, source = 'System') {
+        if (!memberId || points === 0) return false;
+
+        const widgetData = getWidgetData(memberId);
+        const today = DateUtils.today();
+        const now = new Date().toISOString();
+
+        const isDeduction = points < 0;
+        const absPoints = Math.abs(points);
+
+        // Create history entry
+        const entry = {
+            activityId: `${isDeduction ? 'deduction' : 'bonus'}-${Date.now()}`,
+            activityName: isDeduction ? 'Points Deduction' : 'Bonus Points',
+            activityIcon: isDeduction ? 'minus-circle' : 'award',
+            date: today,
+            completedAt: now,
+            points: absPoints,
+            basePoints: absPoints,
+            bonus: 0,
+            type: isDeduction ? 'deduction' : 'bonus',
+            reason: reason || source,
+            addedBy: source
+        };
+
+        // Update widget data
+        const updatedData = {
+            ...widgetData,
+            balance: Math.max(0, (widgetData.balance || 0) + points),
+            history: [entry, ...(widgetData.history || []).slice(0, 99)]
+        };
+
+        Storage.setWidgetData(memberId, 'points', updatedData);
+
+        // Refresh widget if visible
+        const widgetContainer = document.querySelector(`[data-widget="points"][data-member="${memberId}"] .widget-card__body`);
+        if (widgetContainer) {
+            renderWidget(widgetContainer, memberId);
+        }
+
+        return true;
+    }
+
     function init() {
         // Initialize points feature
     }
@@ -2248,6 +2380,7 @@ const Points = (function() {
         renderWidget,
         getWeeklySummary,
         completeActivity,
+        addPoints, // Allow external modules to add/deduct points
         showFullPage,
         showHistoryPage, // Legacy alias for backwards compatibility
         ACTIVITY_CATEGORIES,

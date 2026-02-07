@@ -140,10 +140,15 @@ const CaregiverHandoff = (function() {
                         <i data-lucide="clock"></i>
                         ${lastUpdated}
                     </span>
-                    <button class="btn btn--sm btn--ghost" data-action="history">
-                        <i data-lucide="history"></i>
-                        History
-                    </button>
+                    <div class="handoff-widget__actions">
+                        <button class="btn btn--sm btn--ghost" data-action="share" title="Share with caregiver">
+                            <i data-lucide="share-2"></i>
+                        </button>
+                        <button class="btn btn--sm btn--ghost" data-action="history">
+                            <i data-lucide="history"></i>
+                            History
+                        </button>
+                    </div>
                 </div>
             </div>
         `;
@@ -220,6 +225,11 @@ const CaregiverHandoff = (function() {
             renderWidget(container, memberId);
         });
 
+        // Share button
+        container.querySelector('[data-action="share"]')?.addEventListener('click', () => {
+            showShareModal(memberId);
+        });
+
         // History button
         container.querySelector('[data-action="history"]')?.addEventListener('click', () => {
             showFullPage(memberId);
@@ -277,10 +287,16 @@ const CaregiverHandoff = (function() {
             <div class="kid-page kid-page--handoff ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
                 <!-- Hero Section -->
                 <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark || '#92400E'}">
-                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
-                        <i data-lucide="arrow-left"></i>
-                        Back
-                    </button>
+                    <div class="kid-page__hero-actions">
+                        <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                            <i data-lucide="arrow-left"></i>
+                            Back
+                        </button>
+                        <button class="btn btn--ghost" id="shareHandoffBtn" title="Share with caregiver">
+                            <i data-lucide="share-2"></i>
+                            Share
+                        </button>
+                    </div>
                     <div class="kid-page__hero-content">
                         <h1 class="kid-page__hero-title">
                             📋 Caregiver Handoff
@@ -304,7 +320,7 @@ const CaregiverHandoff = (function() {
                 </div>
 
                 <!-- Tab Navigation -->
-                <div class="kid-page__tabs">
+                <div class="kid-page__tabs" style="--tab-color: ${colors.primary}">
                     ${tabs.map(t => `
                         <button class="kid-page__tab ${t.id === activeTab ? 'kid-page__tab--active' : ''}" data-tab="${t.id}">
                             <span class="emoji-icon">${t.emoji}</span>
@@ -502,6 +518,11 @@ const CaregiverHandoff = (function() {
             State.emit('tabChanged', memberId);
         });
 
+        // Share button
+        document.getElementById('shareHandoffBtn')?.addEventListener('click', () => {
+            showShareModal(memberId);
+        });
+
         // Tab switching
         container.querySelectorAll('[data-tab]').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -559,6 +580,183 @@ const CaregiverHandoff = (function() {
     }
 
     /**
+     * Generate shareable text summary
+     */
+    function generateShareText(memberId) {
+        const member = Storage.getMember(memberId);
+        const summary = getTodaySummary(memberId);
+        const today = DateUtils.today();
+        const formattedDate = DateUtils.formatShort(today);
+
+        let text = `📋 Handoff for ${member?.name || 'Child'} - ${formattedDate}\n\n`;
+        text += `${MOODS[summary.mood]} Mood: ${MOOD_LABELS[summary.mood]}\n`;
+
+        if (summary.mealsCount > 0) {
+            text += `🍽️ Meals: ${summary.mealsCount}\n`;
+        }
+        if (summary.napInfo) {
+            text += `😴 Nap: ${summary.napInfo}\n`;
+        }
+        if (summary.lastDiaper) {
+            text += `🧷 Last Diaper: ${summary.lastDiaper}\n`;
+        }
+        if (summary.notes) {
+            text += `\n📝 Notes:\n${summary.notes}\n`;
+        }
+        if (summary.important) {
+            text += `\n⚠️ Marked as Important\n`;
+        }
+        if (summary.updatedAt) {
+            const time = new Date(summary.updatedAt).toLocaleTimeString('en-US', {
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+            text += `\n🕐 Last updated: ${time}`;
+        }
+
+        return text;
+    }
+
+    /**
+     * Generate share data for URL encoding
+     */
+    function generateShareData(memberId) {
+        const member = Storage.getMember(memberId);
+        const summary = getTodaySummary(memberId);
+        const today = DateUtils.today();
+
+        return {
+            n: member?.name || 'Child',  // name
+            d: today,                     // date
+            m: summary.mood,              // mood
+            mc: summary.mealsCount,       // meals count
+            np: summary.napInfo,          // nap
+            dp: summary.lastDiaper,       // diaper
+            nt: summary.notes,            // notes
+            im: summary.important,        // important
+            ut: summary.updatedAt         // updated at
+        };
+    }
+
+    /**
+     * Generate shareable link
+     */
+    function generateShareLink(memberId) {
+        const data = generateShareData(memberId);
+        const encoded = btoa(encodeURIComponent(JSON.stringify(data)));
+        const baseUrl = window.location.origin + window.location.pathname.replace(/\/[^\/]*$/, '/');
+        return `${baseUrl}handoff-view.html?data=${encoded}`;
+    }
+
+    /**
+     * Show share modal
+     */
+    function showShareModal(memberId) {
+        const member = Storage.getMember(memberId);
+        const shareText = generateShareText(memberId);
+        const shareLink = generateShareLink(memberId);
+
+        const content = `
+            <div class="handoff-share-modal">
+                <p class="handoff-share-modal__intro">
+                    Share ${member?.name || 'child'}'s handoff summary securely. The caregiver will see a read-only view - no access to your Home Anchor data.
+                </p>
+
+                <div class="handoff-share-option">
+                    <div class="handoff-share-option__header">
+                        <i data-lucide="message-square"></i>
+                        <span>Copy as Text</span>
+                    </div>
+                    <p class="handoff-share-option__desc">Perfect for texting or messaging apps</p>
+                    <div class="handoff-share-preview">
+                        <pre>${shareText}</pre>
+                    </div>
+                    <button class="btn btn--primary btn--block" id="copyTextBtn">
+                        <i data-lucide="copy"></i>
+                        Copy Text
+                    </button>
+                </div>
+
+                <div class="handoff-share-option">
+                    <div class="handoff-share-option__header">
+                        <i data-lucide="link"></i>
+                        <span>Copy Share Link</span>
+                    </div>
+                    <p class="handoff-share-option__desc">Opens a read-only page (no app access)</p>
+                    <div class="handoff-share-link">
+                        <input type="text" class="form-input" value="${shareLink}" readonly id="shareLinkInput">
+                    </div>
+                    <button class="btn btn--secondary btn--block" id="copyLinkBtn">
+                        <i data-lucide="link"></i>
+                        Copy Link
+                    </button>
+                </div>
+
+                ${navigator.share ? `
+                    <div class="handoff-share-option handoff-share-option--native">
+                        <button class="btn btn--ghost btn--block" id="nativeShareBtn">
+                            <i data-lucide="share-2"></i>
+                            Share via...
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        Modal.open({
+            title: '📤 Share Handoff Summary',
+            content,
+            size: 'default',
+            footer: null
+        });
+
+        // Initialize icons
+        if (typeof lucide !== 'undefined') {
+            setTimeout(() => lucide.createIcons(), 50);
+        }
+
+        // Copy text button
+        document.getElementById('copyTextBtn')?.addEventListener('click', () => {
+            navigator.clipboard.writeText(shareText).then(() => {
+                Toast.success('Text copied to clipboard!');
+                Modal.close();
+            }).catch(() => {
+                Toast.error('Failed to copy');
+            });
+        });
+
+        // Copy link button
+        document.getElementById('copyLinkBtn')?.addEventListener('click', () => {
+            const input = document.getElementById('shareLinkInput');
+            navigator.clipboard.writeText(shareLink).then(() => {
+                Toast.success('Link copied to clipboard!');
+                Modal.close();
+            }).catch(() => {
+                // Fallback: select input text
+                input?.select();
+                document.execCommand('copy');
+                Toast.success('Link copied!');
+                Modal.close();
+            });
+        });
+
+        // Native share (mobile)
+        document.getElementById('nativeShareBtn')?.addEventListener('click', () => {
+            if (navigator.share) {
+                navigator.share({
+                    title: `Handoff for ${member?.name || 'Child'}`,
+                    text: shareText,
+                    url: shareLink
+                }).then(() => {
+                    Modal.close();
+                }).catch(() => {
+                    // User cancelled - do nothing
+                });
+            }
+        });
+    }
+
+    /**
      * Initialize
      */
     function init() {
@@ -568,6 +766,7 @@ const CaregiverHandoff = (function() {
     return {
         init,
         renderWidget,
-        showFullPage
+        showFullPage,
+        showShareModal
     };
 })();

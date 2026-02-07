@@ -130,6 +130,7 @@ const State = (function() {
         getState,
         setState,
         subscribe,
+        on: subscribe,  // Alias for subscribe
         emit,
         setActiveTab,
         getActiveTab,

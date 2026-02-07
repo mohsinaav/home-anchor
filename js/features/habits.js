@@ -116,7 +116,8 @@ const Habits = (function() {
             category: h.category || 'other',
             schedule: h.schedule || 'daily',
             customDays: h.customDays || null,
-            archived: h.archived || false
+            archived: h.archived || false,
+            createdAt: h.createdAt || null // null = allow all past dates (backward compatibility)
         }));
         return {
             ...stored,
@@ -493,6 +494,16 @@ const Habits = (function() {
         // Track habit check-in (only when completing, not uncompleting)
         if (!wasCompleted) {
             Storage.trackAction(memberId, 'habits', 'checkin');
+            // Log to Activity Monitor
+            if (habit) {
+                Storage.logActivityEvent({
+                    memberId: memberId,
+                    widgetId: 'habits',
+                    action: 'checkin',
+                    details: `Checked in habit "${habit.name}"`,
+                    meta: { habitId, habitName: habit.name, habitIcon: habit.icon }
+                });
+            }
         }
 
         // Update streaks
@@ -787,17 +798,21 @@ const Habits = (function() {
         const isRestDayCell = restDays[dateStr];
         const isScheduled = isHabitScheduledForDate(habit, dateStr);
 
+        // Check if date is before habit was created
+        const isBeforeCreation = habit.createdAt && dateStr < habit.createdAt;
+
         return `
             <td class="habits-tracker__cell
                 ${isCompleted ? 'habits-tracker__cell--done' : ''}
                 ${isTodayCell ? 'habits-tracker__cell--today' : ''}
                 ${!isPastOrToday ? 'habits-tracker__cell--future' : ''}
                 ${isRestDayCell ? 'habits-tracker__cell--rest' : ''}
-                ${!isScheduled ? 'habits-tracker__cell--not-scheduled' : ''}"
+                ${!isScheduled ? 'habits-tracker__cell--not-scheduled' : ''}
+                ${isBeforeCreation ? 'habits-tracker__cell--before-creation' : ''}"
                 data-date="${dateStr}"
                 data-habit-id="${habit.id}"
-                title="${getWeekday(d)} ${d}${isRestDayCell ? ' (Rest day)' : ''}${!isScheduled ? ' (Not scheduled)' : ''}"
-                ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
+                title="${getWeekday(d)} ${d}${isRestDayCell ? ' (Rest day)' : ''}${!isScheduled ? ' (Not scheduled)' : ''}${isBeforeCreation ? ' (Before habit created)' : ''}"
+                ${isPastOrToday && isScheduled && !isRestDayCell && !isBeforeCreation ? 'data-clickable="true"' : ''}>
                 <span class="habits-tracker__day-label">
                     <span class="habits-tracker__weekday-abbr">${getWeekday(d)}</span>
                     <span class="habits-tracker__day-num">${d}</span>
@@ -825,16 +840,20 @@ const Habits = (function() {
         const isRestDayCell = restDays[dateStr];
         const isScheduled = isHabitScheduledForDate(habit, dateStr);
 
+        // Check if date is before habit was created
+        const isBeforeCreation = habit.createdAt && dateStr < habit.createdAt;
+
         return `
             <div class="habits-mobile-cell
                 ${isCompleted ? 'habits-mobile-cell--done' : ''}
                 ${isTodayCell ? 'habits-mobile-cell--today' : ''}
                 ${!isPastOrToday ? 'habits-mobile-cell--future' : ''}
                 ${isRestDayCell ? 'habits-mobile-cell--rest' : ''}
-                ${!isScheduled ? 'habits-mobile-cell--not-scheduled' : ''}"
+                ${!isScheduled ? 'habits-mobile-cell--not-scheduled' : ''}
+                ${isBeforeCreation ? 'habits-mobile-cell--before-creation' : ''}"
                 data-date="${dateStr}"
                 data-habit-id="${habit.id}"
-                ${isPastOrToday && isScheduled && !isRestDayCell ? 'data-clickable="true"' : ''}>
+                ${isPastOrToday && isScheduled && !isRestDayCell && !isBeforeCreation ? 'data-clickable="true"' : ''}>
                 <span class="habits-mobile-cell__weekday">${getWeekday(d)}</span>
                 <span class="habits-mobile-cell__day">${d}</span>
             </div>
@@ -1098,7 +1117,35 @@ const Habits = (function() {
             cell.addEventListener('click', () => {
                 const dateStr = cell.dataset.date;
                 const habitId = cell.dataset.habitId;
+                const today = DateUtils.today();
+
+                // Get current state before toggling
+                const widgetDataBefore = getWidgetData(memberId);
+                const dayLogBefore = widgetDataBefore.log?.[dateStr] || [];
+                const wasCompleted = dayLogBefore.includes(habitId);
+
                 toggleHabitForDate(memberId, habitId, dateStr);
+                updateStreaks(memberId);
+
+                // Show celebration only if completing a habit today
+                if (!wasCompleted && dateStr === today) {
+                    const widgetData = getWidgetData(memberId);
+                    const habits = widgetData.habits.filter(h => !h.archived);
+                    const todayHabits = getTodayHabits(habits);
+                    const todayLog = widgetData.log[today] || [];
+                    const habit = habits.find(h => h.id === habitId);
+
+                    if (habit) {
+                        const isAllDone = todayHabits.every(h => todayLog.includes(h.id));
+                        const updatedHabit = getWidgetData(memberId).habits.find(h => h.id === habitId);
+                        showCelebration(updatedHabit || habit, isAllDone);
+
+                        if (isAllDone) {
+                            Toast.success('All habits completed today! 🎉');
+                        }
+                    }
+                }
+
                 renderFullPage(container, memberId, member, activeTab, currentDate);
             });
         });
@@ -1170,6 +1217,17 @@ const Habits = (function() {
         // Track habit check-in (only when completing, not uncompleting)
         if (!wasCompleted) {
             Storage.trackAction(memberId, 'habits', 'checkin');
+            // Log to Activity Monitor
+            const habit = widgetData.habits.find(h => h.id === habitId);
+            if (habit) {
+                Storage.logActivityEvent({
+                    memberId: memberId,
+                    widgetId: 'habits',
+                    action: 'checkin',
+                    details: `Checked in habit "${habit.name}"`,
+                    meta: { habitId, habitName: habit.name, habitIcon: habit.icon }
+                });
+            }
         }
 
         updateStreaks(memberId);
@@ -1679,7 +1737,8 @@ const Habits = (function() {
             customDays,
             streak: 0,
             bestStreak: 0,
-            archived: false
+            archived: false,
+            createdAt: DateUtils.today() // Track when habit was created
         };
 
         const updatedData = {

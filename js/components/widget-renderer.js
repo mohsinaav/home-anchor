@@ -27,7 +27,7 @@ const WidgetRenderer = (function() {
         'workout', 'task-list', 'meal-plan', 'habits', 'gratitude', 'recipes',
         'grocery', 'routine', 'daily-log', 'toddler-routine', 'activities', 'journal',
         // Kid widgets with full page views
-        'chores', 'screen-time', 'achievements', 'rewards', 'caregiver-handoff', 'growth-chart'
+        'chores', 'screen-time', 'achievements', 'rewards', 'caregiver-handoff', 'growth-chart', 'milestones', 'memory-book'
     ];
 
     // Widget component registry - maps widget IDs to their render functions
@@ -211,16 +211,16 @@ const WidgetRenderer = (function() {
             title: 'Chores',
             icon: 'list-checks'
         },
-        'accomplishments': {
+        'memory-book': {
             render: (container, member) => {
-                if (typeof Accomplishments !== 'undefined' && Accomplishments.renderWidget) {
-                    Accomplishments.renderWidget(container, member.id);
+                if (typeof MemoryBook !== 'undefined' && MemoryBook.renderWidget) {
+                    MemoryBook.renderWidget(container, member.id);
                 } else {
-                    renderPlaceholder(container, 'Accomplishments', 'trophy', 'Extra achievements log');
+                    renderPlaceholder(container, 'Memory Book', 'book-heart', 'Capture special moments');
                 }
             },
-            title: 'Accomplishments',
-            icon: 'trophy'
+            title: 'Memory Book',
+            icon: 'book-heart'
         },
         'screen-time': {
             render: (container, member) => {
@@ -456,6 +456,11 @@ const WidgetRenderer = (function() {
             widgetCard.dataset.index = index;
             widgetCard.draggable = true;
 
+            // Add gender data attribute for milestones widget (for gender-based styling)
+            if (widgetId === 'milestones' && member?.gender) {
+                widgetCard.dataset.gender = member.gender;
+            }
+
             const isExpandable = EXPANDABLE_WIDGETS.includes(widgetId);
 
             widgetCard.innerHTML = `
@@ -573,9 +578,11 @@ const WidgetRenderer = (function() {
                     ${widgets.map(widgetId => {
                         const config = widgetComponents[widgetId];
                         const isActive = widgetId === focusedWidgetId;
+                        const genderAttr = widgetId === 'milestones' && member?.gender ? `data-gender="${member.gender}"` : '';
                         return `
                             <button class="focus-nav__tab ${isActive ? 'focus-nav__tab--active' : ''} focus-nav__tab--${widgetId}"
                                     data-focus-widget="${widgetId}"
+                                    ${genderAttr}
                                     title="${config?.title || 'Widget'}">
                                 <span class="focus-nav__tab-icon">
                                     <i data-lucide="${config?.icon || 'star'}"></i>
@@ -861,9 +868,11 @@ const WidgetRenderer = (function() {
                     ${widgets.map(widgetId => {
                         const config = widgetComponents[widgetId];
                         const isActive = widgetId === focusedWidgetId;
+                        const genderAttr = widgetId === 'milestones' && member?.gender ? `data-gender="${member.gender}"` : '';
                         return `
                             <button class="focus-nav__tab ${isActive ? 'focus-nav__tab--active' : ''} focus-nav__tab--${widgetId}"
                                     data-focus-widget="${widgetId}"
+                                    ${genderAttr}
                                     title="${config?.title || 'Widget'}">
                                 <span class="focus-nav__tab-icon">
                                     <i data-lucide="${config?.icon || 'star'}"></i>
@@ -1530,10 +1539,12 @@ const WidgetRenderer = (function() {
             'chores': () => typeof Chores !== 'undefined' && Chores.showFullPage ? Chores.showFullPage(member.id) : null,
             'screen-time': () => typeof ScreenTime !== 'undefined' && ScreenTime.showFullPage ? ScreenTime.showFullPage(member.id) : null,
             'achievements': () => typeof Achievements !== 'undefined' && Achievements.showFullPage ? Achievements.showFullPage(member.id) : null,
+            'memory-book': () => typeof MemoryBook !== 'undefined' && MemoryBook.showTimelinePage ? MemoryBook.showTimelinePage(member.id) : null,
             'rewards': () => typeof Rewards !== 'undefined' && Rewards.showFullPage ? Rewards.showFullPage(member.id) : null,
             // Toddler widgets
             'caregiver-handoff': () => typeof CaregiverHandoff !== 'undefined' && CaregiverHandoff.showFullPage ? CaregiverHandoff.showFullPage(member.id) : null,
-            'growth-chart': () => typeof GrowthChart !== 'undefined' && GrowthChart.showFullPage ? GrowthChart.showFullPage(member.id) : null
+            'growth-chart': () => typeof GrowthChart !== 'undefined' && GrowthChart.showFullPage ? GrowthChart.showFullPage(member.id) : null,
+            'milestones': () => typeof Milestones !== 'undefined' && Milestones.showFullPage ? Milestones.showFullPage(member.id) : null
         };
 
         const handler = expandHandlers[widgetId];

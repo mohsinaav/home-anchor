@@ -13,14 +13,14 @@
     { "name": "Set the table", "points": 5, "icon": "utensils-crossed" },
     { "name": "Feed pet", "points": 5, "icon": "heart" },
     { "name": "Take out trash", "points": 10, "icon": "trash" },
-    { "name": "Water plants", "points": 5, "icon": "flower-2" },
+    { "name": "Water plants", "points": 5, "icon": "flower" },
     { "name": "Be kind to sibling", "points": 10, "icon": "heart-handshake" },
     { "name": "No screen time before homework", "points": 10, "icon": "tv-off" }
   ],
   "defaultRewards": [
     { "name": "30 min screen time", "cost": 50, "icon": "tv" },
     { "name": "Extra 15 min bedtime", "cost": 75, "icon": "moon" },
-    { "name": "Pick dinner", "cost": 100, "icon": "pizza" },
+    { "name": "Pick dinner", "cost": 100, "icon": "utensils" },
     { "name": "Pick a movie", "cost": 75, "icon": "film" },
     { "name": "Skip one chore", "cost": 100, "icon": "x-circle" },
     { "name": "Ice cream treat", "cost": 150, "icon": "ice-cream-2" },
@@ -39,7 +39,7 @@
     { "name": "Nature walk", "category": "outdoor", "icon": "tree-pine" },
     { "name": "Sandbox play", "category": "outdoor", "icon": "shovel" },
     { "name": "Color sorting", "category": "learning", "icon": "palette" },
-    { "name": "Animal sounds", "category": "learning", "icon": "cat" },
+    { "name": "Animal sounds", "category": "learning", "icon": "heart" },
     { "name": "Puzzle time", "category": "motor", "icon": "puzzle" },
     { "name": "Water play", "category": "sensory", "icon": "droplets" },
     { "name": "Ball games", "category": "movement", "icon": "circle" },
@@ -73,7 +73,7 @@
   ],
   "icons": {
     "activities": ["bed", "sparkles", "book", "book-open", "utensils", "home", "music", "shirt", "heart", "star", "check-circle", "award"],
-    "rewards": ["tv", "moon", "pizza", "film", "gift", "ice-cream-2", "users", "map-pin", "banknote", "gamepad-2", "candy", "party-popper"],
-    "tabs": ["user", "star", "baby", "heart", "home", "briefcase", "book", "music", "gamepad-2", "sun"]
+    "rewards": ["tv", "moon", "utensils", "film", "gift", "ice-cream-2", "users", "map-pin", "banknote", "gamepad", "gift", "party-popper"],
+    "tabs": ["user", "star", "baby", "heart", "home", "briefcase", "book", "music", "gamepad", "sun"]
   }
 }

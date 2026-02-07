@@ -940,42 +940,31 @@ const Grocery = (function() {
                 <!-- Grocery List -->
                 <div class="grocery-page__list" id="groceryList">
                     ${uncheckedItems.length === 0 && checkedItems.length === 0 ? `
-                        <div class="grocery-empty">
-                            <div class="grocery-empty__illustration">
-                                <div class="grocery-empty__icon">
-                                    <i data-lucide="shopping-bag"></i>
-                                </div>
-                                <div class="grocery-empty__shapes">
-                                    <span class="grocery-empty__shape"></span>
-                                    <span class="grocery-empty__shape"></span>
-                                    <span class="grocery-empty__shape"></span>
-                                </div>
-                            </div>
-                            <h3>Your shopping list is empty</h3>
-                            <p>Add items above or generate from your meal plan</p>
-                            <button class="btn btn--primary" id="emptyGenerateBtn">
+                        <div class="grocery-empty grocery-empty--compact">
+                            <p>Your shopping list is empty — add items to a store below or generate from your meal plan</p>
+                            <button class="btn btn--primary btn--sm" id="emptyGenerateBtn">
                                 <i data-lucide="calendar"></i>
                                 Generate from Meal Plan
                             </button>
                         </div>
-                    ` : `
-                        ${renderStoreGroupedList(memberId, uncheckedItems, stores)}
+                    ` : ''}
 
-                        ${checkedItems.length > 0 ? `
-                            <div class="grocery-checked-section">
-                                <button class="grocery-checked-toggle" id="toggleCheckedBtn">
-                                    <i data-lucide="chevron-down"></i>
-                                    <span>Checked off (${checkedItems.length})</span>
-                                </button>
-                                <div class="grocery-checked-list" id="checkedItemsList">
-                                    ${checkedItems.map(item => {
-                                        const cat = CATEGORIES.find(c => c.id === item.category) || CATEGORIES.find(c => c.id === 'other');
-                                        return renderGroceryItem(item, memberId, cat, true);
-                                    }).join('')}
-                                </div>
+                    ${renderStoreGroupedList(memberId, uncheckedItems, stores)}
+
+                    ${checkedItems.length > 0 ? `
+                        <div class="grocery-checked-section">
+                            <button class="grocery-checked-toggle" id="toggleCheckedBtn">
+                                <i data-lucide="chevron-down"></i>
+                                <span>Checked off (${checkedItems.length})</span>
+                            </button>
+                            <div class="grocery-checked-list" id="checkedItemsList">
+                                ${checkedItems.map(item => {
+                                    const cat = CATEGORIES.find(c => c.id === item.category) || CATEGORIES.find(c => c.id === 'other');
+                                    return renderGroceryItem(item, memberId, cat, true);
+                                }).join('')}
                             </div>
-                        ` : ''}
-                    `}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;

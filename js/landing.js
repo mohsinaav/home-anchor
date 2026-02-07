@@ -145,7 +145,7 @@
                         { id: 's2', time: '07:30', activity: 'Breakfast', icon: 'utensils', color: '#10B981' },
                         { id: 's3', time: '08:00', activity: 'School', icon: 'book', color: '#3B82F6' },
                         { id: 's4', time: '15:00', activity: 'Homework', icon: 'edit', color: '#8B5CF6' },
-                        { id: 's5', time: '16:00', activity: 'Play Time', icon: 'gamepad-2', color: '#EC4899' },
+                        { id: 's5', time: '16:00', activity: 'Play Time', icon: 'gamepad', color: '#EC4899' },
                         { id: 's6', time: '19:00', activity: 'Dinner', icon: 'utensils', color: '#10B981' },
                         { id: 's7', time: '20:00', activity: 'Bedtime', icon: 'moon', color: '#6366F1' }
                     ]

@@ -638,7 +638,12 @@ const Meals = (function() {
         let currentVariant = 'adult';
         const adultSlot = normalizeMealSlot(dayPlan.adult?.[mealType]);
         const kidsSlot = normalizeMealSlot(dayPlan.kids?.[mealType]);
-        let mealItems = [...adultSlot.items];
+        // Cache each variant's items in memory so switching doesn't lose unsaved edits
+        const variantItemsCache = {
+            adult: [...adultSlot.items],
+            kids: [...kidsSlot.items]
+        };
+        let mealItems = variantItemsCache.adult;
 
         const content = `
             <form id="editMealForm">
@@ -762,6 +767,9 @@ const Meals = (function() {
                 const newVariant = btn.dataset.variant;
                 if (newVariant === currentVariant) return;
 
+                // Save current variant's items to cache before switching
+                variantItemsCache[currentVariant] = [...mealItems];
+
                 currentVariant = newVariant;
 
                 // Update button states
@@ -775,11 +783,8 @@ const Meals = (function() {
                     modalTitle.textContent = `Today's ${capitalizeFirst(mealType)} (${newVariant === 'adult' ? 'Adult' : 'Kids'})`;
                 }
 
-                // Load the new variant's items
-                const freshData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
-                const freshDayPlan = normalizeDayPlan(freshData.weeklyPlan?.[today]);
-                const freshSlot = normalizeMealSlot(freshDayPlan[newVariant]?.[mealType]);
-                mealItems = [...freshSlot.items];
+                // Load the new variant's items from cache
+                mealItems = [...variantItemsCache[newVariant]];
                 updateTagsDisplay();
                 mealInput.placeholder = mealItems.length > 0 ? 'Add another item...' : 'Type a meal and press Enter...';
             });
@@ -812,14 +817,24 @@ const Meals = (function() {
                 mealItems.push(remaining);
             }
 
+            // Update cache with current variant's final items
+            variantItemsCache[currentVariant] = [...mealItems];
+
             // Check if "Apply to both" checkbox is checked
             const applyToBoth = document.getElementById('applyToBothCheckbox')?.checked;
 
             if (applyToBoth && kidsMenuEnabled) {
-                // Save to both adult and kids
+                // Save current items to both adult and kids
                 saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, 'adult');
                 saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, 'kids');
                 Toast.success('Meal saved to both Adults and Kids!');
+            } else if (kidsMenuEnabled) {
+                // Save both variants from cache so edits to either variant are preserved
+                const adultItems = variantItemsCache.adult;
+                const kidsItems = variantItemsCache.kids;
+                saveMeal(memberId, today, mealType, adultItems.length > 0 ? adultItems : null, 'adult');
+                saveMeal(memberId, today, mealType, kidsItems.length > 0 ? kidsItems : null, 'kids');
+                Toast.success('Meal saved!');
             } else {
                 saveMeal(memberId, today, mealType, mealItems.length > 0 ? mealItems : null, currentVariant);
                 Toast.success('Meal saved!');
@@ -970,12 +985,6 @@ const Meals = (function() {
         if (day.isToday) classes.push('planner-cell--today');
         if (isCompleted) classes.push('planner-cell--completed');
 
-        // Get recipe icons for items
-        function getRecipeIcon(itemName) {
-            const recipe = recipes.find(r => r.name === itemName);
-            return recipe?.icon || null;
-        }
-
         return `
             <td class="${classes.join(' ')}"
                 data-date="${day.date}"
@@ -997,9 +1006,7 @@ const Meals = (function() {
                         <div class="planner-cell__items ${isCompleted ? 'planner-cell__items--done' : ''}">
                             ${slot.items.map(item => {
                                 const truncated = truncateWithTooltip(item, 20);
-                                const icon = getRecipeIcon(item);
                                 return `<span class="planner-cell__item" ${truncated.needsTooltip ? `title="${item}"` : ''}>
-                                    ${icon ? `<i data-lucide="${icon}" class="planner-cell__item-icon"></i>` : ''}
                                     ${truncated.display}
                                 </span>`;
                             }).join('')}
@@ -2071,10 +2078,16 @@ const Meals = (function() {
     function showMealEditModal(memberId, date, mealType, variant = 'adult') {
         const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
         const dayPlan = normalizeDayPlan(widgetData.weeklyPlan?.[date]);
-        const slot = normalizeMealSlot(dayPlan[variant]?.[mealType]);
-        let mealItems = [...slot.items];
-        let mealProtein = slot.protein || null;
-        let mealPrepNotes = slot.prepNotes || '';
+        const adultSlotFull = normalizeMealSlot(dayPlan.adult?.[mealType]);
+        const kidsSlotFull = normalizeMealSlot(dayPlan.kids?.[mealType]);
+        // Cache each variant's data in memory so switching doesn't lose unsaved edits
+        const variantDataCache = {
+            adult: { items: [...adultSlotFull.items], protein: adultSlotFull.protein || null, prepNotes: adultSlotFull.prepNotes || '' },
+            kids: { items: [...kidsSlotFull.items], protein: kidsSlotFull.protein || null, prepNotes: kidsSlotFull.prepNotes || '' }
+        };
+        let mealItems = [...variantDataCache[variant].items];
+        let mealProtein = variantDataCache[variant].protein;
+        let mealPrepNotes = variantDataCache[variant].prepNotes;
         const recipes = getAllRecipes(memberId);
 
         // Use DateUtils.parseLocalDate to avoid timezone issues with YYYY-MM-DD strings
@@ -2200,6 +2213,15 @@ const Meals = (function() {
             btn.addEventListener('click', () => {
                 const newVariant = btn.dataset.variant;
                 if (newVariant !== variant) {
+                    // Save current variant's data to cache before switching
+                    const currentProteinInput = document.getElementById('mealProteinInput');
+                    const currentPrepInput = document.getElementById('mealPrepInput');
+                    variantDataCache[variant] = {
+                        items: [...mealItems],
+                        protein: currentProteinInput?.value ? parseInt(currentProteinInput.value, 10) : null,
+                        prepNotes: currentPrepInput?.value?.trim() || ''
+                    };
+
                     // Update variant state
                     variant = newVariant;
 
@@ -2208,13 +2230,11 @@ const Meals = (function() {
                         b.classList.toggle('variant-btn--active', b.dataset.variant === newVariant);
                     });
 
-                    // Load new variant's data
-                    const freshData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {}, recipes: [] };
-                    const freshDayPlan = normalizeDayPlan(freshData.weeklyPlan?.[date]);
-                    const freshSlot = normalizeMealSlot(freshDayPlan[newVariant]?.[mealType]);
-                    mealItems = [...freshSlot.items];
-                    mealProtein = freshSlot.protein || null;
-                    mealPrepNotes = freshSlot.prepNotes || '';
+                    // Load new variant's data from cache
+                    const cached = variantDataCache[newVariant];
+                    mealItems = [...cached.items];
+                    mealProtein = cached.protein;
+                    mealPrepNotes = cached.prepNotes;
 
                     // Update prep notes input
                     const prepInput = document.getElementById('mealPrepInput');
@@ -2378,14 +2398,23 @@ const Meals = (function() {
                 mealItems.push(remaining);
             }
             // Get protein value (only for adult variant)
-            const proteinValue = proteinInput?.value ? parseInt(proteinInput.value, 10) : null;
+            const currentProteinEl = document.getElementById('mealProteinInput');
+            const proteinValue = currentProteinEl?.value ? parseInt(currentProteinEl.value, 10) : null;
             // Get prep notes
             const prepNotesValue = document.getElementById('mealPrepInput')?.value?.trim() || null;
+
+            // Update cache with current variant's final state
+            variantDataCache[variant] = {
+                items: [...mealItems],
+                protein: proteinValue,
+                prepNotes: prepNotesValue || ''
+            };
+
             // Check if "Apply to Both" is checked
             const applyToBoth = document.getElementById('applyToBoth')?.checked;
 
             if (applyToBoth) {
-                // Save to both variants
+                // Save to both variants with the same data
                 saveMealWithVariant(memberId, date, mealType, 'adult', mealItems.length > 0 ? mealItems : null, proteinValue, prepNotesValue);
                 saveMealWithVariant(memberId, date, mealType, 'kids', mealItems.length > 0 ? mealItems : null, null, prepNotesValue);
                 Modal.close();
@@ -2394,15 +2423,15 @@ const Meals = (function() {
                     Toast.success('Meal saved for both Adult & Kids!');
                 }
             } else {
-                saveMealWithVariant(
-                    memberId,
-                    date,
-                    mealType,
-                    variant,
-                    mealItems.length > 0 ? mealItems : null,
-                    proteinValue,
-                    prepNotesValue
-                );
+                // Save both variants from cache so edits to either are preserved
+                const adultData = variantDataCache.adult;
+                const kidsData = variantDataCache.kids;
+                saveMealWithVariant(memberId, date, mealType, 'adult',
+                    adultData.items.length > 0 ? adultData.items : null,
+                    adultData.protein, adultData.prepNotes || null);
+                saveMealWithVariant(memberId, date, mealType, 'kids',
+                    kidsData.items.length > 0 ? kidsData.items : null,
+                    kidsData.protein, kidsData.prepNotes || null);
                 Modal.close();
                 showWeeklyPlannerPage(memberId);
                 if (mealItems.length > 0) {
@@ -3036,6 +3065,48 @@ Tuesday:
         return widgetData.weeklyPlan?.[today] || null;
     }
 
+    /**
+     * Add a recipe to a meal plan slot (appends, does not replace)
+     * @param {string} memberId
+     * @param {string} date - YYYY-MM-DD
+     * @param {string} mealType - 'breakfast', 'lunch', 'snacks', or 'dinner'
+     * @param {string} recipeName
+     * @param {string} variant - 'adult' or 'kids'
+     * @returns {boolean} true if added, false if already present
+     */
+    function addRecipeToMealPlan(memberId, date, mealType, recipeName, variant = 'adult') {
+        const widgetData = Storage.getWidgetData(memberId, 'meal-plan') || { weeklyPlan: {} };
+        const dayPlan = normalizeDayPlan(widgetData.weeklyPlan?.[date]);
+        const slot = normalizeMealSlot(dayPlan[variant]?.[mealType]);
+
+        if (slot.items.some(item => item.toLowerCase() === recipeName.toLowerCase())) {
+            return false;
+        }
+
+        slot.items.push(recipeName);
+
+        if (!dayPlan[variant]) dayPlan[variant] = {};
+        dayPlan[variant][mealType] = slot;
+
+        const updatedData = {
+            ...widgetData,
+            weeklyPlan: {
+                ...widgetData.weeklyPlan,
+                [date]: dayPlan
+            }
+        };
+
+        Storage.setWidgetData(memberId, 'meal-plan', updatedData);
+        Storage.trackAction(memberId, 'meal-plan', 'planned');
+
+        const widgetBody = document.getElementById('widget-meal-plan');
+        if (widgetBody) {
+            renderWidget(widgetBody, memberId);
+        }
+
+        return true;
+    }
+
     function init() {
         // Initialize meals feature
     }
@@ -3045,6 +3116,7 @@ Tuesday:
         renderWidget,
         getTodaysMeals,
         showWeeklyPlannerPage,
-        showMealPlanImportModal
+        showMealPlanImportModal,
+        addRecipeToMealPlan
     };
 })();

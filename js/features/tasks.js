@@ -547,6 +547,14 @@ const Tasks = (function() {
                     Storage.setWidgetData(memberId, 'task-list', widgetData);
                     if (checkbox.checked) {
                         Storage.trackAction(memberId, 'task-list', 'completed');
+                        // Log to Activity Monitor
+                        Storage.logActivityEvent({
+                            memberId: memberId,
+                            widgetId: 'task-list',
+                            action: 'completed',
+                            details: `Completed task "${task.text}"`,
+                            meta: { taskId: task.id, taskText: task.text, priority: task.priority }
+                        });
                     }
 
                     // Sync with Vision Board if this task came from a goal step
@@ -1272,7 +1280,7 @@ const Tasks = (function() {
                         <span>Day ${dayOfMonth} of ${daysInMonth}</span>
                         ${lastMonthCompleted > 0 ? `
                             <span class="tasks-stats__comparison ${thisMonthCompleted >= lastMonthCompleted ? 'tasks-stats__comparison--up' : 'tasks-stats__comparison--down'}">
-                                <i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'trending-down'}"></i>
+                                <i data-lucide="${thisMonthCompleted >= lastMonthCompleted ? 'trending-up' : 'arrow-down'}"></i>
                                 ${thisMonthCompleted >= lastMonthCompleted ? '+' : ''}${thisMonthCompleted - lastMonthCompleted} vs last month
                             </span>
                         ` : ''}
@@ -1654,6 +1662,17 @@ const Tasks = (function() {
                     task.completed = checkbox.checked;
                     task.completedAt = checkbox.checked ? DateUtils.today() : null;
                     Storage.setWidgetData(memberId, 'task-list', widgetData);
+
+                    if (checkbox.checked) {
+                        // Log to Activity Monitor
+                        Storage.logActivityEvent({
+                            memberId: memberId,
+                            widgetId: 'task-list',
+                            action: 'completed',
+                            details: `Completed task "${task.text}"`,
+                            meta: { taskId: task.id, taskText: task.text, priority: task.priority }
+                        });
+                    }
 
                     // Sync with Vision Board if this task came from a goal step
                     syncWithVisionBoard(memberId, task);

@@ -13,34 +13,34 @@ const KidTheme = (function() {
         TEEN: 'teen'         // 13+
     };
 
-    // Widget color schemes
+    // Widget color schemes - Bright & Vibrant for Kids!
     const WIDGET_COLORS = {
         'points': {
             primary: '#F59E0B',
-            gradient: 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 50%, #FCD34D 100%)',
+            gradient: 'linear-gradient(135deg, #FCD34D 0%, #FBBF24 40%, #F59E0B 100%)',
             light: '#FEF3C7',
-            dark: '#D97706',
+            dark: '#92400E',
             emoji: '⭐'
         },
         'rewards': {
             primary: '#3B82F6',
-            gradient: 'linear-gradient(135deg, #DBEAFE 0%, #BFDBFE 50%, #93C5FD 100%)',
+            gradient: 'linear-gradient(135deg, #60A5FA 0%, #3B82F6 40%, #2563EB 100%)',
             light: '#DBEAFE',
-            dark: '#1D4ED8',
+            dark: '#1E3A8A',
             emoji: '🎁'
         },
         'achievements': {
             primary: '#8B5CF6',
-            gradient: 'linear-gradient(135deg, #EDE9FE 0%, #DDD6FE 50%, #C4B5FD 100%)',
+            gradient: 'linear-gradient(135deg, #A78BFA 0%, #8B5CF6 40%, #7C3AED 100%)',
             light: '#EDE9FE',
-            dark: '#6D28D9',
+            dark: '#4C1D95',
             emoji: '🏆'
         },
         'kid-tasks': {
-            primary: '#EAB308',
-            gradient: 'linear-gradient(135deg, #FEF9C3 0%, #FEF08A 50%, #FDE047 100%)',
-            light: '#FEF9C3',
-            dark: '#CA8A04',
+            primary: '#F97316',
+            gradient: 'linear-gradient(135deg, #FB923C 0%, #F97316 40%, #EA580C 100%)',
+            light: '#FED7AA',
+            dark: '#9A3412',
             emoji: '📝'
         },
         'kid-journal': {
@@ -52,24 +52,73 @@ const KidTheme = (function() {
         },
         'kid-workout': {
             primary: '#22C55E',
-            gradient: 'linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 50%, #86EFAC 100%)',
+            gradient: 'linear-gradient(135deg, #4ADE80 0%, #22C55E 40%, #16A34A 100%)',
             light: '#DCFCE7',
-            dark: '#15803D',
+            dark: '#14532D',
             emoji: '🏃'
         },
         'screen-time': {
             primary: '#06B6D4',
-            gradient: 'linear-gradient(135deg, #CFFAFE 0%, #A5F3FC 50%, #67E8F9 100%)',
+            gradient: 'linear-gradient(135deg, #22D3EE 0%, #06B6D4 40%, #0891B2 100%)',
             light: '#CFFAFE',
-            dark: '#0E7490',
+            dark: '#164E63',
             emoji: '📱'
         },
         'chores': {
             primary: '#10B981',
-            gradient: 'linear-gradient(135deg, #D1FAE5 0%, #A7F3D0 50%, #6EE7B7 100%)',
+            gradient: 'linear-gradient(135deg, #34D399 0%, #10B981 40%, #059669 100%)',
             light: '#D1FAE5',
-            dark: '#047857',
+            dark: '#064E3B',
             emoji: '🧹'
+        },
+        'daily-log': {
+            primary: '#6366F1',
+            gradient: 'linear-gradient(135deg, #818CF8 0%, #6366F1 40%, #4F46E5 100%)',
+            light: '#E0E7FF',
+            dark: '#312E81',
+            emoji: '📋'
+        },
+        'milestones': {
+            primary: '#F43F5E',
+            gradient: 'linear-gradient(135deg, #FB7185 0%, #F43F5E 40%, #E11D48 100%)',
+            light: '#FFE4E6',
+            dark: '#881337',
+            emoji: '🌟'
+        },
+        'growth-chart': {
+            primary: '#14B8A6',
+            gradient: 'linear-gradient(135deg, #2DD4BF 0%, #14B8A6 40%, #0D9488 100%)',
+            light: '#CCFBF1',
+            dark: '#134E4A',
+            emoji: '📏'
+        },
+        'caregiver-handoff': {
+            primary: '#F59E0B',
+            gradient: 'linear-gradient(135deg, #FBBF24 0%, #F59E0B 40%, #D97706 100%)',
+            light: '#FEF3C7',
+            dark: '#78350F',
+            emoji: '👋'
+        },
+        'routine': {
+            primary: '#0EA5E9',
+            gradient: 'linear-gradient(135deg, #38BDF8 0%, #0EA5E9 40%, #0284C7 100%)',
+            light: '#E0F2FE',
+            dark: '#0C4A6E',
+            emoji: '⏰'
+        },
+        'activities': {
+            primary: '#F97316',
+            gradient: 'linear-gradient(135deg, #FB923C 0%, #F97316 40%, #EA580C 100%)',
+            light: '#FFEDD5',
+            dark: '#7C2D12',
+            emoji: '🎯'
+        },
+        'vision-board': {
+            primary: '#A855F7',
+            gradient: 'linear-gradient(135deg, #C084FC 0%, #A855F7 40%, #9333EA 100%)',
+            light: '#F3E8FF',
+            dark: '#581C87',
+            emoji: '🎨'
         }
     };
 
