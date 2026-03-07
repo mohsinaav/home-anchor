@@ -1043,8 +1043,8 @@ const ToddlerRoutine = (function() {
             routineMap[r.id] = r;
         });
 
-        // Get all dates with history
-        const datesWithHistory = history.map(h => h.date);
+        // Get all dates with actual completed routines (not just tracked days with 0 completions)
+        const datesWithHistory = history.filter(h => h.completed > 0).map(h => h.date);
 
         // Sort history by date descending
         const sortedHistory = [...history].sort((a, b) => b.date.localeCompare(a.date));

@@ -27,7 +27,7 @@ const WidgetRenderer = (function() {
         'workout', 'task-list', 'meal-plan', 'habits', 'gratitude', 'recipes',
         'grocery', 'routine', 'daily-log', 'toddler-routine', 'activities', 'journal',
         // Kid widgets with full page views
-        'chores', 'screen-time', 'achievements', 'rewards', 'caregiver-handoff', 'growth-chart', 'milestones', 'memory-book'
+        'chores', 'screen-time', 'achievements', 'rewards', 'caregiver-handoff', 'growth-chart', 'milestones', 'memory-book', 'bookmarks'
     ];
 
     // Widget component registry - maps widget IDs to their render functions
@@ -333,6 +333,17 @@ const WidgetRenderer = (function() {
             },
             title: 'My Routine',
             icon: 'image'
+        },
+        'bookmarks': {
+            render: (container, member) => {
+                if (typeof Bookmarks !== 'undefined' && Bookmarks.renderWidget) {
+                    Bookmarks.renderWidget(container, member.id);
+                } else {
+                    renderPlaceholder(container, 'Bookmarks', 'bookmark', 'Save and organize useful links');
+                }
+            },
+            title: 'Bookmarks',
+            icon: 'bookmark'
         }
     };
 
@@ -1544,7 +1555,8 @@ const WidgetRenderer = (function() {
             // Toddler widgets
             'caregiver-handoff': () => typeof CaregiverHandoff !== 'undefined' && CaregiverHandoff.showFullPage ? CaregiverHandoff.showFullPage(member.id) : null,
             'growth-chart': () => typeof GrowthChart !== 'undefined' && GrowthChart.showFullPage ? GrowthChart.showFullPage(member.id) : null,
-            'milestones': () => typeof Milestones !== 'undefined' && Milestones.showFullPage ? Milestones.showFullPage(member.id) : null
+            'milestones': () => typeof Milestones !== 'undefined' && Milestones.showFullPage ? Milestones.showFullPage(member.id) : null,
+            'bookmarks': () => typeof Bookmarks !== 'undefined' && Bookmarks.showFullPage ? Bookmarks.showFullPage(member.id) : null
         };
 
         const handler = expandHandlers[widgetId];

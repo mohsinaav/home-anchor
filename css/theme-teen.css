@@ -269,3 +269,571 @@
         padding: var(--space-3);
     }
 }
+
+/* ==========================================================================
+   Dark Mode - Teen Theme
+   ========================================================================== */
+
+/* Teen tab background - dark mode */
+html.dark-mode .tab-content--teen {
+    background: #0F172A !important;
+}
+
+/* Layout toggle (Focus/Grid) - dark mode */
+html.dark-mode .tab-content--teen .layout-toggle-group {
+    background: #334155 !important;
+}
+
+html.dark-mode .tab-content--teen .layout-toggle-btn {
+    color: #CBD5E1 !important;
+    background: transparent !important;
+    border-color: transparent !important;
+}
+
+html.dark-mode .tab-content--teen .layout-toggle-btn:hover {
+    color: #F1F5F9 !important;
+    background: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .layout-toggle-btn--active {
+    background: linear-gradient(135deg, #7C3AED 0%, #6366F1 100%) !important;
+    color: #FFFFFF !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 8px rgba(124, 58, 237, 0.4);
+}
+
+html.dark-mode .tab-content--teen .layout-toggle-btn--active:hover {
+    background: linear-gradient(135deg, #8B5CF6 0%, #818CF8 100%) !important;
+    color: #FFFFFF !important;
+}
+
+/* Teen sidebar - dark mode (use !important to override light mode) */
+html.dark-mode .tab-content--teen .member-sidebar {
+    background: linear-gradient(180deg, #1E293B 0%, #4C1D95 100%) !important;
+    border-color: #8B5CF6 !important;
+    box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+}
+
+/* Teen widget cards - dark mode */
+html.dark-mode .tab-content--teen .widget-card {
+    background: #1E293B;
+    border-color: #374151;
+}
+
+html.dark-mode .tab-content--teen .widget-card__header {
+    background: linear-gradient(135deg, #1E293B 0%, #312E81 100%);
+    border-color: #374151;
+}
+
+html.dark-mode .tab-content--teen .widget-card__body {
+    background: #1E293B;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .widget-card__body div,
+html.dark-mode .tab-content--teen .widget-card__body span,
+html.dark-mode .tab-content--teen .widget-card__body p,
+html.dark-mode .tab-content--teen .widget-card__body label {
+    color: #E2E8F0;
+}
+
+/* Teen focused widget - dark mode */
+html.dark-mode .tab-content--teen .widget--focused {
+    background: #1E293B !important;
+    border-color: #4C1D95;
+    box-shadow: 0 8px 32px rgba(124, 58, 237, 0.2);
+}
+
+html.dark-mode .tab-content--teen .widget--focused .widget__header {
+    background: linear-gradient(135deg, #312E81 0%, #4C1D95 100%) !important;
+    color: white;
+}
+
+html.dark-mode .tab-content--teen .widget--focused .widget__body {
+    background: #1E293B !important;
+    color: #E2E8F0;
+}
+
+/* Ghost buttons - dark mode (override light mode --teen-text color) */
+html.dark-mode .tab-content--teen .btn--ghost {
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .btn--ghost:hover {
+    background: #334155;
+    border-color: #8B5CF6;
+    color: #F8FAFC;
+}
+
+html.dark-mode .tab-content--teen .btn--ghost svg {
+    color: #E2E8F0;
+    stroke: #E2E8F0;
+}
+
+/* Task list items in teen dark mode */
+html.dark-mode .tab-content--teen .task-item {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .task-item__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .task-item__due {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .task-item__subtask-count {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .task-item__checkbox-wrapper {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .task-item__checkmark {
+    border-color: #64748B;
+}
+
+html.dark-mode .tab-content--teen .task-item__subtask {
+    background: #2D3A4D;
+    border-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .task-item__subtask-title {
+    color: #CBD5E1 !important;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__input {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__input::placeholder {
+    color: #64748B;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__empty {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__completed-count {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__footer {
+    border-top-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .tasks-widget__more-btn {
+    color: #94A3B8 !important;
+}
+
+/* Workout in teen dark mode */
+html.dark-mode .tab-content--teen .kid-workout-stats {
+    background: #334155 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-stat__value {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-stat__label {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-card {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-card__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-card--completed {
+    background: #1E3A2F !important;
+    border-color: #065F46 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-card__check {
+    color: #34D399 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-footer {
+    border-top-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-footer button {
+    color: #CBD5E1 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-widget {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-card {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-card__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-card__meta {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-category {
+    background: #334155 !important;
+    color: #CBD5E1 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-category--active {
+    background: #4C1D95 !important;
+    color: white !important;
+    border-color: #7C3AED !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-streak-banner {
+    background: #334155 !important;
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-calendar__header {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-calendar__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-calendar__summary {
+    color: #94A3B8 !important;
+}
+
+/* Gratitude inputs in teen dark mode */
+html.dark-mode .tab-content--teen .gratitude-input,
+html.dark-mode .tab-content--teen .form-input,
+html.dark-mode .tab-content--teen .form-textarea {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .form-input::placeholder,
+html.dark-mode .tab-content--teen .form-textarea::placeholder {
+    color: #64748B;
+}
+
+/* Screen time in teen dark mode */
+html.dark-mode .tab-content--teen .screen-time-today__gauge-section {
+    background: #334155;
+}
+
+html.dark-mode .tab-content--teen .screen-time-today__gauge-value {
+    color: #22D3EE;
+}
+
+html.dark-mode .tab-content--teen .screen-time-today__gauge-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .tab-content--teen .screen-time-today__sessions {
+    background: #334155;
+}
+
+html.dark-mode .tab-content--teen .screen-time-today__sessions h3 {
+    color: #E2E8F0;
+}
+
+/* Routines stats in teen dark mode */
+html.dark-mode .tab-content--teen .routine-stats__card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .routine-stats__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .routine-stats__label {
+    color: #94A3B8;
+}
+
+/* General text overrides for teen focused widget */
+html.dark-mode .tab-content--teen .widget--focused h3,
+html.dark-mode .tab-content--teen .widget--focused h4,
+html.dark-mode .tab-content--teen .widget--focused p,
+html.dark-mode .tab-content--teen .widget--focused label,
+html.dark-mode .tab-content--teen .widget--focused .widget__body div,
+html.dark-mode .tab-content--teen .widget--focused .widget__body span {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .widget--focused .text-muted,
+html.dark-mode .tab-content--teen .widget--focused small {
+    color: #94A3B8;
+}
+
+/* Workout specific dark mode overrides */
+html.dark-mode .tab-content--teen .kid-workout-suggestion {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-suggestion__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-suggestion__duration {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-entry {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-entry__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-entry__meta {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-empty__text {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-goal-progress {
+    background: #334155 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-goal-progress__text {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-goal-progress__bar {
+    background: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-today__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-chip {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-chip__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-row {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-row__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-row__points {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-modal {
+    background: #1E293B !important;
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-challenge {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-tile {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-tile__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-workout-activity-tile__meta {
+    color: #94A3B8 !important;
+}
+
+/* Teen Journal - Dark mode (override kid paper aesthetic with dark look) */
+html.dark-mode .tab-content--teen .kid-journal-entry {
+    background: #1E293B !important;
+    background-color: #1E293B !important;
+    border-color: #475569;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry::before {
+    background-color: transparent;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__content {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__time {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__preview {
+    color: #CBD5E1 !important;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__prompt {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__textarea {
+    color: #E2E8F0 !important;
+    background: transparent !important;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__textarea::placeholder {
+    color: #64748B !important;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry__actions {
+    border-top-color: #334155;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-mood-picker__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .tab-content--teen .kid-journal-entry--preview {
+    background-color: #1E293B !important;
+}
+
+/* Teen Journal sticker area */
+html.dark-mode .tab-content--teen .kid-journal-sticker-picker {
+    background: #334155;
+    border-color: #475569;
+}
+
+/* Teen Journal notebook - keep paper aesthetic in dark mode */
+html.dark-mode .tab-content--teen .teen-journal-notebook {
+    background: #FFFEF5 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__paper {
+    background-color: #FFFEF5 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__textarea,
+html.dark-mode .tab-content--teen .teen-journal-notebook textarea {
+    background: #FFFEF5 !important;
+    background-color: #FFFEF5 !important;
+    color: #3D2B1F !important;
+    border-color: #D4C8B0 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__textarea::placeholder,
+html.dark-mode .tab-content--teen .teen-journal-notebook textarea::placeholder {
+    color: #B0A090 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__date {
+    color: #8B7E6E !important;
+    border-bottom-color: #D4C8B0 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__prompt {
+    color: var(--indigo-700) !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__mood-label,
+html.dark-mode .tab-content--teen .teen-journal-notebook__stickers-label {
+    color: #6B5E4E !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__entry-content {
+    color: #3D2B1F !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-sticker-btn {
+    background: #FFFEF5 !important;
+    border-color: #D4C8B0 !important;
+}
+
+html.dark-mode .tab-content--teen .teen-journal-notebook__save {
+    border-top-color: #D4C8B0 !important;
+}
+
+/* Chore picker cards - dark mode text visibility */
+html.dark-mode .tab-content--teen .chore-picker-card {
+    background: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__points {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__points svg {
+    color: #FBBF24 !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__icon {
+    background: rgba(99, 102, 241, 0.2) !important;
+    color: #A5B4FC !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__icon .chore-emoji {
+    font-size: 24px;
+    filter: none !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__icon svg {
+    color: #A5B4FC !important;
+}
+
+html.dark-mode .tab-content--teen .chore-picker-card__info {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .chores-widget__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .chores-widget__subtitle {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .tab-content--teen .chores-widget__footer {
+    border-top-color: #475569 !important;
+}
+
+/* Gratitude widget prompt/quote - dark mode */
+html.dark-mode .tab-content--teen .gratitude-widget__prompt {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .tab-content--teen .gratitude-widget__prompt span {
+    color: #CBD5E1 !important;
+}
+
+html.dark-mode .tab-content--teen .gratitude-widget__streak {
+    color: #94A3B8 !important;
+}

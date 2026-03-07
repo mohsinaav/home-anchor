@@ -745,3 +745,91 @@
     25% { transform: rotate(-10deg); }
     75% { transform: rotate(10deg); }
 }
+
+/* ==========================================================================
+   Dark Mode - Kid Theme
+   ========================================================================== */
+
+/* Kid sidebar - dark mode (use !important to override light mode gradient) */
+html.dark-mode .tab-content--kid .member-sidebar {
+    background: linear-gradient(180deg, #1E293B 0%, #312E81 100%) !important;
+    border-color: #6366F1 !important;
+}
+
+/* Toddler sidebar - dark mode (use !important to override light mode gradient) */
+html.dark-mode .tab-content--toddler .member-sidebar {
+    background: linear-gradient(180deg, #1E293B 0%, #78350F 100%) !important;
+    border-color: #F59E0B !important;
+}
+
+/* Schedule current empty state - dark mode */
+html.dark-mode .schedule-current--empty {
+    background: #334155;
+    color: #94A3B8;
+}
+
+/* Fix text visibility in schedule sidebar */
+html.dark-mode .schedule-sidebar__time {
+    color: #E2E8F0;
+}
+
+html.dark-mode .schedule-current__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .schedule-sidebar__section-title {
+    color: #CBD5E1;
+}
+
+html.dark-mode .schedule-sidebar__empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .schedule-sidebar__setup {
+    background: #334155;
+    color: #94A3B8;
+    border-radius: var(--radius-lg);
+}
+
+html.dark-mode .schedule-sidebar__setup p {
+    color: #94A3B8;
+}
+
+html.dark-mode .schedule-sidebar__setup svg {
+    color: #64748B;
+}
+
+/* Schedule current empty icon - dark mode */
+html.dark-mode .schedule-current--empty .schedule-current__icon {
+    background-color: #475569;
+    color: #94A3B8;
+}
+
+html.dark-mode .schedule-current--empty .schedule-current__time {
+    color: #94A3B8;
+}
+
+/* Schedule sidebar header - dark mode */
+html.dark-mode .schedule-sidebar__header {
+    border-bottom-color: #334155;
+}
+
+/* Upcoming items - dark mode */
+html.dark-mode .schedule-upcoming__item {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .schedule-upcoming__time {
+    color: #94A3B8;
+}
+
+html.dark-mode .schedule-upcoming__name {
+    color: #E2E8F0;
+}
+
+/* Tab content areas for kids - dark backgrounds */
+html.dark-mode .tab-content--kid,
+html.dark-mode .tab-content--toddler {
+    background: #0F172A !important;
+}

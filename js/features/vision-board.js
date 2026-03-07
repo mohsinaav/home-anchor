@@ -748,6 +748,12 @@ const VisionBoard = (function() {
                         </h1>
                         <p class="vb-page__hero-subtitle">${isKid ? 'Dream big and make it happen!' : 'Visualize your goals and track your progress'}</p>
                     </div>
+                    <div class="vb-page__actions">
+                        <button class="btn btn--primary" data-action="add-goal">
+                            <i data-lucide="plus"></i>
+                            ${isKid ? 'Add Dream' : 'Add Goal'}
+                        </button>
+                    </div>
                     <div class="vb-page__hero-stats">
                         <div class="vb-hero-stat">
                             <span class="vb-hero-stat__value">${activeGoals.length}</span>
@@ -783,14 +789,6 @@ const VisionBoard = (function() {
                     <button class="vb-tab ${activeTab === 'stats' ? 'vb-tab--active' : ''}" data-tab="stats">
                         <i data-lucide="bar-chart-2"></i>
                         <span>Stats</span>
-                    </button>
-                </div>
-
-                <!-- Action Bar -->
-                <div class="vb-page__actions">
-                    <button class="btn btn--primary" data-action="add-goal">
-                        <i data-lucide="plus"></i>
-                        ${isKid ? 'Add Dream' : 'Add Goal'}
                     </button>
                 </div>
 

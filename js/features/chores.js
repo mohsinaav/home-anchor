@@ -432,16 +432,14 @@ const Chores = (function() {
             <div class="kid-page kid-page--chores ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
                 <!-- Hero Section -->
                 <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
-                    <div class="kid-page__hero-header">
-                        <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
-                            <i data-lucide="arrow-left"></i>
-                            Back
-                        </button>
-                        <button class="btn btn--sm btn--ghost" id="addChorePageBtn" title="Add new chore">
-                            <i data-lucide="plus-circle"></i>
-                            Add Chore
-                        </button>
-                    </div>
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <button class="btn btn--primary kid-page__hero-action" id="addChorePageBtn" title="Add new chore">
+                        <i data-lucide="plus"></i>
+                        Add Chore
+                    </button>
                     <div class="kid-page__hero-content">
                         <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
                             ${isYoungKid ? '🧹 My Chores!' : 'Chores'}

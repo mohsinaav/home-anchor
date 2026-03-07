@@ -315,11 +315,11 @@
 }
 
 .widget-grid .widget-card[data-widget="habits"] .widget-card__header {
-    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
+    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
 }
 
 .widget-grid .widget-card[data-widget="gratitude"] .widget-card__header {
-    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
 }
 
 .widget-grid .widget-card[data-widget="recipes"] .widget-card__header {
@@ -335,11 +335,11 @@
 }
 
 .widget-grid .widget-card[data-widget="journal"] .widget-card__header {
-    background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);
 }
 
 .widget-grid .widget-card[data-widget="vision-board"] .widget-card__header {
-    background: linear-gradient(135deg, #EF4444 0%, #F87171 100%);
+    background: linear-gradient(135deg, #14B8A6 0%, #2DD4BF 100%);
 }
 
 /* Vision Board in grid view - constrain zones */
@@ -8366,6 +8366,54 @@ tr:last-child .planner-cell--today {
     color: var(--gray-600);
 }
 
+/* Potty Training - Dark Mode */
+html.dark-mode .potty-training-section {
+    background: linear-gradient(135deg, #1E1A2E 0%, #2D1B4E 100%);
+    border-color: #9333EA;
+}
+
+html.dark-mode .potty-training-title {
+    color: #E9D5FF;
+}
+
+html.dark-mode .potty-counter {
+    background: #1E293B;
+}
+
+html.dark-mode .potty-counter--attempts {
+    border-color: #7C3AED;
+}
+
+html.dark-mode .potty-counter--successes {
+    border-color: #22C55E;
+}
+
+html.dark-mode .potty-counter__label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .potty-counter__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .potty-counter--attempts .potty-counter__btn {
+    background: #4C1D95;
+    color: #D8B4FE;
+}
+
+html.dark-mode .potty-counter--successes .potty-counter__btn {
+    background: #14532D;
+    color: #86EFAC;
+}
+
+html.dark-mode .potty-stat__value {
+    color: #D8B4FE;
+}
+
+html.dark-mode .potty-stat__label {
+    color: #94A3B8;
+}
+
 /* Daily Log Settings */
 .daily-log-settings {
     padding: var(--space-2);
@@ -8865,6 +8913,109 @@ tr:last-child .planner-cell--today {
     font-weight: var(--font-semibold);
     font-size: var(--text-base);
     color: var(--gray-800);
+}
+
+/* Daily Log Calendar - Dark Mode */
+html.dark-mode .daily-log-calendar {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .daily-log-calendar__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .daily-log-calendar__summary {
+    color: #94A3B8;
+}
+
+html.dark-mode .daily-log-calendar__nav-btn {
+    color: #CBD5E1;
+    border-color: #475569;
+}
+
+html.dark-mode .daily-log-calendar__nav-btn:hover:not(:disabled) {
+    background: #334155;
+    color: #F1F5F9;
+}
+
+html.dark-mode .daily-log-calendar__weekdays span {
+    color: #94A3B8;
+}
+
+html.dark-mode .daily-log-calendar__day {
+    background: #334155;
+}
+
+html.dark-mode .daily-log-calendar__day--empty {
+    background: transparent;
+}
+
+html.dark-mode .daily-log-calendar__day-num {
+    color: #CBD5E1;
+}
+
+html.dark-mode .daily-log-calendar__day--today {
+    border-color: #818CF8;
+}
+
+/* Dark mode intensity levels */
+html.dark-mode .daily-log-calendar__day--level-1 {
+    background: #312E81;
+}
+
+html.dark-mode .daily-log-calendar__day--level-2 {
+    background: #3730A3;
+}
+
+html.dark-mode .daily-log-calendar__day--level-3 {
+    background: #4338CA;
+}
+
+html.dark-mode .daily-log-calendar__day--level-4 {
+    background: #6366F1;
+}
+
+html.dark-mode .daily-log-calendar__day--level-1 .daily-log-calendar__day-num,
+html.dark-mode .daily-log-calendar__day--level-2 .daily-log-calendar__day-num {
+    color: #C7D2FE;
+}
+
+html.dark-mode .daily-log-calendar__legend-label {
+    color: #64748B;
+}
+
+html.dark-mode .daily-log-calendar__legend-box--0 {
+    background: #334155;
+}
+
+html.dark-mode .daily-log-calendar__legend-box--1 {
+    background: #312E81;
+}
+
+html.dark-mode .daily-log-calendar__legend-box--2 {
+    background: #3730A3;
+}
+
+html.dark-mode .daily-log-calendar__legend-box--3 {
+    background: #4338CA;
+}
+
+html.dark-mode .daily-log-calendar__legend-box--4 {
+    background: #6366F1;
+}
+
+html.dark-mode .daily-log-calendar__hint {
+    color: #64748B;
+}
+
+html.dark-mode .daily-log-calendar__details {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .daily-log-calendar__details-header {
+    color: #E2E8F0;
 }
 
 /* ==========================================================================
@@ -11710,26 +11861,45 @@ tr:last-child .planner-cell--today {
 
 /* Memory Book Full Page */
 .memory-book-page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
     min-height: 100vh;
-    background: var(--gray-50);
 }
 
 .memory-book-page__hero {
-    background: linear-gradient(135deg, #FDF2F8 0%, #FCE7F3 50%, #FBCFE8 100%);
+    background: linear-gradient(135deg, #F472B6 0%, #EC4899 40%, #DB2777 100%);
     padding: var(--space-6);
     position: relative;
+    overflow: hidden;
+    border-radius: 0 0 var(--radius-2xl) var(--radius-2xl);
+}
+
+.memory-book-page__hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 60%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+    pointer-events: none;
 }
 
 .memory-book-page__back {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 2;
     display: inline-flex;
     align-items: center;
     gap: var(--space-2);
-    color: #9D174D;
+    color: white;
     cursor: pointer;
-    background: rgba(255, 255, 255, 0.7);
-    border: 1px solid rgba(157, 23, 77, 0.2);
+    background: rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.3);
     padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-full);
+    border-radius: var(--radius-lg);
     font-size: var(--text-sm);
     font-weight: 500;
     transition: all 0.2s;
@@ -11741,15 +11911,16 @@ tr:last-child .planner-cell--today {
 }
 
 .memory-book-page__back:hover {
-    background: white;
-    border-color: #EC4899;
-    color: #EC4899;
-    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
 }
 
 .memory-book-page__hero-content {
     text-align: center;
     padding-top: var(--space-4);
+    position: relative;
+    z-index: 1;
 }
 
 .memory-book-page__title {
@@ -11759,26 +11930,51 @@ tr:last-child .planner-cell--today {
     gap: var(--space-3);
     font-size: var(--text-2xl);
     font-weight: var(--font-bold);
-    color: #9D174D;
+    color: white;
     margin: 0;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .memory-book-page__title svg {
     width: 32px;
     height: 32px;
-    color: #EC4899;
+    color: white;
 }
 
 .memory-book-page__subtitle {
-    color: #BE185D;
+    color: rgba(255, 255, 255, 0.85);
     margin-top: var(--space-2);
 }
 
 .memory-book-page__actions {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 2;
     display: flex;
-    justify-content: center;
-    gap: var(--space-3);
-    margin-top: var(--space-4);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.memory-book-page__actions .btn--ghost {
+    color: white;
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.memory-book-page__actions .btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+.memory-book-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #9D174D;
+    border: none;
+}
+
+.memory-book-page__actions .btn--primary:hover {
+    background: white;
 }
 
 .memory-book-page__content {
@@ -12217,6 +12413,7 @@ tr:last-child .planner-cell--today {
 
 .memory-filter__scroll {
     display: flex;
+    justify-content: center;
     gap: var(--space-2);
     overflow-x: auto;
     padding-bottom: var(--space-2);
@@ -12278,7 +12475,7 @@ tr:last-child .planner-cell--today {
 .memory-timeline--enhanced .memory-timeline__year-header {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
+    justify-content: center;
     gap: var(--space-3);
     padding-bottom: var(--space-3);
     border-bottom: 3px solid #FBCFE8;
@@ -12529,7 +12726,9 @@ tr:last-child .planner-cell--today {
     }
 
     .memory-book-page__actions {
-        flex-direction: column;
+        position: static;
+        justify-content: center;
+        margin-top: var(--space-3);
     }
 
     .memory-timeline__items {
@@ -17990,6 +18189,30 @@ tr:last-child .planner-cell--today {
         width: 18px;
         height: 18px;
     }
+}
+
+/* Icon Picker - Dark Mode */
+html.dark-mode .icon-picker {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .icon-picker__icon {
+    background: #334155;
+    color: #94A3B8;
+    border-color: transparent;
+}
+
+html.dark-mode .icon-picker__icon:hover {
+    background: #475569;
+    color: #C4B5FD;
+    border-color: #7C3AED;
+}
+
+html.dark-mode .icon-picker__icon--selected {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
 }
 
 /* Add Habit Form - Category & Schedule Fields */
@@ -25158,10 +25381,24 @@ tr:last-child .planner-cell--today {
 
 /* Action Bar */
 .vb-page__actions {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 2;
     display: flex;
-    justify-content: flex-end;
-    gap: var(--space-3);
-    margin-bottom: var(--space-4);
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.vb-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #047857;
+    border: none;
+}
+
+.vb-page__actions .btn--primary:hover {
+    background: white;
 }
 
 /* Tab Content */
@@ -29703,6 +29940,162 @@ tr:last-child .planner-cell--today {
     gap: var(--space-1);
 }
 
+/* History Modal */
+.circuit-history {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+}
+
+.circuit-history__stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: linear-gradient(135deg, var(--color-primary-50) 0%, var(--color-blue-50) 100%);
+    border-radius: var(--radius-lg);
+}
+
+.circuit-history__stat {
+    text-align: center;
+}
+
+.circuit-history__stat-value {
+    display: block;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--color-primary-600);
+}
+
+.circuit-history__stat-label {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.circuit-history__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.circuit-history__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-6);
+    text-align: center;
+    color: var(--color-gray-500);
+}
+
+.circuit-history__empty svg {
+    width: 40px;
+    height: 40px;
+    color: var(--color-gray-300);
+}
+
+.circuit-history__empty p {
+    margin: 0;
+    font-weight: 500;
+    color: var(--color-gray-600);
+}
+
+.circuit-history__empty span {
+    font-size: var(--text-sm);
+}
+
+.circuit-history__day {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.circuit-history__day-header {
+    font-size: var(--text-xs);
+    font-weight: 600;
+    color: var(--color-gray-500);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0 var(--space-2);
+}
+
+.circuit-history__day-items {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+}
+
+.circuit-history__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-gray-50);
+    border-radius: var(--radius-md);
+    transition: background 0.15s ease;
+}
+
+.circuit-history__item:hover {
+    background: var(--color-gray-100);
+}
+
+.circuit-history__item-icon {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary-100);
+    color: var(--color-primary-600);
+    border-radius: var(--radius-md);
+}
+
+.circuit-history__item-icon svg {
+    width: 18px;
+    height: 18px;
+}
+
+.circuit-history__item-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.circuit-history__item-name {
+    font-weight: 500;
+    color: var(--color-gray-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.circuit-history__item-time {
+    font-size: var(--text-xs);
+    color: var(--color-gray-500);
+}
+
+.circuit-history__item-duration {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--color-primary-600);
+    background: var(--color-primary-50);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--radius-sm);
+}
+
+.circuit-history__footer {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--color-gray-100);
+}
+
 /* Timer Screen (Full Screen Overlay) */
 .circuit-timer-screen {
     position: fixed;
@@ -30781,4 +31174,3522 @@ html.dark-mode .journal-edit-modal__gratitude-inputs .form-input::placeholder {
 /* Gratitude section header in edit modal */
 html.dark-mode .journal-edit-modal__gratitude > label {
     color: #F87171;
+}
+
+/* ==========================================================================
+   Dark Mode - Habits Widget Quote
+   ========================================================================== */
+
+html.dark-mode .habits-widget__quote {
+    background: linear-gradient(135deg, #1E3A5F 0%, #1E293B 100%);
+    border-left-color: #60A5FA;
+}
+
+html.dark-mode .habits-widget__quote-text {
+    color: #E2E8F0;
+}
+
+html.dark-mode .habits-widget__quote-author {
+    color: #94A3B8;
+}
+
+/* Habit Items - Dark Mode */
+html.dark-mode .habit-item {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .habit-item__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .habit-item__checkbox {
+    border-color: #64748B;
+}
+
+html.dark-mode .habit-item__icon svg {
+    color: #94A3B8;
+}
+
+html.dark-mode .habit-item:hover:not(.habit-item--done) {
+    background-color: #475569;
+    border-color: #6366F1;
+}
+
+/* ==========================================================================
+   Dark Mode - Journal Widget Cover
+   ========================================================================== */
+
+html.dark-mode .journal-widget__cover {
+    background: linear-gradient(135deg, #374151 0%, #4B5563 100%);
+    color: #E5E7EB;
+    box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .journal-widget__cover-icon {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .journal-widget__cover-icon svg {
+    color: #D1D5DB;
+}
+
+html.dark-mode .journal-widget__cover h3 {
+    color: #F3F4F6;
+}
+
+html.dark-mode .journal-widget__cover-prompt {
+    color: #9CA3AF;
+}
+
+html.dark-mode .journal-widget__written-badge {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ADE80;
+}
+
+/* ==========================================================================
+   Dark Mode - Journal Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark violet gradient */
+html.dark-mode .journal-page__hero {
+    background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 50%, #7C3AED 100%) !important;
+}
+
+html.dark-mode .journal-page__hero::before {
+    background: radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.3) 0%, transparent 50%);
+}
+
+html.dark-mode .journal-page__back {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark-mode .journal-page__back:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .journal-page__hero-title {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .journal-page__hero-title svg {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark-mode .journal-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Hero Stats */
+html.dark-mode .journal-hero-stat__value {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .journal-hero-stat__label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Tabs */
+html.dark-mode .journal-page__tabs,
+html.dark-mode .journal-page--tabbed .journal-page__tabs {
+    background: linear-gradient(135deg, #3B0764 0%, #4C1D95 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark-mode .journal-tab {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(76, 29, 149, 0.4);
+}
+
+html.dark-mode .journal-tab:hover {
+    color: #FFFFFF;
+    background: rgba(124, 58, 237, 0.5);
+}
+
+html.dark-mode .journal-tab--active {
+    background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%) !important;
+    color: #FFFFFF !important;
+}
+
+/* Content area */
+html.dark-mode .journal-page__content,
+html.dark-mode .journal-page--tabbed .journal-page__content {
+    background: #0F172A;
+}
+
+/* Notebook - Paper-like feel in dark mode */
+html.dark-mode .journal-notebook {
+    background: linear-gradient(135deg, #2D2A24 0%, #3D3830 100%) !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .journal-notebook__paper {
+    background: linear-gradient(180deg, #F5F0E6 0%, #EDE8DC 100%) !important;
+    box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.05);
+}
+
+html.dark-mode .journal-notebook__paper::before {
+    border-color: rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-notebook__date {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .journal-notebook__prompt {
+    color: #6B5B4D !important;
+}
+
+html.dark-mode .journal-notebook__prompt svg {
+    color: #8B7355;
+}
+
+/* Mood section */
+html.dark-mode .journal-notebook__mood-label {
+    color: #6B5B4D !important;
+}
+
+html.dark-mode .journal-mood {
+    background: rgba(255, 255, 255, 0.7) !important;
+    border: 1px solid rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-mood:hover {
+    background: rgba(255, 255, 255, 0.9) !important;
+    border-color: rgba(139, 92, 246, 0.4);
+}
+
+html.dark-mode .journal-mood--selected {
+    background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%) !important;
+    border-color: #7C3AED;
+}
+
+html.dark-mode .journal-mood__label {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .journal-mood--selected .journal-mood__label {
+    color: #FFFFFF !important;
+}
+
+/* Textarea - Keep paper feel */
+html.dark-mode .journal-notebook__textarea {
+    background: #FFFEF5 !important;
+    color: #3D3830 !important;
+    border: none !important;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+html.dark-mode .journal-notebook__textarea::placeholder {
+    color: #9B8B7A !important;
+}
+
+/* Gratitude toggle */
+html.dark-mode .journal-gratitude__toggle {
+    color: #7C3AED !important;
+}
+
+html.dark-mode .journal-gratitude__toggle:hover {
+    color: #8B5CF6 !important;
+}
+
+/* Save button */
+html.dark-mode .journal-notebook__save {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    color: #FFFFFF;
+}
+
+html.dark-mode .journal-notebook__save:hover {
+    background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%);
+}
+
+/* Write section background */
+html.dark-mode .journal-write-section {
+    background: #0F172A;
+    padding: var(--space-6);
+}
+
+/* ==========================================================================
+   Dark Mode - Journal History/Calendar Section
+   ========================================================================== */
+
+/* History section */
+html.dark-mode .journal-history {
+    background: #0F172A;
+}
+
+html.dark-mode .journal-history__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-history__empty {
+    color: #94A3B8;
+}
+
+/* Calendar grid */
+html.dark-mode .journal-calendar {
+    background: #1E293B;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+}
+
+html.dark-mode .journal-calendar__header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-calendar__nav {
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-calendar__nav:hover {
+    color: #E2E8F0;
+    background: rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-calendar__weekday {
+    color: #64748B;
+}
+
+html.dark-mode .journal-calendar__day {
+    background: #334155;
+    color: #E2E8F0;
+    border: 1px solid #475569;
+}
+
+html.dark-mode .journal-calendar__day:hover {
+    background: #475569;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .journal-calendar__day--today {
+    border-color: #8B5CF6;
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.3);
+}
+
+html.dark-mode .journal-calendar__day--has-entry {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(167, 139, 250, 0.2) 100%);
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .journal-calendar__day--selected {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    color: #FFFFFF;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .journal-calendar__day--other-month {
+    background: #1E293B;
+    color: #475569;
+    border-color: #334155;
+}
+
+/* Entry cards in history */
+html.dark-mode .journal-entry-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .journal-entry-card:hover {
+    border-color: #8B5CF6;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .journal-entry-card__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-entry-card__preview {
+    color: #CBD5E1;
+}
+
+html.dark-mode .journal-entry-card__mood {
+    background: rgba(139, 92, 246, 0.2);
+}
+
+/* Stats section */
+html.dark-mode .journal-stats {
+    background: #0F172A;
+}
+
+html.dark-mode .journal-stats__card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .journal-stats__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-stats__label {
+    color: #94A3B8;
+}
+
+/* Journal History Section - Dark Mode */
+html.dark-mode .journal-history-section {
+    background: #0F172A;
+}
+
+html.dark-mode .journal-history {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .journal-history__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-history__title svg {
+    color: #8B5CF6;
+}
+
+html.dark-mode .journal-history__entry {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .journal-history__entry:hover {
+    background: #3F4F63;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .journal-history__entry-date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-history__entry-preview {
+    color: #CBD5E1;
+}
+
+html.dark-mode .journal-history-empty {
+    background: #1E293B;
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-history-empty p {
+    color: #CBD5E1;
+}
+
+/* Journal Calendar Additional - Dark Mode */
+html.dark-mode .journal-calendar__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-calendar__summary {
+    color: #94A3B8;
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .journal-calendar__weekdays span {
+    color: #64748B;
+}
+
+html.dark-mode .journal-calendar__selected-hint {
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-calendar__selected-date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-calendar__selected-empty {
+    color: #64748B;
+}
+
+/* Journal Entry Modal - Dark Mode */
+html.dark-mode .journal-entry-modal__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-entry-modal__content {
+    color: #CBD5E1;
+}
+
+/* Journal Stats Section (Stats Tab) - Dark Mode */
+html.dark-mode .journal-stats-section {
+    background: #0F172A;
+}
+
+html.dark-mode .journal-stat-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .journal-stat-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-stat-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-stat-card--primary .journal-stat-card__icon {
+    background: rgba(220, 38, 38, 0.2);
+    color: #FCA5A5;
+}
+
+html.dark-mode .journal-stat-card--success .journal-stat-card__icon {
+    background: rgba(22, 163, 74, 0.2);
+    color: #86EFAC;
+}
+
+html.dark-mode .journal-stat-card--info .journal-stat-card__icon {
+    background: rgba(37, 99, 235, 0.2);
+    color: #93C5FD;
+}
+
+html.dark-mode .journal-stat-card--warning .journal-stat-card__icon {
+    background: rgba(217, 119, 6, 0.2);
+    color: #FCD34D;
+}
+
+/* Journal Month Card - Dark Mode */
+html.dark-mode .journal-month-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .journal-month-card__header {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-month-card__bar {
+    background: #475569;
+}
+
+html.dark-mode .journal-month-card__text {
+    color: #CBD5E1;
+}
+
+/* Journal Mood Card - Dark Mode */
+html.dark-mode .journal-mood-card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .journal-mood-card__header {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-mood-card__count {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-mood-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .journal-mood-card__most-common {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+/* Journal Write Section - Paper Model in Dark Mode */
+html.dark-mode .journal-write-section {
+    background: #0F172A !important;
+    padding: var(--space-6);
+}
+
+html.dark-mode .journal-notebook {
+    background: linear-gradient(135deg, #4A4035 0%, #5C4F42 100%) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid #6B5B4D;
+}
+
+html.dark-mode .journal-notebook__paper {
+    background: linear-gradient(180deg, #FFF8E7 0%, #F5EDD8 100%) !important;
+    box-shadow: inset 0 0 40px rgba(139, 92, 246, 0.05);
+    border: none;
+}
+
+html.dark-mode .journal-notebook__paper::before {
+    border-color: rgba(139, 92, 246, 0.15);
+}
+
+html.dark-mode .journal-notebook__date {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .journal-notebook__prompt {
+    color: #6B5B4D !important;
+    background: rgba(139, 92, 246, 0.08);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
+}
+
+html.dark-mode .journal-notebook__prompt svg {
+    color: #8B5CF6;
+}
+
+html.dark-mode .journal-notebook__mood-label {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .journal-mood {
+    background: rgba(255, 255, 255, 0.85) !important;
+    border: 2px solid rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-mood:hover {
+    background: #FFFFFF !important;
+    border-color: #8B5CF6;
+    transform: translateY(-2px);
+}
+
+html.dark-mode .journal-mood--selected {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%) !important;
+    border-color: #6D28D9;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+html.dark-mode .journal-mood__label {
+    color: #4A4035 !important;
+}
+
+html.dark-mode .journal-mood--selected .journal-mood__label {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .journal-notebook__textarea {
+    background: linear-gradient(180deg, #FFFEF8 0%, #FFF8E7 100%) !important;
+    color: #3D2B1F !important;
+    border: 2px solid rgba(139, 92, 246, 0.15) !important;
+    border-radius: var(--radius-lg);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+html.dark-mode .journal-notebook__textarea::placeholder {
+    color: #9B8B7A !important;
+}
+
+html.dark-mode .journal-notebook__textarea:focus {
+    border-color: #8B5CF6 !important;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05), 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-gratitude__toggle {
+    color: #7C3AED !important;
+    background: rgba(139, 92, 246, 0.1);
+    border-radius: var(--radius-md);
+}
+
+html.dark-mode .journal-gratitude__toggle:hover {
+    color: #8B5CF6 !important;
+    background: rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .journal-notebook__save {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%) !important;
+    color: #FFFFFF !important;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+}
+
+html.dark-mode .journal-notebook__save:hover {
+    background: linear-gradient(135deg, #6D28D9 0%, #7C3AED 100%) !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5);
+}
+
+/* Journal Write Section - Ensure full paper appearance */
+html.dark-mode .journal-write-section {
+    background: #1E293B !important;
+    border-radius: var(--radius-xl);
+}
+
+html.dark-mode .journal-notebook {
+    background: linear-gradient(135deg, #5C4F42 0%, #6B5B4D 100%) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    border: 1px solid #7D6B5D;
+    border-radius: var(--radius-xl);
+}
+
+html.dark-mode .journal-notebook__paper {
+    background: linear-gradient(180deg, #FFF8E7 0%, #F5EDD8 100%) !important;
+    border-radius: var(--radius-lg);
+}
+
+html.dark-mode .journal-notebook__write {
+    background: transparent !important;
+}
+
+html.dark-mode .journal-notebook__textarea {
+    background: linear-gradient(180deg, #FFFEF8 0%, #FFF8E7 100%) !important;
+    color: #2D1F14 !important;
+    border: 2px solid rgba(139, 92, 246, 0.2) !important;
+    border-radius: var(--radius-lg);
+    caret-color: #7C3AED;
+}
+
+html.dark-mode .journal-notebook__textarea::placeholder {
+    color: #8B7A69 !important;
+}
+
+/* Journal Calendar Entry - Paper appearance in dark mode */
+html.dark-mode .journal-calendar__entry {
+    background: linear-gradient(180deg, #FFF8E7 0%, #F5EDD8 100%);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .journal-calendar__entry-paper {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            rgba(139, 92, 246, 0.15) 31px,
+            rgba(139, 92, 246, 0.15) 32px
+        ),
+        linear-gradient(180deg, #FFF8E7 0%, #F5EDD8 100%) !important;
+}
+
+html.dark-mode .journal-calendar__entry-paper::before {
+    border-color: rgba(236, 72, 153, 0.25);
+}
+
+html.dark-mode .journal-calendar__entry-header {
+    border-bottom-color: rgba(139, 92, 246, 0.15);
+}
+
+html.dark-mode .journal-calendar__entry-date {
+    color: #4A3728 !important;
+}
+
+html.dark-mode .journal-calendar__entry-content {
+    color: #3D2B1F !important;
+}
+
+html.dark-mode .journal-calendar__entry-gratitude {
+    background: rgba(244, 63, 94, 0.12);
+}
+
+html.dark-mode .journal-calendar__entry-gratitude-label {
+    color: #9D174D;
+}
+
+html.dark-mode .journal-calendar__entry-gratitude-item {
+    color: #4A3728;
+}
+
+html.dark-mode .journal-calendar__entry-actions .btn {
+    background: rgba(139, 92, 246, 0.15);
+    color: #5B4636;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+html.dark-mode .journal-calendar__entry-actions .btn:hover {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .journal-calendar__entry-actions .btn--primary {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    color: white;
+    border: none;
+}
+
+/* ==========================================================================
+   Dark Mode - Habits Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark green gradient */
+html.dark-mode .habits-page__hero {
+    background: linear-gradient(135deg, #14532D 0%, #166534 50%, #15803D 100%) !important;
+}
+
+html.dark-mode .habits-page__hero::before {
+    background: radial-gradient(circle at 80% 20%, rgba(34, 197, 94, 0.3) 0%, transparent 50%);
+}
+
+html.dark-mode .habits-page__back {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark-mode .habits-page__back:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .habits-page__hero-title {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .habits-page__hero-title svg {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark-mode .habits-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Hero Stats */
+html.dark-mode .habits-hero-stat__value,
+html.dark-mode .habits-page__hero-stats > div > div:first-child {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .habits-hero-stat__label,
+html.dark-mode .habits-page__hero-stats > div > div:last-child {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Tabs */
+html.dark-mode .habits-page__tabs {
+    background: linear-gradient(135deg, #052E16 0%, #14532D 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark-mode .habits-tab {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(20, 83, 45, 0.4);
+}
+
+html.dark-mode .habits-tab:hover {
+    color: #FFFFFF;
+    background: rgba(21, 128, 61, 0.5);
+}
+
+html.dark-mode .habits-tab--active {
+    background: linear-gradient(135deg, #14532D 0%, #15803D 100%) !important;
+    color: #FFFFFF !important;
+}
+
+/* Actions bar */
+html.dark-mode .habits-page__actions {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .habits-page__actions .btn {
+    background: #334155;
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+html.dark-mode .habits-page__actions .btn:hover {
+    background: #475569;
+}
+
+/* Content area */
+html.dark-mode .habits-page__content {
+    background: #0F172A;
+}
+
+/* Calendar/grid styling */
+html.dark-mode .habits-page__nav-btn {
+    color: #94A3B8;
+}
+
+html.dark-mode .habits-page__nav-btn:hover {
+    color: #E2E8F0;
+    background: rgba(34, 197, 94, 0.2);
+}
+
+html.dark-mode .habits-page__month {
+    color: #E2E8F0;
+}
+
+/* ==========================================================================
+   Dark Mode - Gratitude Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark amber/gold gradient */
+html.dark-mode .gratitude-page__hero {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 50%, #B45309 100%) !important;
+}
+
+html.dark-mode .gratitude-page__hero::before {
+    background: radial-gradient(circle at 80% 20%, rgba(245, 158, 11, 0.3) 0%, transparent 50%);
+}
+
+html.dark-mode .gratitude-page__back {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark-mode .gratitude-page__back:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .gratitude-page__hero-title {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .gratitude-page__hero-title svg {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark-mode .gratitude-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Hero Stats */
+html.dark-mode .gratitude-hero-stat__value,
+html.dark-mode .gratitude-page__hero-stats > div > div:first-child {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .gratitude-hero-stat__label,
+html.dark-mode .gratitude-page__hero-stats > div > div:last-child {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Tabs */
+html.dark-mode .gratitude-page__tabs {
+    background: linear-gradient(135deg, #451A03 0%, #78350F 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark-mode .gratitude-tab {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(120, 53, 15, 0.4);
+}
+
+html.dark-mode .gratitude-tab:hover {
+    color: #FFFFFF;
+    background: rgba(180, 83, 9, 0.5);
+}
+
+html.dark-mode .gratitude-tab--active {
+    background: linear-gradient(135deg, #78350F 0%, #B45309 100%) !important;
+    color: #FFFFFF !important;
+}
+
+/* Content area */
+html.dark-mode .gratitude-page__content {
+    background: #0F172A;
+}
+
+/* Write Section - Dark mode */
+html.dark-mode .gratitude-write-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .gratitude-write-card__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .gratitude-write-card__prompt {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+}
+
+html.dark-mode .gratitude-write-card__prompt svg {
+    color: #FCD34D;
+}
+
+html.dark-mode .gratitude-write-card__prompt span {
+    color: #FEF3C7;
+}
+
+html.dark-mode .gratitude-write-card__current {
+    background: rgba(120, 53, 15, 0.3);
+    border-color: #78350F;
+}
+
+html.dark-mode .gratitude-write-card__current-label {
+    color: #FBBF24;
+}
+
+html.dark-mode .gratitude-write-card__current-items .gratitude-write-card__item {
+    color: #E2E8F0;
+}
+
+html.dark-mode .gratitude-write-card__current-items .gratitude-write-card__item svg {
+    color: #F59E0B;
+}
+
+html.dark-mode .gratitude-write-card__form {
+    border-top-color: #334155;
+}
+
+html.dark-mode .gratitude-write-card__instruction {
+    color: #94A3B8;
+}
+
+html.dark-mode .gratitude-write-card__number {
+    color: #F59E0B;
+}
+
+html.dark-mode .gratitude-write-card__input-row .form-input {
+    background: #0F172A;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .gratitude-write-card__input-row .form-input:focus {
+    border-color: #F59E0B;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+}
+
+html.dark-mode .gratitude-write-card__input-row .form-input::placeholder {
+    color: #64748B;
+}
+
+/* Week cards */
+html.dark-mode .gratitude-week-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .gratitude-week-card:hover {
+    border-color: #F59E0B;
+}
+
+html.dark-mode .gratitude-week-card__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .gratitude-week-card__items {
+    color: #CBD5E1;
+}
+
+/* Stats cards */
+html.dark-mode .gratitude-stats__card {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .gratitude-stats__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .gratitude-stats__label {
+    color: #94A3B8;
+}
+
+/* Week View Day Cards - Dark mode colors to override inline styles */
+/* Sunday - Red theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) {
+    --day-bg: #450A0A !important;
+    --day-border: #7F1D1D !important;
+    --day-text: #FCA5A5 !important;
+    background-color: #450A0A !important;
+    border-color: #7F1D1D !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__empty span {
+    color: #FCA5A5 !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(1) .gratitude-day__empty svg {
+    color: #F87171 !important;
+}
+
+/* Monday - Blue theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) {
+    --day-bg: #172554 !important;
+    --day-border: #1E3A8A !important;
+    --day-text: #93C5FD !important;
+    background-color: #172554 !important;
+    border-color: #1E3A8A !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__empty span {
+    color: #93C5FD !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(2) .gratitude-day__empty svg {
+    color: #60A5FA !important;
+}
+
+/* Tuesday - Green theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) {
+    --day-bg: #052E16 !important;
+    --day-border: #14532D !important;
+    --day-text: #86EFAC !important;
+    background-color: #052E16 !important;
+    border-color: #14532D !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__empty span {
+    color: #86EFAC !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(3) .gratitude-day__empty svg {
+    color: #4ADE80 !important;
+}
+
+/* Wednesday - Amber theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) {
+    --day-bg: #451A03 !important;
+    --day-border: #78350F !important;
+    --day-text: #FCD34D !important;
+    background-color: #451A03 !important;
+    border-color: #78350F !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__empty span {
+    color: #FCD34D !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(4) .gratitude-day__empty svg {
+    color: #FBBF24 !important;
+}
+
+/* Thursday - Violet theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) {
+    --day-bg: #2E1065 !important;
+    --day-border: #4C1D95 !important;
+    --day-text: #C4B5FD !important;
+    background-color: #2E1065 !important;
+    border-color: #4C1D95 !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__empty span {
+    color: #C4B5FD !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(5) .gratitude-day__empty svg {
+    color: #A78BFA !important;
+}
+
+/* Friday - Pink theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) {
+    --day-bg: #500724 !important;
+    --day-border: #831843 !important;
+    --day-text: #F9A8D4 !important;
+    background-color: #500724 !important;
+    border-color: #831843 !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__empty span {
+    color: #F9A8D4 !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(6) .gratitude-day__empty svg {
+    color: #F472B6 !important;
+}
+
+/* Saturday - Sky theme */
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) {
+    --day-bg: #082F49 !important;
+    --day-border: #0C4A6E !important;
+    --day-text: #7DD3FC !important;
+    background-color: #082F49 !important;
+    border-color: #0C4A6E !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__name,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__date,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__item span,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__empty span {
+    color: #7DD3FC !important;
+}
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__item svg,
+html.dark-mode .gratitude-week .gratitude-day:nth-child(7) .gratitude-day__empty svg {
+    color: #38BDF8 !important;
+}
+
+/* Edit button for all days in dark mode */
+html.dark-mode .gratitude-week .gratitude-day .gratitude-day__edit {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    border-color: rgba(255, 255, 255, 0.2) !important;
+}
+html.dark-mode .gratitude-week .gratitude-day .gratitude-day__edit:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+html.dark-mode .gratitude-week .gratitude-day .gratitude-day__edit svg {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Today highlight in dark mode */
+html.dark-mode .gratitude-week .gratitude-day--today {
+    box-shadow: 0 0 0 3px #F59E0B, 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* ==========================================================================
+   Dark Mode - Vision Board Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark teal gradient */
+html.dark-mode .vision-board-page__hero,
+html.dark-mode .vision-board-page__header,
+html.dark-mode .vb-page__hero {
+    background: linear-gradient(135deg, #134E4A 0%, #0F766E 50%, #14B8A6 100%) !important;
+}
+
+html.dark-mode .vision-board-page__hero::before,
+html.dark-mode .vb-page__hero::before {
+    background: radial-gradient(circle at 80% 20%, rgba(20, 184, 166, 0.3) 0%, transparent 50%);
+}
+
+html.dark-mode .vision-board-page__back,
+html.dark-mode .vb-page__back {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.dark-mode .vision-board-page__back:hover,
+html.dark-mode .vb-page__back:hover {
+    color: #FFFFFF !important;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .vb-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .vb-page__actions .btn--primary:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .vision-board-page__title,
+html.dark-mode .vb-page__hero-title {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .vision-board-page__title svg,
+html.dark-mode .vb-page__hero-title svg {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+html.dark-mode .vision-board-page__subtitle,
+html.dark-mode .vb-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Stats */
+html.dark-mode .vision-board-page-stat__value,
+html.dark-mode .vb-hero-stat__value {
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .vision-board-page-stat__label,
+html.dark-mode .vb-hero-stat__label {
+    color: rgba(255, 255, 255, 0.8) !important;
+}
+
+html.dark-mode .vision-board-page-stat__icon,
+html.dark-mode .vb-hero-stat__icon {
+    background: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+/* Tabs */
+html.dark-mode .vision-board-page__tabs,
+html.dark-mode .vb-page__tabs {
+    background: linear-gradient(135deg, #042F2E 0%, #134E4A 100%) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark-mode .vision-board-tab,
+html.dark-mode .vb-tab {
+    color: rgba(255, 255, 255, 0.85);
+    background: rgba(19, 78, 74, 0.4);
+}
+
+html.dark-mode .vision-board-tab:hover,
+html.dark-mode .vb-tab:hover {
+    color: #FFFFFF;
+    background: rgba(20, 184, 166, 0.4);
+}
+
+html.dark-mode .vision-board-tab--active,
+html.dark-mode .vb-tab--active {
+    background: linear-gradient(135deg, #134E4A 0%, #14B8A6 100%) !important;
+    color: #FFFFFF !important;
+}
+
+/* Content area */
+html.dark-mode .vision-board-page__content,
+html.dark-mode .vb-page__content {
+    background: #0F172A;
+}
+
+/* Goal cards - already styled in Vision Board Cards section */
+
+/* ==========================================================================
+   Dark Mode - Vision Board Cards
+   ========================================================================== */
+
+html.dark-mode .vision-board-card {
+    background-color: #1E293B;
+    border-color: #374151;
+}
+
+html.dark-mode .vision-board-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .vision-board-card--completed {
+    border-color: #059669;
+}
+
+html.dark-mode .vision-board-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vision-board-card__notes {
+    color: #94A3B8;
+}
+
+html.dark-mode .vision-board-card__progress-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .vision-board-card__progress-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vision-board-card__progress-bar {
+    background-color: #374151;
+}
+
+html.dark-mode .vision-board-card__date,
+html.dark-mode .vision-board-card__completed-date {
+    color: #94A3B8;
+}
+
+html.dark-mode .vision-board-card__badge--completed {
+    background-color: rgba(16, 185, 129, 0.2);
+    color: #4ADE80;
+}
+
+/* ==========================================================================
+   Dark Mode - Vision Board Widget (Grid View)
+   ========================================================================== */
+
+html.dark-mode .vision-board-widget {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vision-board-empty {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .vision-board-empty svg {
+    color: #64748B !important;
+}
+
+html.dark-mode .vision-board-stat {
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+}
+
+html.dark-mode .vision-board-stat__value {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vision-board-stat__label {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .vision-board-stat__icon {
+    background: rgba(20, 184, 166, 0.2) !important;
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vision-board-goal-mini {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+html.dark-mode .vision-board-goal-mini:hover {
+    background: #334155 !important;
+    border-color: #14B8A6 !important;
+}
+
+html.dark-mode .vision-board-goal-mini__icon {
+    background: rgba(20, 184, 166, 0.2) !important;
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vision-board-goal-mini__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vision-board-goal-mini__progress {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .vision-board-goal-mini__bar {
+    background: #334155 !important;
+}
+
+html.dark-mode .vision-board-widget__footer {
+    border-top-color: #334155 !important;
+}
+
+/* ==========================================================================
+   Dark Mode - Vision Board Template (Full Page Zones)
+   ========================================================================== */
+
+html.dark-mode .vb-template {
+    background-color: #0F172A !important;
+}
+
+html.dark-mode .vb-template__header {
+    border-bottom-color: #334155 !important;
+}
+
+html.dark-mode .vb-template__title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vb-template__title span {
+    color: #5EEAD4 !important;
+}
+
+html.dark-mode .vb-template__subtitle {
+    color: #94A3B8 !important;
+}
+
+/* Zone cards - Teal theme */
+html.dark-mode .vb-zone {
+    background-color: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+html.dark-mode .vb-zone:hover {
+    border-color: #14B8A6 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark-mode .vb-zone__title {
+    color: #5EEAD4 !important;
+}
+
+html.dark-mode .vb-zone__title:hover {
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vb-zone__expand {
+    background-color: #334155 !important;
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .vb-zone__expand:hover {
+    background-color: #14B8A6 !important;
+    color: #FFFFFF !important;
+}
+
+html.dark-mode .vb-zone__empty {
+    color: #64748B !important;
+}
+
+html.dark-mode .vb-zone__goal {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vb-zone__goal:hover {
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vb-zone__goal-bullet {
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vb-zone__goal-title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vb-zone__goal--completed .vb-zone__goal-title {
+    color: #64748B !important;
+}
+
+html.dark-mode .vb-zone__goal-progress {
+    color: #94A3B8;
+}
+
+html.dark-mode .vb-zone__add {
+    background-color: rgba(20, 184, 166, 0.1);
+    border-color: #134E4A;
+    color: #5EEAD4;
+}
+
+html.dark-mode .vb-zone__add:hover {
+    background-color: rgba(20, 184, 166, 0.2);
+    border-color: #14B8A6;
+    color: #14B8A6;
+}
+
+/* Stats section */
+html.dark-mode .vb-stats {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .vb-stats__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vb-stats__card {
+    background: #0F172A;
+    border-color: #334155;
+}
+
+html.dark-mode .vb-stats__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vb-stats__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .vb-stats__icon {
+    background: rgba(20, 184, 166, 0.2) !important;
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vb-stats__card-icon {
+    background: rgba(20, 184, 166, 0.2) !important;
+    color: #14B8A6 !important;
+}
+
+html.dark-mode .vb-stats__goal-title {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .vb-stats__goal-pct {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .vb-stats__goal-bar {
+    background: #334155 !important;
+}
+
+/* Goal detail modal/view */
+html.dark-mode .vb-goal-detail {
+    background: #1E293B;
+}
+
+html.dark-mode .vb-goal-detail__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vb-goal-detail__notes {
+    color: #94A3B8;
+}
+
+html.dark-mode .vb-goal-detail__progress-bar {
+    background: #334155;
+}
+
+html.dark-mode .vb-goal-detail__date {
+    color: #94A3B8;
+}
+
+/* Steps section */
+html.dark-mode .vb-steps__item {
+    background: #0F172A;
+    border-color: #334155;
+}
+
+html.dark-mode .vb-steps__item:hover {
+    border-color: #14B8A6;
+}
+
+html.dark-mode .vb-steps__text {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vb-steps__item--completed .vb-steps__text {
+    color: #64748B;
+}
+
+html.dark-mode .vb-steps__checkbox {
+    border-color: #475569;
+    background: #0F172A;
+}
+
+html.dark-mode .vb-steps__checkbox--checked {
+    background: #14B8A6;
+    border-color: #14B8A6;
+}
+
+html.dark-mode .vb-steps__add {
+    background: rgba(20, 184, 166, 0.1);
+    border-color: #134E4A;
+    color: #5EEAD4;
+}
+
+html.dark-mode .vb-steps__add:hover {
+    background: rgba(20, 184, 166, 0.2);
+    border-color: #14B8A6;
+}
+
+/* ==========================================================================
+   Dark Mode - Recipes Widget
+   ========================================================================== */
+
+/* Widget Header - Colorful gradient */
+html.dark-mode .widget-grid .widget-card[data-widget="recipes"] .widget-card__header,
+html.dark-mode .widget[data-widget="recipes"] .widget__header {
+    background: linear-gradient(135deg, #BE185D 0%, #7C3AED 100%);
+}
+
+/* ==========================================================================
+   Dark Mode - Widget Headers (matching full page banner themes)
+   ========================================================================== */
+
+/* Journal - Violet theme (matches journal full page banner) */
+html.dark-mode .widget-grid .widget-card[data-widget="journal"] .widget-card__header,
+html.dark-mode .widget[data-widget="journal"] .widget__header {
+    background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%);
+}
+
+/* Habits - Green theme (matches habits full page banner) */
+html.dark-mode .widget-grid .widget-card[data-widget="habits"] .widget-card__header,
+html.dark-mode .widget[data-widget="habits"] .widget__header {
+    background: linear-gradient(135deg, #14532D 0%, #22C55E 100%);
+}
+
+/* Gratitude - Amber theme (matches gratitude full page banner) */
+html.dark-mode .widget-grid .widget-card[data-widget="gratitude"] .widget-card__header,
+html.dark-mode .widget[data-widget="gratitude"] .widget__header {
+    background: linear-gradient(135deg, #78350F 0%, #F59E0B 100%);
+}
+
+/* Vision Board - Teal theme (matches vision board full page banner) */
+html.dark-mode .widget-grid .widget-card[data-widget="vision-board"] .widget-card__header,
+html.dark-mode .widget[data-widget="vision-board"] .widget__header {
+    background: linear-gradient(135deg, #134E4A 0%, #14B8A6 100%);
+}
+
+/* Widget Stats */
+html.dark-mode .recipes-widget__stat {
+    background: #334155;
+}
+
+html.dark-mode .recipes-widget__stat--primary {
+    background: rgba(99, 102, 241, 0.2);
+}
+
+html.dark-mode .recipes-widget__stat--favorite {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+html.dark-mode .recipes-widget__stat--tags {
+    background: rgba(16, 185, 129, 0.2);
+}
+
+html.dark-mode .recipes-widget__stat-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-widget__stat-label {
+    color: #94A3B8;
+}
+
+/* Recent Header */
+html.dark-mode .recipes-widget__recent-header h4 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-widget__viewall {
+    color: #818CF8;
+}
+
+/* Recipe Cards in Widget */
+html.dark-mode .recipes-widget__card {
+    background: #334155;
+}
+
+html.dark-mode .recipes-widget__card:hover {
+    background: #475569;
+}
+
+html.dark-mode .recipes-widget__card-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-widget__card-fav {
+    background: #1E293B;
+}
+
+/* Footer */
+html.dark-mode .recipes-widget__footer {
+    border-top-color: #334155;
+}
+
+html.dark-mode .recipes-widget__footer .btn--outline {
+    background: #1E293B;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-widget__footer .btn--outline:hover {
+    background: #334155;
+    border-color: #6366F1;
+}
+
+/* Recipe Chips */
+html.dark-mode .recipe-chip {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipe-chip:hover {
+    background: #475569;
+}
+
+/* ==========================================================================
+   Dark Mode - Recipes Full Page
+   ========================================================================== */
+
+/* Hero Section */
+html.dark-mode .recipes-page__hero {
+    background: linear-gradient(135deg, #BE185D 0%, #7C3AED 100%);
+}
+
+html.dark-mode .recipes-page__hero-title {
+    color: #F1F5F9;
+}
+
+html.dark-mode .recipes-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark-mode .recipes-page__back {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-page__back:hover {
+    color: #FFFFFF;
+}
+
+/* Tabs - Colorful theme matching hero */
+html.dark-mode .recipes-page__tabs {
+    background: linear-gradient(135deg, #831843 0%, #581C87 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .recipes-page__tab {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+html.dark-mode .recipes-page__tab:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .recipes-page__tab--active {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.25);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+html.dark-mode .recipes-page__tab-badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: #FFFFFF;
+}
+
+/* Toolbar */
+html.dark-mode .recipes-page__toolbar {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .recipes-page__sort-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .recipes-page__sort select {
+    background: #334155;
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+/* Search */
+html.dark-mode .recipes-page__search .form-input {
+    background: #334155;
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+html.dark-mode .recipes-page__search .form-input::placeholder {
+    color: #64748B;
+}
+
+html.dark-mode .recipes-page__search svg {
+    color: #64748B;
+}
+
+/* Recipe Cards in Full Page */
+html.dark-mode .recipe-card {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border-color: #475569;
+}
+
+html.dark-mode .recipe-card:hover {
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+    border-color: #6366F1;
+}
+
+html.dark-mode .recipe-card--has-image {
+    background: #1E293B;
+}
+
+html.dark-mode .recipe-card--has-image .recipe-card__header {
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+}
+
+html.dark-mode .recipe-card--has-image .recipe-card__body {
+    background: #1E293B;
+}
+
+html.dark-mode .recipe-card__header {
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.3) 0%, rgba(99, 102, 241, 0.1) 100%);
+}
+
+html.dark-mode .recipe-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipe-card__description {
+    color: #94A3B8;
+}
+
+html.dark-mode .recipe-card__meta {
+    color: #94A3B8;
+}
+
+html.dark-mode .recipe-card__favorite {
+    background: rgba(30, 41, 59, 0.9);
+}
+
+html.dark-mode .recipe-card__favorite svg {
+    color: #94A3B8;
+}
+
+html.dark-mode .recipe-card__favorite:hover {
+    background: #1E293B;
+}
+
+html.dark-mode .recipe-card--favorite .recipe-card__favorite {
+    background: rgba(239, 68, 68, 0.2);
+}
+
+html.dark-mode .recipe-card .recipe-tag {
+    background-color: rgba(99, 102, 241, 0.2);
+    border-color: rgba(99, 102, 241, 0.3);
+    color: #C4B5FD;
+}
+
+html.dark-mode .recipe-card__nutrition {
+    background: rgba(51, 65, 81, 0.5);
+}
+
+html.dark-mode .recipe-card__nutrition-item {
+    color: #94A3B8;
+}
+
+html.dark-mode .recipe-card__nutrition-item strong {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipe-card__source {
+    border-top-color: #334155;
+    color: #64748B;
+}
+
+html.dark-mode .recipe-card__footer {
+    border-top-color: #334155;
+}
+
+html.dark-mode .recipe-card__action {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipe-card__action:hover {
+    background: #475569;
+}
+
+/* Add Recipe Card */
+html.dark-mode .recipe-card--add {
+    background: #1E293B;
+    border-color: #475569;
+    border-style: dashed;
+}
+
+html.dark-mode .recipe-card--add:hover {
+    background: #334155;
+    border-color: #6366F1;
+}
+
+html.dark-mode .recipe-card--add svg {
+    color: #6366F1;
+}
+
+/* Mini Cards */
+html.dark-mode .recipe-card--mini {
+    background: #334155;
+}
+
+html.dark-mode .recipe-card--mini:hover {
+    background: #475569;
+}
+
+html.dark-mode .recipe-card__name-mini {
+    color: #E2E8F0;
+}
+
+/* Empty State */
+html.dark-mode .recipes-page__empty {
+    background: #1E293B;
+}
+
+html.dark-mode .recipes-page__empty h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .recipes-page__empty p {
+    color: #94A3B8;
+}
+
+/* Filter Chips */
+html.dark-mode .recipe-filter-chip {
+    background: #334155;
+    color: #E2E8F0;
+    border-color: #475569;
+}
+
+html.dark-mode .recipe-filter-chip:hover {
+    background: #475569;
+}
+
+html.dark-mode .recipe-filter-chip--active {
+    background: #6366F1;
+    border-color: #6366F1;
+    color: #FFFFFF;
+}
+
+/* ==========================================================================
+   Dark Mode - Routines Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark sky blue gradient */
+html.dark-mode .routines-page__hero {
+    background: linear-gradient(135deg, #0C4A6E 0%, #0369A1 50%, #0284C7 100%);
+}
+
+html.dark-mode .routines-page__hero::before {
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+}
+
+html.dark-mode .routines-page__back {
+    color: #BAE6FD;
+}
+
+html.dark-mode .routines-page__back:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+html.dark-mode .routines-page__hero-title {
+    color: #F0F9FF;
+}
+
+html.dark-mode .routines-page__hero-title svg {
+    color: #38BDF8;
+}
+
+html.dark-mode .routines-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark-mode .routines-hero-stat__value {
+    color: #F0F9FF;
+}
+
+html.dark-mode .routines-hero-stat__label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Tabs - Colorful theme matching hero */
+html.dark-mode .routines-page__tabs {
+    background: linear-gradient(135deg, #082F49 0%, #0C4A6E 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .routines-tab {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+html.dark-mode .routines-tab:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .routines-tab--active {
+    background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%);
+    color: #FFFFFF;
+}
+
+html.dark-mode .routines-tab--active:hover {
+    background: linear-gradient(135deg, #0EA5E9 0%, #38BDF8 100%);
+}
+
+html.dark-mode .routines-tab__count {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .routines-tab--active .routines-tab__count {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Action Bar */
+html.dark-mode .routines-page__actions {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+/* Content Area */
+html.dark-mode .routines-page__content {
+    background: transparent;
+}
+
+/* Empty State */
+html.dark-mode .routines-empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-empty__icon {
+    background: #334155;
+}
+
+html.dark-mode .routines-empty__icon svg {
+    color: #64748B;
+}
+
+html.dark-mode .routines-empty h3 {
+    color: #E2E8F0;
+}
+
+/* Stats Tab */
+html.dark-mode .routines-stats__card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .routines-stats__card-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-stats__card-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-stats__section {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .routines-stats__section-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-stats__performer {
+    background: #334155;
+}
+
+html.dark-mode .routines-stats__performer-rank {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-stats__performer-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-stats__category {
+    background: #334155;
+}
+
+html.dark-mode .routines-stats__category-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-stats__category-count {
+    color: #94A3B8;
+}
+
+/* History Tab */
+html.dark-mode .routines-history__week {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .routines-history__week-header h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-history__week-total {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-history__day {
+    background: #334155;
+}
+
+html.dark-mode .routines-history__day-name {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-history__day-num {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-history__day-count {
+    color: #94A3B8;
+}
+
+html.dark-mode .routines-history__day--active {
+    background: #166534;
+}
+
+html.dark-mode .routines-history__day--active .routines-history__day-num {
+    color: #86EFAC;
+}
+
+html.dark-mode .routines-history__recent {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .routines-history__recent h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-history__cal-day {
+    background: #334155;
+}
+
+html.dark-mode .routines-history__cal-num {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routines-history__cal-day--active {
+    background: #166534;
+}
+
+html.dark-mode .routines-history__cal-day--today {
+    border-color: #0EA5E9;
+}
+
+/* Routine Sections */
+html.dark-mode .routines-section {
+    background-color: #1E293B;
+    box-shadow: none;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .routines-section--overdue .routines-section__title {
+    color: #F87171;
+}
+
+html.dark-mode .routines-section--due-soon .routines-section__title {
+    color: #FBBF24;
+}
+
+html.dark-mode .routines-section--never-done .routines-section__title {
+    color: #A78BFA;
+}
+
+html.dark-mode .routines-section--upcoming .routines-section__title {
+    color: #38BDF8;
+}
+
+html.dark-mode .routines-section--done .routines-section__title {
+    color: #4ADE80;
+}
+
+html.dark-mode .routines-section--snoozed .routines-section__title {
+    color: #64748B;
+}
+
+/* Routine Cards */
+html.dark-mode .routine-card {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .routine-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .routine-card--overdue {
+    background-color: rgba(220, 38, 38, 0.15);
+    border-color: #DC2626;
+}
+
+html.dark-mode .routine-card--due-soon,
+html.dark-mode .routine-card--new {
+    background-color: rgba(217, 119, 6, 0.15);
+    border-color: #D97706;
+}
+
+html.dark-mode .routine-card--done {
+    background-color: rgba(34, 197, 94, 0.1);
+    border-color: #22C55E;
+}
+
+html.dark-mode .routine-card--snoozed {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .routine-card__icon {
+    background-color: color-mix(in srgb, var(--routine-color, var(--primary)) 25%, #1E293B);
+}
+
+html.dark-mode .routine-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routine-card__meta {
+    color: #94A3B8;
+}
+
+html.dark-mode .routine-card__status {
+    color: #94A3B8;
+}
+
+html.dark-mode .routine-card--overdue .routine-card__status {
+    color: #F87171;
+}
+
+html.dark-mode .routine-card--due-soon .routine-card__status,
+html.dark-mode .routine-card--new .routine-card__status {
+    color: #FBBF24;
+}
+
+html.dark-mode .routine-card--done .routine-card__status {
+    color: #4ADE80;
+}
+
+html.dark-mode .routine-card__actions-secondary {
+    border-color: #475569;
+}
+
+html.dark-mode .routine-card__delete {
+    color: #64748B;
+}
+
+html.dark-mode .routine-card__delete:hover {
+    color: #F87171;
+}
+
+/* Category Grouping */
+html.dark-mode .routines-category__title {
+    color: #E2E8F0;
+}
+
+/* Routine Form */
+html.dark-mode .routine-freq-option {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .routine-freq-option:hover {
+    border-color: #0EA5E9;
+}
+
+html.dark-mode .routine-freq-option svg {
+    color: #64748B;
+}
+
+html.dark-mode .routine-freq-option span {
+    color: #94A3B8;
+}
+
+html.dark-mode .routine-freq-option--selected {
+    background-color: rgba(14, 165, 233, 0.2);
+    border-color: #0EA5E9;
+}
+
+html.dark-mode .routine-freq-option--selected svg,
+html.dark-mode .routine-freq-option--selected span {
+    color: #38BDF8;
+}
+
+/* Widget Stats */
+html.dark-mode .routine-widget__stat {
+    background: #334155;
+}
+
+html.dark-mode .routine-widget__stat--danger {
+    background: rgba(220, 38, 38, 0.15);
+}
+
+html.dark-mode .routine-widget__stat--warning {
+    background: rgba(217, 119, 6, 0.15);
+}
+
+html.dark-mode .routine-widget__stat--success {
+    background: rgba(34, 197, 94, 0.1);
+}
+
+/* Routine Widget Card - Dark Mode Text Fixes */
+html.dark-mode .routine-widget__stat-label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .routine-widget__stat--danger .routine-widget__stat-value {
+    color: #F87171;
+}
+
+html.dark-mode .routine-widget__stat--warning .routine-widget__stat-value {
+    color: #FBBF24;
+}
+
+html.dark-mode .routine-widget__stat--success .routine-widget__stat-value {
+    color: #34D399;
+}
+
+html.dark-mode .routine-widget__upnext-header h4 {
+    color: #CBD5E1;
+}
+
+html.dark-mode .routine-widget__upnext-item {
+    background: #334155;
+}
+
+html.dark-mode .routine-widget__upnext-item:hover {
+    background: #475569;
+}
+
+html.dark-mode .routine-widget__upnext-title {
+    color: #F1F5F9;
+}
+
+html.dark-mode .routine-widget__upnext-meta {
+    color: #94A3B8;
+}
+
+html.dark-mode .routine-widget__upnext-check {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .routine-widget__upnext-check svg {
+    color: #64748B;
+}
+
+html.dark-mode .routine-widget__footer {
+    border-color: #334155;
+}
+
+/* ==========================================================================
+   Dark Mode - Chores Widget Items
+   ========================================================================== */
+
+html.dark-mode .chore-item {
+    background-color: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .chore-item__icon {
+    background-color: #475569;
+}
+
+html.dark-mode .chore-item__icon svg {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chore-item__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chore-item--done {
+    background-color: rgba(5, 150, 105, 0.15);
+    border-color: #059669;
+}
+
+html.dark-mode .chore-item--done .chore-item__icon {
+    background-color: rgba(5, 150, 105, 0.2);
+}
+
+/* ==========================================================================
+   Dark Mode - Screen Time Widget Card
+   ========================================================================== */
+
+html.dark-mode .screen-time-widget__time {
+    color: #F1F5F9;
+}
+
+html.dark-mode .screen-time-widget__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-widget__info {
+    background-color: #334155;
+}
+
+html.dark-mode .screen-time-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-gauge__bg {
+    stroke: #475569;
+}
+
+html.dark-mode .screen-time-widget__footer {
+    border-color: #334155;
+}
+
+/* ==========================================================================
+   Dark Mode - Daily Log Widget
+   ========================================================================== */
+
+html.dark-mode .daily-log-widget__date {
+    color: #F1F5F9;
+}
+
+html.dark-mode .log-item {
+    background-color: #334155;
+}
+
+html.dark-mode .log-item__icon {
+    background-color: #475569;
+}
+
+html.dark-mode .log-item__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .log-counter__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .log-item__time {
+    background: #475569;
+    border-color: #64748B;
+    color: #F1F5F9;
+}
+
+html.dark-mode .mood-btn {
+    background-color: #334155;
+}
+
+html.dark-mode .daily-log-widget__notes {
+    background-color: rgba(120, 53, 15, 0.4);
+    color: #FDE68A;
+}
+
+html.dark-mode .daily-log-widget__footer {
+    border-top-color: #334155;
+}
+
+/* Potty Training Section - Dark Mode */
+html.dark-mode .potty-training-section {
+    background: linear-gradient(135deg, #2E1065 0%, #3B0764 100%);
+    border-color: #A855F7;
+}
+
+html.dark-mode .potty-training-title {
+    color: #D8B4FE;
+}
+
+html.dark-mode .potty-counter {
+    background: #334155;
+}
+
+html.dark-mode .potty-counter--attempts {
+    border-color: #A855F7;
+}
+
+html.dark-mode .potty-counter--successes {
+    border-color: #22C55E;
+}
+
+html.dark-mode .potty-counter__label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .potty-counter__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .potty-counter--attempts .potty-counter__btn {
+    background: rgba(147, 51, 234, 0.2);
+    color: #C084FC;
+}
+
+html.dark-mode .potty-counter--successes .potty-counter__btn {
+    background: rgba(22, 163, 74, 0.2);
+    color: #4ADE80;
+}
+
+html.dark-mode .potty-stat__value {
+    color: #D8B4FE;
+}
+
+html.dark-mode .potty-stat__label {
+    color: #CBD5E1;
+}
+
+/* ==========================================================================
+   Dark Mode - Tasks Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark blue gradient */
+html.dark-mode .tasks-page__hero {
+    background: linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 50%, #2563EB 100%);
+}
+
+html.dark-mode .tasks-page__hero::before {
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+}
+
+html.dark-mode .tasks-page__back {
+    color: #BFDBFE;
+}
+
+html.dark-mode .tasks-page__back:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+html.dark-mode .tasks-page__hero-title {
+    color: #F0F9FF;
+}
+
+html.dark-mode .tasks-page__hero-title svg {
+    color: #60A5FA;
+}
+
+html.dark-mode .tasks-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark-mode .tasks-hero-stat__value {
+    color: #F0F9FF;
+}
+
+html.dark-mode .tasks-hero-stat__label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Tabs */
+html.dark-mode .tasks-page__tabs {
+    background: linear-gradient(135deg, #172554 0%, #1E3A8A 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .tasks-page__tab {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+html.dark-mode .tasks-page__tab:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .tasks-page__tab--active {
+    background: linear-gradient(135deg, #2563EB 0%, #3B82F6 100%);
+    color: #FFFFFF;
+}
+
+/* Content Area */
+html.dark-mode .tasks-page__content {
+    background: transparent;
+}
+
+/* Tasks History Tab */
+html.dark-mode .tasks-history__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tasks-history__summary {
+    background: #1E293B;
+    border: 1px solid #334155;
+}
+
+html.dark-mode .tasks-history__summary-stat {
+    color: #94A3B8;
+}
+
+html.dark-mode .tasks-history__summary-stat svg {
+    color: #60A5FA;
+}
+
+html.dark-mode .tasks-history__day {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .tasks-history__day--today {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 1px #2563EB;
+}
+
+html.dark-mode .tasks-history__day-header {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .tasks-history__day--today .tasks-history__day-header {
+    background: rgba(37, 99, 235, 0.3);
+}
+
+html.dark-mode .tasks-history__day-num {
+    color: #60A5FA;
+}
+
+html.dark-mode .tasks-history__day-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tasks-history__day-month {
+    color: #94A3B8;
+}
+
+html.dark-mode .tasks-history__day-count {
+    color: #94A3B8;
+    background: #1E293B;
+}
+
+html.dark-mode .tasks-history__day--today .tasks-history__day-count {
+    background: #2563EB;
+    color: #FFFFFF;
+}
+
+html.dark-mode .tasks-history__task {
+    color: #E2E8F0;
+}
+
+/* Tasks Stats Tab */
+html.dark-mode .tasks-stats__card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .tasks-stats__card-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tasks-stats__card-label {
+    color: #94A3B8;
+}
+
+/* Empty State */
+html.dark-mode .tasks-page__empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .tasks-page__empty-icon {
+    background: #334155;
+}
+
+html.dark-mode .tasks-page__empty-icon svg {
+    color: #64748B;
+}
+
+html.dark-mode .tasks-page__empty h2 {
+    color: #E2E8F0;
+}
+
+/* Task Add Form */
+html.dark-mode .tasks-page__add input {
+    background: #1E293B;
+    border-color: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tasks-page__add input::placeholder {
+    color: #64748B;
+}
+
+/* Task Sections */
+html.dark-mode .tasks-page__section {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: var(--radius-lg);
+}
+
+html.dark-mode .tasks-page__section-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tasks-page__section-title--completed {
+    color: #4ADE80;
+}
+
+/* ==========================================================================
+   Dark Mode - Workout Full Page
+   ========================================================================== */
+
+/* Hero Section - Dark orange gradient */
+html.dark-mode .workout-page__hero {
+    background: linear-gradient(135deg, #7C2D12 0%, #9A3412 50%, #C2410C 100%) !important;
+}
+
+html.dark-mode .workout-page__hero::before {
+    background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+}
+
+html.dark-mode .workout-page__back {
+    color: #FED7AA;
+}
+
+html.dark-mode .workout-page__back:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #FFFFFF;
+}
+
+html.dark-mode .workout-page__hero-title {
+    color: #FFF7ED;
+}
+
+html.dark-mode .workout-page__hero-title svg {
+    color: #FB923C;
+}
+
+html.dark-mode .workout-page__hero-subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark-mode .workout-hero-stat__value {
+    color: #FFF7ED;
+}
+
+html.dark-mode .workout-hero-stat__label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Tabs */
+html.dark-mode .workout-page--tabbed .workout-page__tabs {
+    background: linear-gradient(135deg, #431407 0%, #7C2D12 100%);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .workout-tab {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+html.dark-mode .workout-tab:hover {
+    color: #FFFFFF;
+    background: rgba(255, 255, 255, 0.15);
+}
+
+html.dark-mode .workout-tab--active {
+    background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
+    color: #FFFFFF;
+}
+
+html.dark-mode .workout-tab--active:hover {
+    background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
+}
+
+/* Week Navigation */
+html.dark-mode .workout-week-nav__btn {
+    background-color: #1E293B;
+    border-color: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-week-nav__btn:hover:not(:disabled) {
+    background-color: rgba(249, 115, 22, 0.2);
+    border-color: #F97316;
+    color: #FB923C;
+}
+
+html.dark-mode .workout-week-nav__text {
+    color: #E2E8F0;
+}
+
+/* Day Cards - Override inline colors for dark mode */
+html.dark-mode .workout-day-card {
+    --day-bg: #334155 !important;
+    --day-border: #475569 !important;
+    --day-text: #E2E8F0 !important;
+    background-color: #334155 !important;
+    border-color: #475569 !important;
+}
+
+html.dark-mode .workout-day-card__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .workout-day-card__date {
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .workout-day-card__summary {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .workout-day-card__content {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-day-card__item {
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-day-card__item:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark-mode .workout-day-card__item-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-day-card__item-duration {
+    color: #94A3B8;
+}
+
+html.dark-mode .workout-day-card__empty {
+    color: #64748B;
+}
+
+html.dark-mode .workout-day-card__empty svg {
+    color: #475569;
+}
+
+html.dark-mode .workout-day-card__add {
+    background-color: rgba(249, 115, 22, 0.15);
+    border-color: rgba(249, 115, 22, 0.3);
+    color: #FB923C;
+}
+
+html.dark-mode .workout-day-card__add:hover {
+    background-color: rgba(249, 115, 22, 0.25);
+    border-color: #F97316;
+}
+
+/* Weekly Goal Card */
+html.dark-mode .workout-weekly-goal {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .workout-weekly-goal__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-weekly-goal__progress-text {
+    color: #94A3B8;
+}
+
+html.dark-mode .workout-weekly-goal__days-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .workout-weekly-goal__day-btn {
+    background: #334155;
+    color: #94A3B8;
+    border-color: #475569;
+}
+
+html.dark-mode .workout-weekly-goal__day-btn:hover {
+    background: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-weekly-goal__day-btn--active {
+    background: #F97316;
+    color: #FFFFFF;
+    border-color: #F97316;
+}
+
+/* Quick Add Section */
+html.dark-mode .workout-quick-add__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-quick-add__btn {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-quick-add__btn:hover {
+    background: #475569;
+    border-color: #F97316;
+}
+
+html.dark-mode .workout-quick-add__btn svg {
+    color: #FB923C;
+}
+
+/* Calendar Tab */
+html.dark-mode .workout-calendar {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .workout-calendar__header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-calendar__day-name {
+    color: #64748B;
+}
+
+html.dark-mode .workout-calendar__day {
+    color: #94A3B8;
+}
+
+html.dark-mode .workout-calendar__day--today {
+    background: #F97316;
+    color: #FFFFFF;
+}
+
+html.dark-mode .workout-calendar__day--has-workout {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ADE80;
+}
+
+/* Body Tab */
+html.dark-mode .workout-body__section {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .workout-body__section-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .workout-body__measurement {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .workout-body__measurement-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .workout-body__measurement-value {
+    color: #E2E8F0;
+}
+
+/* Suggest Workout Cards */
+html.dark-mode .suggest-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .suggest-card h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .suggest-card__hint {
+    color: #94A3B8;
+}
+
+html.dark-mode .suggest-card__option {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .suggest-card__option:hover {
+    background: #475569;
+    border-color: #F97316;
+}
+
+html.dark-mode .suggest-card__option--selected {
+    background: rgba(249, 115, 22, 0.2);
+    border-color: #F97316;
+    color: #FB923C;
+}
+
+/* ==========================================================================
+   Bookmarks Widget
+   ========================================================================== */
+
+/* Collapsed Widget View */
+.bookmarks-widget__empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-6) var(--space-4);
+    text-align: center;
+}
+
+.bookmarks-widget__empty p {
+    color: var(--gray-500);
+    font-size: var(--text-sm);
+    margin: 0;
+}
+
+.bookmarks-widget__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.bookmarks-widget__item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    text-decoration: none;
+    color: inherit;
+    transition: background 0.2s;
+}
+
+.bookmarks-widget__item:hover {
+    background: var(--gray-50);
+}
+
+.bookmarks-widget__favicon {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.bookmarks-widget__item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmarks-widget__item-title {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--gray-800);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bookmarks-widget__item-domain {
+    display: block;
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+}
+
+.bookmarks-widget__item-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 3px;
+}
+
+.bookmarks-widget__item-tag {
+    display: inline-block;
+    font-size: 10px;
+    font-weight: var(--font-medium);
+    color: var(--tag-color, #6366F1);
+    background: color-mix(in srgb, var(--tag-color, #6366F1) 12%, transparent);
+    padding: 1px 6px;
+    border-radius: 8px;
+    line-height: 1.4;
+}
+
+.bookmarks-widget__more {
+    display: block;
+    width: 100%;
+    text-align: center;
+    font-size: var(--text-xs);
+    font-weight: var(--font-medium);
+    color: #6366F1;
+    padding: var(--space-2);
+    background: none;
+    border: 1px dashed var(--gray-200);
+    border-radius: var(--radius-lg);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bookmarks-widget__more:hover {
+    background: #EEF2FF;
+    border-color: #C7D2FE;
+}
+
+.bookmarks-widget__footer {
+    display: flex;
+    justify-content: center;
+    padding-top: var(--space-2);
+    border-top: 1px solid var(--gray-100);
+    margin-top: var(--space-2);
+}
+
+/* Full Page View */
+.bookmarks-page {
+    min-height: 100vh;
+    background: var(--gray-50);
+}
+
+.bookmarks-page__hero {
+    position: relative;
+    background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #A855F7 100%);
+    padding: var(--space-6) var(--space-6) var(--space-8);
+    color: white;
+    overflow: hidden;
+}
+
+.bookmarks-page__hero-bg {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 20% 80%, rgba(255,255,255,0.15) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(255,255,255,0.1) 0%, transparent 50%);
+}
+
+.bookmarks-page__hero-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    text-align: center;
+    padding-top: var(--space-4);
+}
+
+.bookmarks-page__back {
+    position: absolute;
+    top: var(--space-4);
+    left: var(--space-4);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: white;
+    text-decoration: none;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(0, 0, 0, 0.08);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bookmarks-page__back:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.5);
+    color: white;
+}
+
+.bookmarks-page__back svg {
+    width: 16px;
+    height: 16px;
+}
+
+.bookmarks-page__header {
+    margin-bottom: var(--space-4);
+}
+
+.bookmarks-page__icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-3);
+}
+
+.bookmarks-page__icon svg {
+    width: 28px;
+    height: 28px;
+}
+
+.bookmarks-page__title {
+    font-size: var(--text-2xl);
+    font-weight: var(--font-bold);
+    margin: 0;
+}
+
+.bookmarks-page__subtitle {
+    font-size: var(--text-sm);
+    opacity: 0.8;
+    margin-top: var(--space-1);
+}
+
+.bookmarks-page__actions {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+}
+
+.bookmarks-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.9);
+    color: #4338CA;
+    border: none;
+}
+
+.bookmarks-page__actions .btn--primary:hover {
+    background: white;
+}
+
+/* Filters */
+.bookmarks-page__filters {
+    background: white;
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--gray-200);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.bookmarks-filter__scroll {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.bookmarks-filter__chip {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--gray-100);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    color: var(--gray-600);
+    white-space: nowrap;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bookmarks-filter__chip:hover {
+    background: var(--gray-200);
+}
+
+.bookmarks-filter__chip--active {
+    background: var(--chip-color, #6366F1);
+    color: white;
+    border-color: var(--chip-color, #6366F1);
+}
+
+.bookmarks-filter__chip--active:hover {
+    opacity: 0.9;
+}
+
+.bookmarks-filter__count {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: var(--text-xs);
+}
+
+/* Search */
+.bookmarks-search {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    padding: var(--space-2) var(--space-3);
+    color: var(--gray-400);
+}
+
+.bookmarks-search__input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    outline: none;
+    font-size: var(--text-sm);
+    color: var(--gray-800);
+}
+
+.bookmarks-search__input::placeholder {
+    color: var(--gray-400);
+}
+
+/* Content */
+.bookmarks-page__content {
+    padding: var(--space-6);
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.bookmarks-page__empty {
+    text-align: center;
+    padding: var(--space-12) var(--space-4);
+    color: var(--gray-500);
+}
+
+.bookmarks-page__empty svg {
+    color: var(--gray-300);
+    margin-bottom: var(--space-3);
+}
+
+.bookmarks-page__empty h3 {
+    color: var(--gray-700);
+    margin: 0 0 var(--space-2);
+}
+
+.bookmarks-page__empty p {
+    margin: 0 0 var(--space-4);
+}
+
+.bookmarks-page__empty-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #EEF2FF, #E0E7FF);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto var(--space-4);
+}
+
+.bookmarks-page__empty-icon svg {
+    color: #6366F1;
+}
+
+/* Bookmarks Grid */
+.bookmarks-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: var(--space-4);
+}
+
+/* Bookmark Card */
+.bookmark-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    border: 1px solid var(--gray-100);
+    overflow: hidden;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.bookmark-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12);
+    border-color: #C7D2FE;
+}
+
+.bookmark-card__header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-3) 0;
+}
+
+.bookmark-card__favicon {
+    width: 20px;
+    height: 20px;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+}
+
+.bookmark-card__domain {
+    flex: 1;
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.bookmark-card__menu {
+    position: relative;
+}
+
+.bookmark-card__menu-btn {
+    background: none;
+    border: none;
+    padding: var(--space-1);
+    border-radius: var(--radius-md);
+    color: var(--gray-400);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+}
+
+.bookmark-card__menu-btn:hover {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+.bookmark-card__dropdown {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 100%;
+    background: white;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 20;
+    min-width: 120px;
+    overflow: hidden;
+}
+
+.bookmark-card__dropdown--open {
+    display: block;
+}
+
+.bookmark-card__dropdown button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+    padding: var(--space-2) var(--space-3);
+    background: none;
+    border: none;
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.bookmark-card__dropdown button:hover {
+    background: var(--gray-50);
+}
+
+.bookmark-card__dropdown button[data-action="delete"] {
+    color: #EF4444;
+}
+
+.bookmark-card__dropdown button[data-action="delete"]:hover {
+    background: #FEF2F2;
+}
+
+.bookmark-card__body {
+    display: block;
+    padding: var(--space-3);
+    text-decoration: none;
+    color: inherit;
+}
+
+.bookmark-card__title {
+    font-size: var(--text-base);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+    margin: 0 0 var(--space-1);
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.bookmark-card__desc {
+    font-size: var(--text-sm);
+    color: var(--gray-500);
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.5;
+}
+
+.bookmark-card__footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--space-3) var(--space-3);
+    gap: var(--space-2);
+}
+
+.bookmark-card__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.bookmark-card__tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: var(--radius-full);
+    font-size: 11px;
+    font-weight: var(--font-medium);
+    background: color-mix(in srgb, var(--tag-color, #6366F1) 12%, transparent);
+    color: var(--tag-color, #6366F1);
+}
+
+.bookmark-card__date {
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Add Bookmark Modal - Tag Picker */
+.bookmarks-tag-picker {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.bookmarks-tag-option {
+    cursor: pointer;
+}
+
+.bookmarks-tag-option input {
+    display: none;
+}
+
+.bookmarks-tag-option__label {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border-radius: var(--radius-full);
+    font-size: var(--text-sm);
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+}
+
+.bookmarks-tag-option__label:hover {
+    background: var(--gray-200);
+}
+
+.bookmarks-tag-option--selected .bookmarks-tag-option__label {
+    background: color-mix(in srgb, var(--tag-color, #6366F1) 15%, transparent);
+    color: var(--tag-color, #6366F1);
+    border-color: color-mix(in srgb, var(--tag-color, #6366F1) 30%, transparent);
+}
+
+.bookmarks-custom-tag {
+    display: flex;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.bookmarks-custom-tag .form-input--sm {
+    flex: 1;
+    padding: var(--space-2) var(--space-3);
+    font-size: var(--text-sm);
+}
+
+/* Responsive */
+@media (max-width: 599px) {
+    .bookmarks-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .bookmarks-page__hero {
+        padding: var(--space-4) var(--space-4) var(--space-6);
+    }
+
+    .bookmarks-page__content {
+        padding: var(--space-4);
+    }
 }

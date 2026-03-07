@@ -385,3 +385,88 @@
 .data-table tr:hover td {
     background-color: var(--gray-50);
 }
+
+/* ==========================================================================
+   Dark Mode - Adult Theme
+   ========================================================================== */
+
+/* Adult sidebar - dark mode (use !important to override light mode) */
+html.dark-mode .tab-content--adult .member-sidebar {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+/* Adult widget styling - dark mode */
+html.dark-mode .tab-content--adult .widget {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .widget__header {
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .widget__footer {
+    background-color: #0F172A;
+    border-color: #334155;
+}
+
+/* Adult stats - dark mode */
+html.dark-mode .tab-content--adult .stat {
+    background-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--adult .stat__label {
+    color: #94A3B8;
+}
+
+/* Adult meal items - dark mode */
+html.dark-mode .tab-content--adult .meal-item {
+    background-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .meal-item__time {
+    color: #94A3B8;
+}
+
+html.dark-mode .tab-content--adult .meal-item__name {
+    color: #E2E8F0;
+}
+
+/* Adult task items - dark mode */
+html.dark-mode .tab-content--adult .task-item {
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .task-item__title {
+    color: #E2E8F0;
+}
+
+/* Adult data tables - dark mode */
+html.dark-mode .tab-content--adult .data-table th {
+    color: #94A3B8;
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .data-table td {
+    color: #E2E8F0;
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--adult .data-table tr:hover td {
+    background-color: #334155;
+}
+
+/* Adult quick actions - dark mode */
+html.dark-mode .tab-content--adult .quick-action {
+    background-color: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .tab-content--adult .quick-action:hover {
+    background-color: #475569;
+}

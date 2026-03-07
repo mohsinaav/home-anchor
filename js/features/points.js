@@ -717,8 +717,8 @@ const Points = (function() {
                         </div>
                     </div>
                     <!-- Add Points Button (Admin) -->
-                    <button class="btn btn--sm btn--secondary kid-page__hero-action" id="addBonusBtn" title="Add Bonus ${pointsLabel} (Admin)">
-                        <i data-lucide="plus-circle"></i>
+                    <button class="btn btn--primary kid-page__hero-action" id="addBonusBtn" title="Add Bonus ${pointsLabel} (Admin)">
+                        <i data-lucide="plus"></i>
                         Add ${pointsLabel}
                     </button>
                 </div>

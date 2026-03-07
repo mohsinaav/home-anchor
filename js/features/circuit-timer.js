@@ -148,6 +148,10 @@ const CircuitTimer = (function() {
                 </div>
 
                 <div class="circuit-timer-widget__footer">
+                    <button class="btn btn--sm btn--ghost" data-action="view-history">
+                        <i data-lucide="history"></i>
+                        History
+                    </button>
                     <button class="btn btn--sm btn--ghost" data-action="open-workout">
                         <i data-lucide="dumbbell"></i>
                         Workout
@@ -190,6 +194,11 @@ const CircuitTimer = (function() {
         // Manage presets
         container.querySelector('[data-action="manage-presets"]')?.addEventListener('click', () => {
             showManagePresetsModal(memberId);
+        });
+
+        // View history
+        container.querySelector('[data-action="view-history"]')?.addEventListener('click', () => {
+            showHistoryModal(memberId);
         });
 
         // Open workout - scroll to Workout widget or switch focus to it
@@ -484,6 +493,144 @@ const CircuitTimer = (function() {
             Modal.close();
             // Refresh widget
             refreshWidget(memberId);
+        });
+    }
+
+    /**
+     * Show history modal
+     */
+    function showHistoryModal(memberId) {
+        const data = getWidgetData(memberId);
+        const history = data.history || [];
+
+        // Group history by date
+        const groupedHistory = {};
+        history.forEach(entry => {
+            const date = entry.completedAt.split('T')[0];
+            if (!groupedHistory[date]) {
+                groupedHistory[date] = [];
+            }
+            groupedHistory[date].push(entry);
+        });
+
+        const sortedDates = Object.keys(groupedHistory).sort().reverse();
+        const today = DateUtils.today();
+        const yesterday = DateUtils.addDays(today, -1);
+
+        // Calculate stats
+        const totalWorkouts = history.length;
+        const totalMinutes = Math.round(history.reduce((sum, h) => sum + (h.totalDuration || 0), 0) / 60);
+        const thisWeekCount = history.filter(h => {
+            const date = h.completedAt.split('T')[0];
+            const weekAgo = DateUtils.addDays(today, -7);
+            return date >= weekAgo;
+        }).length;
+
+        const content = `
+            <div class="circuit-history">
+                <!-- Stats Summary -->
+                <div class="circuit-history__stats">
+                    <div class="circuit-history__stat">
+                        <span class="circuit-history__stat-value">${totalWorkouts}</span>
+                        <span class="circuit-history__stat-label">Total</span>
+                    </div>
+                    <div class="circuit-history__stat">
+                        <span class="circuit-history__stat-value">${thisWeekCount}</span>
+                        <span class="circuit-history__stat-label">This Week</span>
+                    </div>
+                    <div class="circuit-history__stat">
+                        <span class="circuit-history__stat-value">${totalMinutes}</span>
+                        <span class="circuit-history__stat-label">Minutes</span>
+                    </div>
+                </div>
+
+                <!-- History List -->
+                <div class="circuit-history__list">
+                    ${history.length === 0 ? `
+                        <div class="circuit-history__empty">
+                            <i data-lucide="clock"></i>
+                            <p>No timer history yet</p>
+                            <span>Complete a timer to see it here</span>
+                        </div>
+                    ` : sortedDates.map(date => {
+                        let dateLabel;
+                        if (date === today) {
+                            dateLabel = 'Today';
+                        } else if (date === yesterday) {
+                            dateLabel = 'Yesterday';
+                        } else {
+                            dateLabel = new Date(date + 'T00:00:00').toLocaleDateString('en-US', {
+                                weekday: 'short',
+                                month: 'short',
+                                day: 'numeric'
+                            });
+                        }
+
+                        return `
+                            <div class="circuit-history__day">
+                                <div class="circuit-history__day-header">${dateLabel}</div>
+                                <div class="circuit-history__day-items">
+                                    ${groupedHistory[date].map(entry => {
+                                        const time = new Date(entry.completedAt).toLocaleTimeString('en-US', {
+                                            hour: 'numeric',
+                                            minute: '2-digit',
+                                            hour12: true
+                                        });
+                                        const duration = formatTime(entry.totalDuration || 0);
+
+                                        return `
+                                            <div class="circuit-history__item">
+                                                <div class="circuit-history__item-icon">
+                                                    <i data-lucide="timer"></i>
+                                                </div>
+                                                <div class="circuit-history__item-info">
+                                                    <span class="circuit-history__item-name">${entry.presetName}</span>
+                                                    <span class="circuit-history__item-time">${time}</span>
+                                                </div>
+                                                <div class="circuit-history__item-duration">${duration}</div>
+                                            </div>
+                                        `;
+                                    }).join('')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+
+                ${history.length > 0 ? `
+                    <div class="circuit-history__footer">
+                        <button class="btn btn--sm btn--ghost btn--danger" data-action="clear-history">
+                            <i data-lucide="trash-2"></i>
+                            Clear History
+                        </button>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+
+        Modal.open({
+            title: 'Timer History',
+            content,
+            footer: '<button class="btn btn--primary" data-modal-done>Done</button>'
+        });
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+        }
+
+        // Clear history button
+        document.querySelector('[data-action="clear-history"]')?.addEventListener('click', () => {
+            if (confirm('Clear all timer history?')) {
+                data.history = [];
+                saveWidgetData(memberId, data);
+                Modal.close();
+                Toast.success('History cleared');
+            }
+        });
+
+        // Done button
+        document.querySelector('[data-modal-done]')?.addEventListener('click', () => {
+            Modal.close();
         });
     }
 

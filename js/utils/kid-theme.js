@@ -65,10 +65,10 @@ const KidTheme = (function() {
             emoji: '📱'
         },
         'chores': {
-            primary: '#10B981',
-            gradient: 'linear-gradient(135deg, #34D399 0%, #10B981 40%, #059669 100%)',
-            light: '#D1FAE5',
-            dark: '#064E3B',
+            primary: '#22C55E',
+            gradient: 'linear-gradient(135deg, #4ADE80 0%, #22C55E 40%, #16A34A 100%)',
+            light: '#DCFCE7',
+            dark: '#14532D',
             emoji: '🧹'
         },
         'daily-log': {

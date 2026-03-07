@@ -1,138 +1,766 @@
 /**
  * Family Dashboard Feature
- * Admin page with statistics, activity feed, shared calendar overview, and family challenges
+ * Clean, scannable overview of family status with actionable insights
  */
 
 const FamilyDashboard = (function() {
     const PAGE_ID = 'family-dashboard';
 
     /**
-     * Render the family dashboard page
+     * Render the family dashboard page - NEW DESIGN
      */
     function render(container) {
         const members = Storage.getMembers();
         const stats = calculateFamilyStats(members);
+        const attentionItems = getAttentionItems(members);
+        const recentActivity = getRecentActivity(5);
 
         container.innerHTML = `
-            <div class="dashboard-page">
-                <div class="dashboard-page__header">
-                    <button class="dashboard-page__back" id="dashboardBackBtn">
+            <div class="fd">
+                <!-- Header with back button -->
+                <header class="fd__header">
+                    <button class="fd__back" id="dashboardBackBtn">
                         <i data-lucide="arrow-left"></i>
-                        <span>Back to Home</span>
                     </button>
-                    <h1 class="dashboard-page__title">
-                        <i data-lucide="layout-dashboard"></i>
-                        Family Dashboard
-                    </h1>
-                </div>
-
-                <div class="dashboard-page__content">
-                    <!-- Quick Stats Overview -->
-                    <section class="dashboard-section">
-                        <h2 class="dashboard-section__title">
-                            <i data-lucide="bar-chart-3"></i>
-                            Family Overview
-                        </h2>
-                        <div class="stats-grid">
-                            ${renderStatsCards(stats, members)}
-                        </div>
-                    </section>
-
-                    <!-- Two Column Layout -->
-                    <div class="dashboard-columns">
-                        <!-- Left Column -->
-                        <div class="dashboard-column">
-                            <!-- Member Stats -->
-                            <section class="dashboard-section">
-                                <h2 class="dashboard-section__title">
-                                    <i data-lucide="users"></i>
-                                    Member Statistics
-                                </h2>
-                                <div class="dashboard-section__content">
-                                    ${renderMemberStats(members)}
-                                </div>
-                            </section>
-
-                            <!-- Today's Events -->
-                            <section class="dashboard-section">
-                                <h2 class="dashboard-section__title">
-                                    <i data-lucide="calendar-check"></i>
-                                    Today's Schedule
-                                </h2>
-                                <div class="dashboard-section__content">
-                                    ${renderTodaySchedule(members)}
-                                </div>
-                            </section>
-                        </div>
-
-                        <!-- Right Column -->
-                        <div class="dashboard-column">
-                            <!-- Upcoming Events -->
-                            <section class="dashboard-section">
-                                <h2 class="dashboard-section__title">
-                                    <i data-lucide="calendar"></i>
-                                    Upcoming Events
-                                </h2>
-                                <div class="dashboard-section__content">
-                                    ${renderUpcomingEvents()}
-                                </div>
-                            </section>
-                        </div>
+                    <div class="fd__header-content">
+                        <h1 class="fd__title">Family Dashboard</h1>
+                        <p class="fd__greeting">${getGreeting()}</p>
                     </div>
+                    <button class="fd__settings" id="dashboardSettingsBtn" title="Dashboard Settings">
+                        <i data-lucide="settings"></i>
+                    </button>
+                </header>
 
-                    <!-- Activity Monitor (Full Width) -->
-                    <section class="dashboard-section dashboard-section--full">
-                        <div class="dashboard-section__header">
-                            <h2 class="dashboard-section__title">
-                                <i data-lucide="activity"></i>
-                                Activity Monitor
-                            </h2>
-                            <button class="btn btn--ghost btn--sm" id="showFullActivityBtn">
-                                <i data-lucide="maximize-2"></i>
-                                Full View
-                            </button>
-                        </div>
-                        <div class="dashboard-section__content">
-                            ${renderActivityMonitor(members)}
-                        </div>
-                    </section>
+                <!-- Stats Bar -->
+                <section class="fd__stats-bar">
+                    <div class="fd__stat">
+                        <span class="fd__stat-value">${stats.tasksCompleted}</span>
+                        <span class="fd__stat-label">Tasks Done</span>
+                    </div>
+                    <div class="fd__stat">
+                        <span class="fd__stat-value">${stats.habitsCompleted}</span>
+                        <span class="fd__stat-label">Habits</span>
+                    </div>
+                    <div class="fd__stat">
+                        <span class="fd__stat-value">${stats.totalPoints}</span>
+                        <span class="fd__stat-label">Points</span>
+                    </div>
+                    <div class="fd__stat">
+                        <span class="fd__stat-value">${stats.eventsToday}</span>
+                        <span class="fd__stat-label">Events</span>
+                    </div>
+                </section>
 
-                    <!-- Family Challenges -->
-                    <section class="dashboard-section dashboard-section--full">
-                        <div class="dashboard-section__header">
-                            <h2 class="dashboard-section__title">
-                                <i data-lucide="trophy"></i>
-                                Family Challenges
-                            </h2>
-                            <button class="btn btn--primary btn--sm" id="addChallengeBtn">
-                                <i data-lucide="plus"></i>
-                                Add Challenge
-                            </button>
-                        </div>
-                        <div class="dashboard-section__content">
-                            ${renderFamilyChallenges()}
-                        </div>
-                    </section>
-
-                    <!-- Quick Actions -->
-                    <section class="dashboard-section dashboard-section--full">
-                        <h2 class="dashboard-section__title">
-                            <i data-lucide="zap"></i>
-                            Quick Actions
+                <!-- Who's Doing What - Member Status Cards -->
+                <section class="fd__section">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="users"></i>
+                            Who's Doing What
                         </h2>
-                        <div class="quick-actions">
-                            ${renderQuickActions()}
-                        </div>
-                    </section>
+                    </div>
+                    <div class="fd__members-scroll">
+                        ${renderMemberStatusCards(members)}
+                    </div>
+                </section>
+
+                <!-- Today's Timeline -->
+                <section class="fd__section">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="clock"></i>
+                            Today's Timeline
+                        </h2>
+                        <button class="fd__section-action" id="viewFullCalendarBtn">
+                            <i data-lucide="calendar"></i>
+                            Full Calendar
+                        </button>
+                    </div>
+                    <div class="fd__timeline">
+                        ${renderTimeline(members)}
+                    </div>
+                </section>
+
+                <!-- Needs Attention -->
+                ${attentionItems.length > 0 ? `
+                <section class="fd__section fd__section--attention">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="alert-circle"></i>
+                            Needs Attention
+                            <span class="fd__badge">${attentionItems.length}</span>
+                        </h2>
+                    </div>
+                    <div class="fd__attention-list">
+                        ${renderAttentionItems(attentionItems)}
+                    </div>
+                </section>
+                ` : ''}
+
+                <!-- Recent Activity -->
+                <section class="fd__section">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="activity"></i>
+                            Recent Activity
+                        </h2>
+                        <button class="fd__section-action" id="showFullActivityBtn">
+                            View All
+                        </button>
+                    </div>
+                    <div class="fd__activity-feed">
+                        ${renderSimpleActivityFeed(recentActivity)}
+                    </div>
+                </section>
+
+                <!-- Weekly Overview -->
+                <section class="fd__section">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="bar-chart-2"></i>
+                            This Week
+                        </h2>
+                    </div>
+                    <div class="fd__week-overview">
+                        ${renderWeekOverview()}
+                    </div>
+                </section>
+
+                <!-- Family Goals -->
+                <section class="fd__section">
+                    <div class="fd__section-header">
+                        <h2 class="fd__section-title">
+                            <i data-lucide="target"></i>
+                            Family Goals
+                        </h2>
+                        <button class="fd__section-action" id="addChallengeBtn">
+                            <i data-lucide="plus"></i>
+                            Add
+                        </button>
+                    </div>
+                    <div class="fd__goals">
+                        ${renderFamilyGoals()}
+                    </div>
+                </section>
+
+                <!-- Quick Actions -->
+                <section class="fd__quick-actions">
+                    <button class="fd__action-btn" data-action="addEvent">
+                        <i data-lucide="calendar-plus"></i>
+                        <span>Add Event</span>
+                    </button>
+                    <button class="fd__action-btn" data-action="addMember">
+                        <i data-lucide="user-plus"></i>
+                        <span>Add Member</span>
+                    </button>
+                    <button class="fd__action-btn" data-action="givePoints">
+                        <i data-lucide="star"></i>
+                        <span>Give Points</span>
+                    </button>
+                    <button class="fd__action-btn" data-action="exportData">
+                        <i data-lucide="download"></i>
+                        <span>Export</span>
+                    </button>
+                </section>
+
+                <!-- Legacy Activity Monitor (hidden, kept for Full View) -->
+                <div id="legacyActivityContainer" style="display: none;">
+                    ${renderActivityMonitor(members)}
                 </div>
             </div>
         `;
 
-        bindEvents(container);
+        bindNewEvents(container);
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
         }
+    }
+
+    /**
+     * Get greeting based on time of day
+     */
+    function getGreeting() {
+        const hour = new Date().getHours();
+        const settings = Storage.getSettings();
+        const familyName = settings.familyName || 'Family';
+
+        if (hour < 12) return `Good morning, ${familyName}!`;
+        if (hour < 17) return `Good afternoon, ${familyName}!`;
+        return `Good evening, ${familyName}!`;
+    }
+
+    /**
+     * Render member status cards (Who's Doing What)
+     */
+    function renderMemberStatusCards(members) {
+        if (members.length === 0) {
+            return `
+                <div class="fd__empty-members">
+                    <i data-lucide="users"></i>
+                    <p>No family members yet</p>
+                    <button class="btn btn--primary btn--sm" data-action="addMember">Add Member</button>
+                </div>
+            `;
+        }
+
+        return members.map(member => {
+            const status = getMemberCurrentStatus(member);
+            const progress = getMemberProgress(member);
+            const progressPercent = Math.round(progress * 100);
+            const avatarHtml = renderAvatar(member.avatar, member.name);
+
+            return `
+                <div class="fd__member-card" data-member-id="${member.id}">
+                    <div class="fd__member-avatar">
+                        ${avatarHtml}
+                        <span class="fd__member-status-dot fd__member-status-dot--${status.type}"></span>
+                    </div>
+                    <div class="fd__member-name">${member.name}</div>
+                    <div class="fd__member-activity">
+                        <i data-lucide="${status.icon}"></i>
+                        <span>${status.text}</span>
+                    </div>
+                    <div class="fd__member-progress">
+                        <svg class="fd__progress-ring" viewBox="0 0 36 36">
+                            <path class="fd__progress-ring-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <path class="fd__progress-ring-fill" stroke-dasharray="${progressPercent}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                            <text x="18" y="20.5" class="fd__progress-text">${progressPercent}%</text>
+                        </svg>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Get member's current status (what they're doing now)
+     */
+    function getMemberCurrentStatus(member) {
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+        // Check schedule for current activity
+        const schedule = Storage.getScheduleForToday(member.id);
+        const currentBlock = schedule.find(block =>
+            currentTime >= block.start && currentTime < block.end
+        );
+
+        if (currentBlock) {
+            return {
+                type: 'busy',
+                icon: 'calendar',
+                text: currentBlock.title
+            };
+        }
+
+        // Check for upcoming activity within 1 hour
+        const nextBlock = schedule.find(block => {
+            const [h, m] = block.start.split(':').map(Number);
+            const blockMinutes = h * 60 + m;
+            const nowMinutes = now.getHours() * 60 + now.getMinutes();
+            return blockMinutes > nowMinutes && blockMinutes - nowMinutes <= 60;
+        });
+
+        if (nextBlock) {
+            return {
+                type: 'upcoming',
+                icon: 'clock',
+                text: `Next: ${nextBlock.title}`
+            };
+        }
+
+        // Default to free time
+        return {
+            type: 'free',
+            icon: 'coffee',
+            text: 'Free Time'
+        };
+    }
+
+    /**
+     * Get member's daily progress (0-1)
+     */
+    function getMemberProgress(member) {
+        const today = DateUtils.today();
+
+        if (member.type === 'adult') {
+            const taskData = Storage.getWidgetData(member.id, 'task-list');
+            const habitData = Storage.getWidgetData(member.id, 'habits');
+
+            const tasksDone = (taskData.tasks || []).filter(t => t.completed && t.completedAt?.startsWith(today)).length;
+            const tasksTotal = Math.max((taskData.tasks || []).length, 1);
+            const habitsDone = (habitData.log?.[today] || []).length;
+            const habitsTotal = Math.max((habitData.habits || []).filter(h => !h.archived).length, 1);
+
+            return (tasksDone / tasksTotal + habitsDone / habitsTotal) / 2;
+        }
+
+        if (member.type === 'kid' || member.type === 'teen') {
+            const pointsData = Storage.getWidgetData(member.id, 'points');
+            const earnedToday = pointsData.dailyLog?.[today]?.pointsEarned || 0;
+            const dailyGoal = pointsData.settings?.dailyGoal || 20;
+            return Math.min(earnedToday / dailyGoal, 1);
+        }
+
+        if (member.type === 'toddler') {
+            const routineData = Storage.getWidgetData(member.id, 'toddler-routine');
+            const completed = (routineData.completedToday || []).length;
+            const total = Math.max((routineData.routines || []).length, 1);
+            return completed / total;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Render timeline for today
+     */
+    function renderTimeline(members) {
+        const allEvents = [];
+        const now = new Date();
+        const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+        // Gather schedule items from all members
+        members.forEach(member => {
+            const schedule = Storage.getScheduleForToday(member.id);
+            schedule.forEach(block => {
+                allEvents.push({
+                    ...block,
+                    memberName: member.name,
+                    memberColor: member.avatar?.color || '#6366F1',
+                    isCurrent: currentTime >= block.start && currentTime < block.end,
+                    isPast: currentTime > block.end
+                });
+            });
+        });
+
+        // Add calendar events
+        const calendarEvents = Storage.getCalendarEventsForToday();
+        calendarEvents.forEach(event => {
+            if (event.time) {
+                allEvents.push({
+                    start: event.time,
+                    end: event.endTime || event.time,
+                    title: event.title,
+                    memberName: event.memberId ? Storage.getMember(event.memberId)?.name : 'Family',
+                    memberColor: '#6366F1',
+                    isCurrent: currentTime >= event.time && (!event.endTime || currentTime < event.endTime),
+                    isPast: event.endTime ? currentTime > event.endTime : currentTime > event.time,
+                    isCalendarEvent: true
+                });
+            }
+        });
+
+        // Sort by time
+        allEvents.sort((a, b) => a.start.localeCompare(b.start));
+
+        if (allEvents.length === 0) {
+            return `
+                <div class="fd__timeline-empty">
+                    <i data-lucide="calendar-x"></i>
+                    <p>No scheduled activities today</p>
+                </div>
+            `;
+        }
+
+        return `
+            <div class="fd__timeline-list">
+                ${allEvents.slice(0, 8).map(event => `
+                    <div class="fd__timeline-item ${event.isCurrent ? 'fd__timeline-item--current' : ''} ${event.isPast ? 'fd__timeline-item--past' : ''}">
+                        <div class="fd__timeline-time">${formatTime(event.start)}</div>
+                        <div class="fd__timeline-dot" style="--dot-color: ${event.memberColor}"></div>
+                        <div class="fd__timeline-content">
+                            <div class="fd__timeline-title">${event.title}</div>
+                            <div class="fd__timeline-member">${event.memberName}</div>
+                        </div>
+                        ${event.isCurrent ? '<span class="fd__timeline-now">NOW</span>' : ''}
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Get items needing attention
+     */
+    function getAttentionItems(members) {
+        const items = [];
+        const today = DateUtils.today();
+
+        members.forEach(member => {
+            // Check for pending reward requests (kids)
+            if (member.type === 'kid' || member.type === 'teen') {
+                const rewardsData = Storage.getWidgetData(member.id, 'rewards');
+                const pendingRedemptions = (rewardsData.pendingRedemptions || []);
+                pendingRedemptions.forEach(redemption => {
+                    items.push({
+                        type: 'reward-request',
+                        icon: 'gift',
+                        text: `${member.name} requested "${redemption.rewardName}"`,
+                        color: '#F59E0B',
+                        memberId: member.id,
+                        data: redemption
+                    });
+                });
+
+                // Check screen time limits
+                const screenTimeData = Storage.getWidgetData(member.id, 'screen-time');
+                const todayUsage = screenTimeData.log?.[today]?.totalMinutes || 0;
+                const dailyLimit = screenTimeData.settings?.dailyLimitMinutes || 120;
+                if (todayUsage >= dailyLimit) {
+                    items.push({
+                        type: 'screen-limit',
+                        icon: 'monitor-off',
+                        text: `${member.name}'s screen time limit reached`,
+                        color: '#EF4444',
+                        memberId: member.id
+                    });
+                }
+            }
+
+            // Check overdue tasks
+            const taskData = member.type === 'adult'
+                ? Storage.getWidgetData(member.id, 'task-list')
+                : Storage.getWidgetData(member.id, 'kid-tasks');
+
+            (taskData.tasks || []).forEach(task => {
+                if (!task.completed && task.dueDate && task.dueDate < today) {
+                    items.push({
+                        type: 'overdue-task',
+                        icon: 'alert-triangle',
+                        text: `${member.name}: "${task.title}" is overdue`,
+                        color: '#EF4444',
+                        memberId: member.id
+                    });
+                }
+            });
+        });
+
+        // Check grocery list
+        const groceryData = Storage.getWidgetData('shared', 'grocery') || Storage.getWidgetData(members[0]?.id, 'grocery');
+        const uncheckedItems = (groceryData.items || []).filter(i => !i.checked).length;
+        if (uncheckedItems >= 5) {
+            items.push({
+                type: 'grocery',
+                icon: 'shopping-cart',
+                text: `Grocery list has ${uncheckedItems} items`,
+                color: '#10B981'
+            });
+        }
+
+        return items.slice(0, 5); // Limit to 5 items
+    }
+
+    /**
+     * Render attention items
+     */
+    function renderAttentionItems(items) {
+        return items.map(item => `
+            <div class="fd__attention-item" data-type="${item.type}" data-member="${item.memberId || ''}">
+                <div class="fd__attention-icon" style="--icon-color: ${item.color}">
+                    <i data-lucide="${item.icon}"></i>
+                </div>
+                <div class="fd__attention-text">${item.text}</div>
+                <button class="fd__attention-action">
+                    <i data-lucide="chevron-right"></i>
+                </button>
+            </div>
+        `).join('');
+    }
+
+    /**
+     * Get recent activity from central log
+     */
+    function getRecentActivity(limit = 5) {
+        const log = Storage.getActivityLog({ limit });
+        return log;
+    }
+
+    /**
+     * Render simple activity feed
+     */
+    function renderSimpleActivityFeed(activities) {
+        if (activities.length === 0) {
+            return `
+                <div class="fd__activity-empty">
+                    <p>No recent activity</p>
+                </div>
+            `;
+        }
+
+        const categories = Storage.getActivityCategories();
+
+        return activities.map(activity => {
+            const cat = categories[activity.category] || { icon: 'circle', color: '#6B7280' };
+            const time = formatRelativeTime(activity.timestamp);
+
+            return `
+                <div class="fd__activity-item">
+                    <div class="fd__activity-icon" style="--icon-color: ${cat.color}">
+                        <i data-lucide="${cat.icon}"></i>
+                    </div>
+                    <div class="fd__activity-content">
+                        <span class="fd__activity-member">${activity.memberName}</span>
+                        <span class="fd__activity-text">${activity.details}</span>
+                    </div>
+                    <span class="fd__activity-time">${time}</span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Format relative time (e.g., "5m ago", "2h ago")
+     */
+    function formatRelativeTime(timestamp) {
+        const now = new Date();
+        const then = new Date(timestamp);
+        const diffMs = now - then;
+        const diffMins = Math.floor(diffMs / 60000);
+
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins}m ago`;
+
+        const diffHours = Math.floor(diffMins / 60);
+        if (diffHours < 24) return `${diffHours}h ago`;
+
+        const diffDays = Math.floor(diffHours / 24);
+        if (diffDays === 1) return 'Yesterday';
+        return `${diffDays}d ago`;
+    }
+
+    /**
+     * Render week overview
+     */
+    function renderWeekOverview() {
+        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+        const today = new Date();
+        const todayIdx = (today.getDay() + 6) % 7; // Monday = 0
+
+        // Get activity counts for each day this week
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - todayIdx);
+
+        const dayCounts = days.map((_, idx) => {
+            const date = new Date(weekStart);
+            date.setDate(weekStart.getDate() + idx);
+            const dateStr = date.toISOString().split('T')[0];
+
+            // Count activities for this date
+            const dayLog = Storage.getActivityLog({ startDate: dateStr, endDate: dateStr });
+            return dayLog.length;
+        });
+
+        const maxCount = Math.max(...dayCounts, 1);
+
+        return `
+            <div class="fd__week-days">
+                ${days.map((day, idx) => {
+                    const count = dayCounts[idx];
+                    const height = (count / maxCount) * 100;
+                    const isToday = idx === todayIdx;
+                    const isPast = idx < todayIdx;
+
+                    return `
+                        <div class="fd__week-day ${isToday ? 'fd__week-day--today' : ''} ${isPast ? 'fd__week-day--past' : ''}">
+                            <div class="fd__week-bar-container">
+                                <div class="fd__week-bar" style="height: ${Math.max(height, 5)}%"></div>
+                            </div>
+                            <span class="fd__week-label">${day}</span>
+                            ${count > 0 ? `<span class="fd__week-count">${count}</span>` : ''}
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    /**
+     * Render family goals/challenges
+     */
+    function renderFamilyGoals() {
+        const settings = Storage.getSettings();
+        const challenges = settings.familyChallenges || [];
+
+        if (challenges.length === 0) {
+            return `
+                <div class="fd__goals-empty">
+                    <i data-lucide="target"></i>
+                    <p>No family goals yet</p>
+                    <span>Create goals to motivate the whole family!</span>
+                </div>
+            `;
+        }
+
+        return challenges.slice(0, 3).map(challenge => {
+            const progress = challenge.progress || 0;
+            const target = challenge.target || 100;
+            const percentage = Math.min(Math.round((progress / target) * 100), 100);
+
+            return `
+                <div class="fd__goal-card" data-challenge-id="${challenge.id}">
+                    <div class="fd__goal-icon">
+                        <i data-lucide="${challenge.icon || 'target'}"></i>
+                    </div>
+                    <div class="fd__goal-content">
+                        <div class="fd__goal-title">${challenge.title}</div>
+                        <div class="fd__goal-progress-bar">
+                            <div class="fd__goal-progress-fill" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="fd__goal-stats">${progress} / ${target}</div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Bind events for new dashboard
+     */
+    function bindNewEvents(container) {
+        // Back button
+        container.querySelector('#dashboardBackBtn')?.addEventListener('click', () => {
+            if (typeof Tabs !== 'undefined') {
+                Tabs.switchTo('home');
+            }
+        });
+
+        // Settings button
+        container.querySelector('#dashboardSettingsBtn')?.addEventListener('click', () => {
+            if (typeof Tabs !== 'undefined') {
+                Tabs.switchTo('settings');
+            }
+        });
+
+        // View full calendar
+        container.querySelector('#viewFullCalendarBtn')?.addEventListener('click', () => {
+            if (typeof Calendar !== 'undefined') {
+                Calendar.showFullCalendar();
+            }
+        });
+
+        // Full activity view
+        container.querySelector('#showFullActivityBtn')?.addEventListener('click', () => {
+            showActivityPage(container);
+        });
+
+        // Add challenge
+        container.querySelector('#addChallengeBtn')?.addEventListener('click', () => {
+            showAddChallengeModal(container);
+        });
+
+        // Member cards - click to go to member dashboard
+        container.querySelectorAll('.fd__member-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const memberId = card.dataset.memberId;
+                if (typeof Tabs !== 'undefined') {
+                    Tabs.switchTo(memberId);
+                }
+            });
+        });
+
+        // Quick action buttons
+        container.querySelectorAll('.fd__action-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleQuickAction(btn.dataset.action);
+            });
+        });
+
+        // Attention items
+        container.querySelectorAll('.fd__attention-item').forEach(item => {
+            item.addEventListener('click', () => {
+                handleAttentionItem(item.dataset.type, item.dataset.member);
+            });
+        });
+
+        // Goal cards - click to edit
+        container.querySelectorAll('.fd__goal-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const challengeId = card.dataset.challengeId;
+                showEditChallengeModal(container, challengeId);
+            });
+        });
+
+        // Empty state add member button
+        container.querySelector('.fd__empty-members [data-action="addMember"]')?.addEventListener('click', () => {
+            handleQuickAction('addMember');
+        });
+    }
+
+    /**
+     * Handle attention item click
+     */
+    function handleAttentionItem(type, memberId) {
+        switch (type) {
+            case 'reward-request':
+                if (memberId && typeof Tabs !== 'undefined') {
+                    Tabs.switchTo(memberId);
+                    // Could also open the rewards widget directly
+                }
+                break;
+            case 'screen-limit':
+            case 'overdue-task':
+                if (memberId && typeof Tabs !== 'undefined') {
+                    Tabs.switchTo(memberId);
+                }
+                break;
+            case 'grocery':
+                // Navigate to grocery widget or adult with grocery
+                const members = Storage.getMembers();
+                const adultWithGrocery = members.find(m => m.type === 'adult');
+                if (adultWithGrocery && typeof Tabs !== 'undefined') {
+                    Tabs.switchTo(adultWithGrocery.id);
+                }
+                break;
+        }
+    }
+
+    /**
+     * Show edit challenge modal
+     */
+    function showEditChallengeModal(pageContainer, challengeId) {
+        const settings = Storage.getSettings();
+        const challenge = (settings.familyChallenges || []).find(c => c.id === challengeId);
+
+        if (!challenge) return;
+
+        const content = `
+            <form id="editChallengeForm">
+                <div class="form-group">
+                    <label class="form-label">Current Progress</label>
+                    <input type="number" class="form-input" id="challengeProgress"
+                           value="${challenge.progress || 0}" min="0" max="${challenge.target}">
+                    <span class="form-hint">Target: ${challenge.target}</span>
+                </div>
+            </form>
+        `;
+
+        Modal.open({
+            title: `Update: ${challenge.title}`,
+            content,
+            footer: `
+                <button class="btn btn--ghost" data-action="cancel">Cancel</button>
+                <button class="btn btn--danger btn--sm" data-action="delete">Delete</button>
+                <button class="btn btn--primary" data-action="confirm">Update</button>
+            `
+        });
+
+        Modal.bindFooterEvents(() => {
+            const newProgress = parseInt(document.getElementById('challengeProgress')?.value) || 0;
+            challenge.progress = newProgress;
+            Storage.updateSettings(settings);
+            Toast.success('Goal updated!');
+            render(pageContainer);
+            return true;
+        }, () => {
+            // Delete handler
+            settings.familyChallenges = settings.familyChallenges.filter(c => c.id !== challengeId);
+            Storage.updateSettings(settings);
+            Toast.success('Goal removed');
+            Modal.close();
+            render(pageContainer);
+        });
     }
 
     /**
@@ -664,650 +1292,16 @@ const FamilyDashboard = (function() {
     }
 
     /**
-     * Render activity feed (legacy - reconstructs from widget data)
-     */
-    function renderActivityFeed(members) {
-        const activities = [];
-        const today = DateUtils.today();
-        const yesterday = DateUtils.addDays(today, -1);
-        const recentDates = [today, yesterday];
-
-        members.forEach(member => {
-            // Get recent task completions (including subtasks)
-            const taskData = Storage.getWidgetData(member.id, 'task-list');
-            (taskData.tasks || []).forEach(task => {
-                if (task.completed && task.completedAt) {
-                    const date = task.completedAt.split('T')[0];
-                    if (recentDates.includes(date)) {
-                        activities.push({
-                            type: 'task',
-                            icon: 'check-circle',
-                            text: `completed "${task.title}"`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: task.completedAt,
-                            date: date
-                        });
-                    }
-                }
-                // Check for completed subtasks (show as separate activities)
-                (task.subtasks || []).forEach(subtask => {
-                    if (subtask.completed && subtask.completedAt) {
-                        const subtaskDate = subtask.completedAt.split('T')[0];
-                        if (recentDates.includes(subtaskDate)) {
-                            activities.push({
-                                type: 'subtask',
-                                icon: 'check',
-                                text: `completed subtask "${subtask.title}"`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: subtask.completedAt,
-                                date: subtaskDate
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Get kid task completions
-            const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
-            (kidTaskData.tasks || []).forEach(task => {
-                if (task.completed && task.completedAt) {
-                    const date = task.completedAt.split('T')[0];
-                    if (recentDates.includes(date)) {
-                        activities.push({
-                            type: 'task',
-                            icon: 'check-circle',
-                            text: `completed "${task.title}"`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: task.completedAt,
-                            date: date
-                        });
-                    }
-                }
-            });
-
-            // Get habit completions
-            const habitData = Storage.getWidgetData(member.id, 'habits');
-            const habits = habitData.habits || [];
-            const habitLog = habitData.log || {};
-            recentDates.forEach(date => {
-                const dayLog = habitLog[date] || [];
-                dayLog.forEach(habitId => {
-                    const habit = habits.find(h => h.id === habitId);
-                    if (habit) {
-                        activities.push({
-                            type: 'habit',
-                            icon: 'target',
-                            text: `completed habit "${habit.name}"`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    }
-                });
-            });
-
-            // Get chore completions (for kids)
-            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
-                const choreData = Storage.getWidgetData(member.id, 'chores');
-                (choreData.completedToday || []).forEach(completion => {
-                    const date = completion.date || today;
-                    if (recentDates.includes(date)) {
-                        // Find the chore name
-                        const dailyChores = choreData.dailyChores?.[date] || [];
-                        const chore = dailyChores.find(c => c.id === completion.choreId);
-                        if (chore) {
-                            activities.push({
-                                type: 'chore',
-                                icon: 'sparkles',
-                                text: `completed chore "${chore.name}"`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                    }
-                });
-            }
-
-            // Get points earned (for kids)
-            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
-                const pointsData = Storage.getWidgetData(member.id, 'points');
-                Object.entries(pointsData.dailyLog || {}).forEach(([date, log]) => {
-                    if (recentDates.includes(date)) {
-                        if (log.pointsEarned > 0) {
-                            activities.push({
-                                type: 'points',
-                                icon: 'star',
-                                text: `earned ${log.pointsEarned} points`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                    }
-                });
-
-                // Rewards redeemed
-                const rewardsData = Storage.getWidgetData(member.id, 'rewards');
-                (rewardsData.redemptionHistory || []).forEach(redemption => {
-                    const date = redemption.date.split('T')[0];
-                    if (recentDates.includes(date)) {
-                        activities.push({
-                            type: 'reward',
-                            icon: 'gift',
-                            text: `redeemed "${redemption.rewardName}"`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: redemption.date,
-                            date: date
-                        });
-                    }
-                });
-            }
-
-            // Get workout completions
-            const workoutData = Storage.getWidgetData(member.id, 'workout');
-            Object.entries(workoutData.log || {}).forEach(([date, log]) => {
-                if (recentDates.includes(date)) {
-                    // Show each workout activity
-                    (log.activities || []).forEach(activity => {
-                        activities.push({
-                            type: 'workout',
-                            icon: 'dumbbell',
-                            text: `completed ${activity.name || 'a workout'}`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    });
-                    // Fallback if no activities array but log exists
-                    if (!log.activities || log.activities.length === 0) {
-                        activities.push({
-                            type: 'workout',
-                            icon: 'dumbbell',
-                            text: 'completed a workout',
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    }
-                }
-            });
-
-            // Get journal entries
-            const journalData = Storage.getWidgetData(member.id, 'journal');
-            (journalData.entries || []).forEach(entry => {
-                const date = entry.date || entry.createdAt?.split('T')[0];
-                if (date && recentDates.includes(date)) {
-                    activities.push({
-                        type: 'journal',
-                        icon: 'book-open',
-                        text: 'added a journal entry',
-                        memberName: member.name,
-                        memberColor: member.avatar?.color || '#6366F1',
-                        timestamp: entry.createdAt || date,
-                        date: date
-                    });
-                }
-            });
-
-            // Toddler-specific activities
-            if (member.type === 'toddler') {
-                // Toddler routine completions
-                const routineData = Storage.getWidgetData(member.id, 'toddler-routine');
-                if (routineData.lastResetDate === today && routineData.completedToday?.length > 0) {
-                    const routines = routineData.routines || [];
-                    routineData.completedToday.forEach(routineId => {
-                        const routine = routines.find(r => r.id === routineId);
-                        if (routine) {
-                            activities.push({
-                                type: 'routine',
-                                icon: 'sun',
-                                text: `completed routine "${routine.title}"`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: today,
-                                date: today
-                            });
-                        }
-                    });
-                }
-
-                // Daily log activities
-                const dailyLogData = Storage.getWidgetData(member.id, 'daily-log');
-                recentDates.forEach(date => {
-                    const dayLog = dailyLogData.logs?.[date];
-                    if (dayLog) {
-                        // Log meals, activities, naps
-                        if (dayLog.meal > 0) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'utensils',
-                                text: `had ${dayLog.meal} meal${dayLog.meal > 1 ? 's' : ''}`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                        if (dayLog.activity > 0) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'shapes',
-                                text: `did ${dayLog.activity} activit${dayLog.activity > 1 ? 'ies' : 'y'}`,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                        if (dayLog.notes) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'message-square',
-                                text: 'had a note logged',
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                    }
-                });
-
-                // Milestones achieved
-                const milestonesData = Storage.getWidgetData(member.id, 'milestones');
-                (milestonesData.achieved || []).forEach(milestone => {
-                    if (recentDates.includes(milestone.date)) {
-                        activities.push({
-                            type: 'milestone',
-                            icon: 'award',
-                            text: `achieved a milestone`,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: milestone.date,
-                            date: milestone.date
-                        });
-                    }
-                });
-            }
-        });
-
-        // Sort by timestamp (most recent first)
-        activities.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-
-        if (activities.length === 0) {
-            return `
-                <div class="dashboard-empty">
-                    <i data-lucide="activity"></i>
-                    <p>No recent activity</p>
-                </div>
-            `;
-        }
-
-        return `
-            <div class="activity-feed">
-                ${activities.slice(0, 8).map(activity => `
-                    <div class="activity-item">
-                        <div class="activity-item__icon" style="--icon-color: ${activity.memberColor}">
-                            <i data-lucide="${activity.icon}"></i>
-                        </div>
-                        <div class="activity-item__content">
-                            <span class="activity-item__member">${activity.memberName}</span>
-                            <span class="activity-item__text">${activity.text}</span>
-                        </div>
-                        <span class="activity-item__time">${formatActivityTime(activity.timestamp)}</span>
-                    </div>
-                `).join('')}
-            </div>
-            <button class="btn btn--ghost btn--sm activity-show-more" id="showMoreActivityBtn">
-                <i data-lucide="chevron-down"></i>
-                Show More Activity
-            </button>
-        `;
-    }
-
-    /**
-     * Gather all activities for full activity page (last 30 days)
-     */
-    function getAllActivities(members, daysBack = 30) {
-        const activities = [];
-        const today = new Date();
-
-        // Generate list of dates to check
-        const datesToCheck = [];
-        for (let i = 0; i < daysBack; i++) {
-            const d = new Date(today);
-            d.setDate(d.getDate() - i);
-            datesToCheck.push(d.toISOString().split('T')[0]);
-        }
-
-        members.forEach(member => {
-            // Task completions
-            const taskData = Storage.getWidgetData(member.id, 'task-list');
-            (taskData.tasks || []).forEach(task => {
-                if (task.completed && task.completedAt) {
-                    const date = task.completedAt.split('T')[0];
-                    if (datesToCheck.includes(date)) {
-                        activities.push({
-                            type: 'task',
-                            icon: 'check-circle',
-                            text: `completed "${task.title}"`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: task.completedAt,
-                            date: date
-                        });
-                    }
-                }
-                // Subtasks
-                (task.subtasks || []).forEach(subtask => {
-                    if (subtask.completed && subtask.completedAt) {
-                        const subtaskDate = subtask.completedAt.split('T')[0];
-                        if (datesToCheck.includes(subtaskDate)) {
-                            activities.push({
-                                type: 'subtask',
-                                icon: 'check',
-                                text: `completed subtask "${subtask.title}"`,
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: subtask.completedAt,
-                                date: subtaskDate
-                            });
-                        }
-                    }
-                });
-            });
-
-            // Kid tasks
-            const kidTaskData = Storage.getWidgetData(member.id, 'kid-tasks');
-            (kidTaskData.tasks || []).forEach(task => {
-                if (task.completed && task.completedAt) {
-                    const date = task.completedAt.split('T')[0];
-                    if (datesToCheck.includes(date)) {
-                        activities.push({
-                            type: 'task',
-                            icon: 'check-circle',
-                            text: `completed "${task.title}"`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: task.completedAt,
-                            date: date
-                        });
-                    }
-                }
-            });
-
-            // Habits
-            const habitData = Storage.getWidgetData(member.id, 'habits');
-            const habits = habitData.habits || [];
-            const habitLog = habitData.log || {};
-            datesToCheck.forEach(date => {
-                const dayLog = habitLog[date] || [];
-                dayLog.forEach(habitId => {
-                    const habit = habits.find(h => h.id === habitId);
-                    if (habit) {
-                        activities.push({
-                            type: 'habit',
-                            icon: 'target',
-                            text: `completed habit "${habit.name}"`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    }
-                });
-            });
-
-            // Chores (kids)
-            if (member.type === 'kid' || member.type === 'teen' || member.type === 'toddler') {
-                const choreData = Storage.getWidgetData(member.id, 'chores');
-                (choreData.completedToday || []).forEach(completion => {
-                    const date = completion.date;
-                    if (date && datesToCheck.includes(date)) {
-                        const dailyChores = choreData.dailyChores?.[date] || [];
-                        const chore = dailyChores.find(c => c.id === completion.choreId);
-                        if (chore) {
-                            activities.push({
-                                type: 'chore',
-                                icon: 'sparkles',
-                                text: `completed chore "${chore.name}"`,
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                    }
-                });
-
-                // Points
-                const pointsData = Storage.getWidgetData(member.id, 'points');
-                Object.entries(pointsData.dailyLog || {}).forEach(([date, log]) => {
-                    if (datesToCheck.includes(date) && log.pointsEarned > 0) {
-                        activities.push({
-                            type: 'points',
-                            icon: 'star',
-                            text: `earned ${log.pointsEarned} points`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    }
-                });
-
-                // Rewards
-                const rewardsData = Storage.getWidgetData(member.id, 'rewards');
-                (rewardsData.redemptionHistory || []).forEach(redemption => {
-                    const date = redemption.date.split('T')[0];
-                    if (datesToCheck.includes(date)) {
-                        activities.push({
-                            type: 'reward',
-                            icon: 'gift',
-                            text: `redeemed "${redemption.rewardName}"`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: redemption.date,
-                            date: date
-                        });
-                    }
-                });
-            }
-
-            // Workouts
-            const workoutData = Storage.getWidgetData(member.id, 'workout');
-            Object.entries(workoutData.log || {}).forEach(([date, log]) => {
-                if (datesToCheck.includes(date)) {
-                    (log.activities || []).forEach(activity => {
-                        activities.push({
-                            type: 'workout',
-                            icon: 'dumbbell',
-                            text: `completed ${activity.name || 'a workout'}`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    });
-                    if (!log.activities || log.activities.length === 0) {
-                        activities.push({
-                            type: 'workout',
-                            icon: 'dumbbell',
-                            text: 'completed a workout',
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: date,
-                            date: date
-                        });
-                    }
-                }
-            });
-
-            // Journal
-            const journalData = Storage.getWidgetData(member.id, 'journal');
-            (journalData.entries || []).forEach(entry => {
-                const date = entry.date || entry.createdAt?.split('T')[0];
-                if (date && datesToCheck.includes(date)) {
-                    activities.push({
-                        type: 'journal',
-                        icon: 'book-open',
-                        text: 'added a journal entry',
-                        memberId: member.id,
-                        memberName: member.name,
-                        memberColor: member.avatar?.color || '#6366F1',
-                        timestamp: entry.createdAt || date,
-                        date: date
-                    });
-                }
-            });
-
-            // Toddler-specific activities
-            if (member.type === 'toddler') {
-                // Toddler routine history
-                const routineData = Storage.getWidgetData(member.id, 'toddler-routine');
-                const routines = routineData.routines || [];
-                const routineHistory = routineData.history || [];
-
-                // Current day completions
-                if (routineData.lastResetDate && datesToCheck.includes(routineData.lastResetDate)) {
-                    (routineData.completedToday || []).forEach(routineId => {
-                        const routine = routines.find(r => r.id === routineId);
-                        if (routine) {
-                            activities.push({
-                                type: 'routine',
-                                icon: 'sun',
-                                text: `completed routine "${routine.title}"`,
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: routineData.lastResetDate,
-                                date: routineData.lastResetDate
-                            });
-                        }
-                    });
-                }
-
-                // Historical routine completions
-                routineHistory.forEach(historyEntry => {
-                    if (datesToCheck.includes(historyEntry.date) && historyEntry.completed > 0) {
-                        activities.push({
-                            type: 'routine',
-                            icon: 'sun',
-                            text: `completed ${historyEntry.completed} of ${historyEntry.total} routines`,
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: historyEntry.date,
-                            date: historyEntry.date
-                        });
-                    }
-                });
-
-                // Daily log activities
-                const dailyLogData = Storage.getWidgetData(member.id, 'daily-log');
-                Object.entries(dailyLogData.logs || {}).forEach(([date, dayLog]) => {
-                    if (datesToCheck.includes(date)) {
-                        if (dayLog.meal > 0) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'utensils',
-                                text: `had ${dayLog.meal} meal${dayLog.meal > 1 ? 's' : ''}`,
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                        if (dayLog.activity > 0) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'shapes',
-                                text: `did ${dayLog.activity} activit${dayLog.activity > 1 ? 'ies' : 'y'}`,
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                        if (dayLog.notes) {
-                            activities.push({
-                                type: 'daily-log',
-                                icon: 'message-square',
-                                text: 'had a note logged',
-                                memberId: member.id,
-                                memberName: member.name,
-                                memberColor: member.avatar?.color || '#6366F1',
-                                timestamp: date,
-                                date: date
-                            });
-                        }
-                    }
-                });
-
-                // Milestones achieved
-                const milestonesData = Storage.getWidgetData(member.id, 'milestones');
-                (milestonesData.achieved || []).forEach(milestone => {
-                    if (datesToCheck.includes(milestone.date)) {
-                        activities.push({
-                            type: 'milestone',
-                            icon: 'award',
-                            text: 'achieved a milestone',
-                            memberId: member.id,
-                            memberName: member.name,
-                            memberColor: member.avatar?.color || '#6366F1',
-                            timestamp: milestone.date,
-                            date: milestone.date
-                        });
-                    }
-                });
-            }
-        });
-
-        // Sort by timestamp (most recent first)
-        activities.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
-        return activities;
-    }
-
-    /**
-     * Show full activity page
+     * Show full activity page (uses central activity log)
      */
     function showActivityPage(container) {
         const members = Storage.getMembers();
-        const allActivities = getAllActivities(members);
+        const categories = Storage.getActivityCategories();
+        const stats = Storage.getActivityStats();
+        const activityLog = Storage.getActivityLog({ limit: 500 });
 
-        // Get unique activity types for filters
-        const activityTypes = [...new Set(allActivities.map(a => a.type))];
-
-        // Calculate stats
-        const today = DateUtils.today();
-        const todayCount = allActivities.filter(a => a.date === today).length;
-        const thisWeekCount = allActivities.filter(a => {
-            const actDate = new Date(a.date);
-            const now = new Date();
-            const weekAgo = new Date(now.setDate(now.getDate() - 7));
-            return actDate >= weekAgo;
-        }).length;
+        // Get unique categories for filters
+        const activeCategories = [...new Set(activityLog.map(a => a.category))];
 
         container.innerHTML = `
             <div class="activity-page">
@@ -1332,11 +1326,11 @@ const FamilyDashboard = (function() {
                         </div>
                         <div class="activity-page__hero-stats">
                             <div class="activity-hero-stat">
-                                <span class="activity-hero-stat__value">${todayCount}</span>
+                                <span class="activity-hero-stat__value">${stats.today}</span>
                                 <span class="activity-hero-stat__label">Today</span>
                             </div>
                             <div class="activity-hero-stat">
-                                <span class="activity-hero-stat__value">${thisWeekCount}</span>
+                                <span class="activity-hero-stat__value">${stats.thisWeek}</span>
                                 <span class="activity-hero-stat__label">This Week</span>
                             </div>
                             <div class="activity-hero-stat">
@@ -1344,7 +1338,7 @@ const FamilyDashboard = (function() {
                                 <span class="activity-hero-stat__label">Members</span>
                             </div>
                             <div class="activity-hero-stat">
-                                <span class="activity-hero-stat__value">${allActivities.length}</span>
+                                <span class="activity-hero-stat__value">${stats.total}</span>
                                 <span class="activity-hero-stat__label">Total</span>
                             </div>
                         </div>
@@ -1355,17 +1349,20 @@ const FamilyDashboard = (function() {
                 <div class="activity-page__filters">
                     <div class="activity-filter-row">
                         <div class="activity-filter-group">
-                            <span class="activity-filter-label">Type:</span>
+                            <span class="activity-filter-label">Category:</span>
                             <div class="activity-filter-chips" id="typeFilters">
                                 <button class="activity-filter-chip activity-filter-chip--active" data-filter-type="all">
                                     All
                                 </button>
-                                ${activityTypes.map(type => `
-                                    <button class="activity-filter-chip" data-filter-type="${type}">
-                                        <i data-lucide="${getActivityIcon(type)}"></i>
-                                        ${formatActivityType(type)}
-                                    </button>
-                                `).join('')}
+                                ${activeCategories.map(catId => {
+                                    const cat = categories[catId] || { name: catId, icon: 'circle' };
+                                    return `
+                                        <button class="activity-filter-chip" data-filter-type="${catId}">
+                                            <i data-lucide="${cat.icon}"></i>
+                                            ${cat.name}
+                                        </button>
+                                    `;
+                                }).join('')}
                             </div>
                         </div>
                     </div>
@@ -1391,23 +1388,23 @@ const FamilyDashboard = (function() {
 
                 <!-- Activity List -->
                 <div class="activity-page__content">
-                    ${renderActivityList(allActivities)}
+                    ${renderActivityList(activityLog, categories)}
                 </div>
             </div>
         `;
 
         if (typeof lucide !== 'undefined') lucide.createIcons();
-        bindActivityPageEvents(container, members, allActivities);
+        bindActivityPageEvents(container, members, activityLog, categories);
     }
 
     /**
-     * Render activity list grouped by date
+     * Render activity list grouped by date (uses central activity log format)
      */
-    function renderActivityList(activities, typeFilter = 'all', memberFilter = 'all') {
+    function renderActivityList(activities, categories, categoryFilter = 'all', memberFilter = 'all') {
         let filtered = activities;
 
-        if (typeFilter !== 'all') {
-            filtered = filtered.filter(a => a.type === typeFilter);
+        if (categoryFilter !== 'all') {
+            filtered = filtered.filter(a => a.category === categoryFilter);
         }
         if (memberFilter !== 'all') {
             filtered = filtered.filter(a => a.memberId === memberFilter);
@@ -1425,32 +1422,21 @@ const FamilyDashboard = (function() {
         // Group by date
         const grouped = {};
         filtered.forEach(activity => {
-            const date = activity.date;
+            const date = activity.timestamp.split('T')[0];
             if (!grouped[date]) {
                 grouped[date] = [];
             }
             grouped[date].push(activity);
         });
 
-        // Sort activities within each day by timestamp (most recent first)
-        // For activities with same timestamp, sort by type then member name
-        Object.keys(grouped).forEach(date => {
-            grouped[date].sort((a, b) => {
-                // First sort by timestamp (descending - most recent first)
-                const timeCompare = b.timestamp.localeCompare(a.timestamp);
-                if (timeCompare !== 0) return timeCompare;
-                // If same timestamp, sort by activity type
-                const typeCompare = a.type.localeCompare(b.type);
-                if (typeCompare !== 0) return typeCompare;
-                // If same type, sort by member name
-                return a.memberName.localeCompare(b.memberName);
-            });
-        });
+        // Sort dates descending
+        const sortedDates = Object.keys(grouped).sort().reverse();
 
         const today = DateUtils.today();
         const yesterday = DateUtils.addDays(today, -1);
 
-        return Object.entries(grouped).map(([date, dayActivities]) => {
+        return sortedDates.map(date => {
+            const dayActivities = grouped[date];
             let dateLabel;
             if (date === today) {
                 dateLabel = 'Today';
@@ -1471,20 +1457,31 @@ const FamilyDashboard = (function() {
                         <span class="activity-day__count">${dayActivities.length} activities</span>
                     </div>
                     <div class="activity-day__list">
-                        ${dayActivities.map(activity => `
-                            <div class="activity-item activity-item--full">
-                                <div class="activity-item__icon" style="--icon-color: ${activity.memberColor}">
-                                    <i data-lucide="${activity.icon}"></i>
+                        ${dayActivities.map(activity => {
+                            const cat = categories[activity.category] || { icon: 'circle', color: '#6B7280', name: activity.category };
+                            const time = new Date(activity.timestamp).toLocaleTimeString('en-US', {
+                                hour: 'numeric',
+                                minute: '2-digit',
+                                hour12: true
+                            });
+                            return `
+                                <div class="activity-item activity-item--full">
+                                    <div class="activity-item__icon" style="background-color: ${cat.color}20; color: ${cat.color}">
+                                        <i data-lucide="${cat.icon}"></i>
+                                    </div>
+                                    <div class="activity-item__content">
+                                        <span class="activity-item__member">${activity.memberName}</span>
+                                        <span class="activity-item__text">${activity.details}</span>
+                                    </div>
+                                    <div class="activity-item__meta">
+                                        <span class="activity-item__time">${time}</span>
+                                        <span class="activity-item__badge activity-item__badge--${activity.category}">
+                                            ${cat.name}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div class="activity-item__content">
-                                    <span class="activity-item__member">${activity.memberName}</span>
-                                    <span class="activity-item__text">${activity.text}</span>
-                                </div>
-                                <span class="activity-item__badge activity-item__badge--${activity.type}">
-                                    ${formatActivityType(activity.type)}
-                                </span>
-                            </div>
-                        `).join('')}
+                            `;
+                        }).join('')}
                     </div>
                 </div>
             `;
@@ -1492,50 +1489,10 @@ const FamilyDashboard = (function() {
     }
 
     /**
-     * Get icon for activity type
-     */
-    function getActivityIcon(type) {
-        const icons = {
-            task: 'check-circle',
-            subtask: 'check',
-            habit: 'target',
-            chore: 'sparkles',
-            points: 'star',
-            reward: 'gift',
-            workout: 'dumbbell',
-            journal: 'book-open',
-            routine: 'sun',
-            'daily-log': 'clipboard-list',
-            milestone: 'award'
-        };
-        return icons[type] || 'activity';
-    }
-
-    /**
-     * Format activity type for display
-     */
-    function formatActivityType(type) {
-        const labels = {
-            task: 'Tasks',
-            subtask: 'Subtasks',
-            habit: 'Habits',
-            chore: 'Chores',
-            points: 'Points',
-            reward: 'Rewards',
-            workout: 'Workouts',
-            journal: 'Journal',
-            routine: 'Routines',
-            'daily-log': 'Daily Log',
-            milestone: 'Milestones'
-        };
-        return labels[type] || type;
-    }
-
-    /**
      * Bind activity page events
      */
-    function bindActivityPageEvents(container, members, allActivities) {
-        let currentTypeFilter = 'all';
+    function bindActivityPageEvents(container, members, activityLog, categories) {
+        let currentCategoryFilter = 'all';
         let currentMemberFilter = 'all';
 
         // Back button
@@ -1543,10 +1500,10 @@ const FamilyDashboard = (function() {
             render(container);
         });
 
-        // Type filter chips
+        // Category filter chips
         container.querySelectorAll('[data-filter-type]').forEach(chip => {
             chip.addEventListener('click', () => {
-                currentTypeFilter = chip.dataset.filterType;
+                currentCategoryFilter = chip.dataset.filterType;
                 // Update active state
                 container.querySelectorAll('[data-filter-type]').forEach(c =>
                     c.classList.remove('activity-filter-chip--active')
@@ -1555,7 +1512,7 @@ const FamilyDashboard = (function() {
                 // Re-render list
                 const contentEl = container.querySelector('.activity-page__content');
                 if (contentEl) {
-                    contentEl.innerHTML = renderActivityList(allActivities, currentTypeFilter, currentMemberFilter);
+                    contentEl.innerHTML = renderActivityList(activityLog, categories, currentCategoryFilter, currentMemberFilter);
                     if (typeof lucide !== 'undefined') lucide.createIcons();
                 }
             });
@@ -1573,7 +1530,7 @@ const FamilyDashboard = (function() {
                 // Re-render list
                 const contentEl = container.querySelector('.activity-page__content');
                 if (contentEl) {
-                    contentEl.innerHTML = renderActivityList(allActivities, currentTypeFilter, currentMemberFilter);
+                    contentEl.innerHTML = renderActivityList(activityLog, categories, currentCategoryFilter, currentMemberFilter);
                     if (typeof lucide !== 'undefined') lucide.createIcons();
                 }
             });

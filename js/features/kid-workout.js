@@ -1304,16 +1304,14 @@ const KidWorkout = (function() {
             <div class="kid-page kid-page--workout ${useKidTheme ? KidTheme.getAgeClass(member) : ''}">
                 <!-- Hero Section -->
                 <div class="kid-page__hero" style="background: ${colors.gradient}; --kid-hero-text: ${colors.dark}">
-                    <div class="kid-page__hero-header">
-                        <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
-                            <i data-lucide="arrow-left"></i>
-                            Back
-                        </button>
-                        <button class="btn btn--sm btn--ghost" id="addActivityPageBtn" title="Add new activity">
-                            <i data-lucide="plus-circle"></i>
-                            Add Activity
-                        </button>
-                    </div>
+                    <button class="btn btn--ghost kid-page__back" id="backToMemberBtn">
+                        <i data-lucide="arrow-left"></i>
+                        Back
+                    </button>
+                    <button class="btn btn--primary kid-page__hero-action" id="addActivityPageBtn" title="Add new activity">
+                        <i data-lucide="plus"></i>
+                        Add Activity
+                    </button>
                     <div class="kid-page__hero-content">
                         <h1 class="kid-page__hero-title ${isYoungKid ? 'kid-page__hero-title--playful' : ''}">
                             ${isYoungKid ? '🏃 Move & Play!' : 'Move & Play'}

@@ -552,8 +552,8 @@ const Tasks = (function() {
                             memberId: memberId,
                             widgetId: 'task-list',
                             action: 'completed',
-                            details: `Completed task "${task.text}"`,
-                            meta: { taskId: task.id, taskText: task.text, priority: task.priority }
+                            details: `Completed task "${task.title}"`,
+                            meta: { taskId: task.id, taskText: task.title, priority: task.priority }
                         });
                     }
 
@@ -1669,8 +1669,8 @@ const Tasks = (function() {
                             memberId: memberId,
                             widgetId: 'task-list',
                             action: 'completed',
-                            details: `Completed task "${task.text}"`,
-                            meta: { taskId: task.id, taskText: task.text, priority: task.priority }
+                            details: `Completed task "${task.title}"`,
+                            meta: { taskId: task.id, taskText: task.title, priority: task.priority }
                         });
                     }
 

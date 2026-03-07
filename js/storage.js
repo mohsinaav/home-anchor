@@ -52,7 +52,8 @@ const Storage = (function() {
             { id: 'memory-book', name: 'Memory Book', description: 'Capture special moments', icon: 'book-heart', default: false },
             { id: 'screen-time', name: 'Screen Time', description: 'Screen time tracker', icon: 'tv', default: false },
             { id: 'vision-board', name: 'Dreams', description: 'Track your dreams and goals', icon: 'sparkles', default: false },
-            { id: 'kid-journal', name: 'My Journal', description: 'Write and reflect on your day', icon: 'book-open', default: false }
+            { id: 'kid-journal', name: 'My Journal', description: 'Write and reflect on your day', icon: 'book-open', default: false },
+            { id: 'bookmarks', name: 'Bookmarks', description: 'Save and organize useful links', icon: 'bookmark', default: false }
         ],
         toddler: [
             { id: 'toddler-routine', name: 'My Routine', description: 'Visual daily routine checklist', icon: 'image', default: true },
@@ -512,7 +513,8 @@ const Storage = (function() {
             'vision-board': { goals: [] },
             'journal': { entries: [], settings: { showPrompts: true } },
             'kid-workout': { activities: null, log: [], settings: { weeklyGoal: 5, showPoints: true } },
-            'circuit-timer': { presets: [], history: [] }
+            'circuit-timer': { presets: [], history: [] },
+            'bookmarks': { items: [], tags: ['activities', 'recipes', 'shopping', 'learning', 'diy', 'health', 'fun'] }
         };
 
         return templates[widgetId] || {};

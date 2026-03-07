@@ -247,7 +247,7 @@ const Routine = (function() {
         const overlay = document.createElement('div');
         overlay.className = 'routine-celebration';
 
-        const message = isAllDone ? 'All Done!' : routine.name;
+        const message = isAllDone ? 'All Done!' : routine.title;
         const streakText = routine.streak > 1 ? `${routine.streak} in a row` : 'Keep it up!';
         const routineColor = routine.color || '#6366F1';
 

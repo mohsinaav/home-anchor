@@ -115,6 +115,29 @@
     font-weight: var(--font-bold);
 }
 
+/* Widget-specific focus view banner colors (matching sidebar nav tabs) */
+.widget--focused[data-widget="points"] .widget__header {
+    background: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+}
+.widget--focused[data-widget="rewards"] .widget__header {
+    background: linear-gradient(135deg, #3B82F6 0%, #60A5FA 100%);
+}
+.widget--focused[data-widget="kid-tasks"] .widget__header {
+    background: linear-gradient(135deg, #F97316 0%, #FB923C 100%);
+}
+.widget--focused[data-widget="kid-workout"] .widget__header {
+    background: linear-gradient(135deg, #22C55E 0%, #4ADE80 100%);
+}
+.widget--focused[data-widget="chores"] .widget__header {
+    background: linear-gradient(135deg, #22C55E 0%, #34D399 100%);
+}
+.widget--focused[data-widget="screen-time"] .widget__header {
+    background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%);
+}
+.widget--focused[data-widget="kid-journal"] .widget__header {
+    background: linear-gradient(135deg, #6366F1 0%, #818CF8 100%);
+}
+
 .widget--focused .widget__body {
     padding: var(--space-5);
 }
@@ -806,10 +829,10 @@
 }
 
 .focus-nav__tab--active.focus-nav__tab--recipes {
-    background: #F97316;
+    background: linear-gradient(135deg, #BE185D 0%, #7C3AED 100%) !important;  /* pink-to-purple gradient */
 }
 .focus-nav__tab--active.focus-nav__tab--recipes::after {
-    background: #F97316;
+    background: #BE185D !important;  /* Use solid color for arrow (gradient doesn't work well on small clip-path) */
 }
 
 .focus-nav__tab--active.focus-nav__tab--grocery {
@@ -5284,6 +5307,16 @@
     background: white;
 }
 
+html.dark-mode .kid-page__hero-action {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .kid-page__hero-action:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
 /* Primary hero stat styling */
 .kid-hero-stat--primary {
     background: rgba(255, 255, 255, 0.3);
@@ -8205,15 +8238,19 @@
 
 .teen-journal-notebook__paper {
     padding: var(--space-6);
+    padding-left: calc(var(--space-6) + 20px);
     background:
         repeating-linear-gradient(
             transparent,
             transparent 31px,
             #E8DFC8 31px,
             #E8DFC8 32px
-        );
+        ),
+        linear-gradient(to right, #F8C8C8 0px, #F8C8C8 3px, transparent 3px);
     background-color: #FFFEF5;
+    background-position: 0 0, 24px 0;
     min-height: 300px;
+    position: relative;
 }
 
 .teen-journal-notebook__date {
@@ -9067,6 +9104,7 @@
 
     .teen-journal-notebook__paper {
         padding: var(--space-4);
+        padding-left: calc(var(--space-4) + 20px);
     }
 
     .teen-journal-stats-grid {
@@ -15732,7 +15770,8 @@
     align-items: center;
     gap: var(--space-2);
     min-width: 100px;
-    width: 100%;
+    width: 140px;
+    flex-shrink: 0;
 }
 
 .achievements-full-badge__progress-bar {
@@ -18822,6 +18861,82 @@
     color: var(--gray-500);
 }
 
+/* History card (matches JS class names) */
+.handoff-history-card {
+    background: white;
+    border-radius: var(--radius-xl);
+    padding: var(--space-4);
+    border: 2px solid var(--gray-200);
+    transition: all 0.2s ease;
+}
+
+.handoff-history-card--today {
+    border-color: #F59E0B;
+    background: linear-gradient(135deg, #FFFBEB 0%, #FEF3C7 100%);
+}
+
+.handoff-history-card--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #FEF2F2 0%, #FEE2E2 100%);
+}
+
+.handoff-history-card__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-3);
+}
+
+.handoff-history-card__date {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.handoff-history-card__day {
+    font-size: var(--text-lg);
+    font-weight: var(--font-semibold);
+    color: var(--gray-800);
+}
+
+.handoff-history-card__mood {
+    font-size: 24px;
+}
+
+.handoff-history-card__stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.handoff-history-card__notes {
+    padding: var(--space-3);
+    background: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: var(--space-2);
+}
+
+.handoff-history-card__notes p {
+    margin: 0;
+    font-size: var(--text-sm);
+    color: var(--gray-700);
+    line-height: 1.5;
+}
+
+.handoff-history-card__time {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--gray-400);
+}
+
+.handoff-history-card__time svg {
+    width: 14px;
+    height: 14px;
+}
+
 /* ==========================================================================
    Growth Chart Full Page Tabs
    ========================================================================== */
@@ -20078,4 +20193,5607 @@
         height: 36px;
         font-size: 10px;
     }
+}
+
+/* ==========================================================================
+   Dark Mode - Kid Widgets
+   ========================================================================== */
+
+/* Points Widget - Dark Mode */
+html.dark-mode .points-widget--kid {
+    background: linear-gradient(135deg, #1E293B 0%, #312E81 100%);
+}
+
+html.dark-mode .points-widget__xp-bar {
+    background: #334155;
+}
+
+html.dark-mode .points-widget__xp-text {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-widget__total-xp {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-widget__goal {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .points-widget__goal-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-widget__goal-value {
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-widget__goal-bar {
+    background: #334155;
+}
+
+/* Points Daily Goal - Dark Mode */
+html.dark-mode .points-widget__daily-goal {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+}
+
+html.dark-mode .points-widget__daily-goal-title {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-widget__daily-goal-progress {
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-widget__daily-goal-bar {
+    background-color: #475569;
+}
+
+html.dark-mode .points-widget__daily-goal-complete {
+    color: #34D399;
+}
+
+html.dark-mode .points-widget__activities-header h4 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-activity--kid {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .points-activity--kid:hover:not(:disabled) {
+    background: #3F4F63;
+    border-color: #64748B;
+}
+
+html.dark-mode .points-activity--kid__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-activities-filter .btn {
+    background: #334155;
+    border-color: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-activities-filter .btn.btn--active {
+    background: var(--primary);
+    border-color: var(--primary);
+    color: white;
+}
+
+html.dark-mode .points-widget__footer .btn--ghost {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-widget__footer .btn--ghost:hover {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+/* Kid Grid Widget Cards - Dark Mode */
+html.dark-mode .widget-card--kid-grid {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .widget-card--kid-grid:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+}
+
+html.dark-mode .widget-card--kid-grid .widget-card__body {
+    background: #1E293B;
+}
+
+/* Points Widget Category Filter - Dark Mode */
+html.dark-mode .points-widget__category-filter {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .points-category-pill {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-category-pill:hover {
+    background: #3F4F63;
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-category-pill--active {
+    background: var(--pill-color, var(--primary));
+    color: white;
+}
+
+/* Points Widget Section Title - Dark Mode */
+html.dark-mode .points-widget__section-title {
+    color: #E2E8F0;
+}
+
+/* Points Widget Settings Panel - Dark Mode */
+html.dark-mode .points-widget__settings-panel {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .points-settings-label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-settings-btn {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .points-settings-btn--active {
+    background: var(--primary);
+    color: white;
+}
+
+/* Points Calendar - Dark Mode */
+html.dark-mode .points-calendar {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .points-calendar__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-calendar__weekdays span {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-calendar__day {
+    background: #334155;
+}
+
+html.dark-mode .points-calendar__day:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .points-calendar__day--empty {
+    background: transparent;
+}
+
+html.dark-mode .points-calendar__day--today {
+    border-color: var(--primary);
+}
+
+html.dark-mode .points-calendar__day-number {
+    color: #E2E8F0;
+}
+
+/* Dark mode calendar activity levels - keep green tones but darker */
+html.dark-mode .points-calendar__day--level-1 {
+    background: #064E3B;
+}
+
+html.dark-mode .points-calendar__day--level-2 {
+    background: #047857;
+}
+
+html.dark-mode .points-calendar__day--level-3 {
+    background: #059669;
+}
+
+html.dark-mode .points-calendar__day--level-4 {
+    background: #10B981;
+}
+
+html.dark-mode .points-calendar__day--level-1 .points-calendar__day-number,
+html.dark-mode .points-calendar__day--level-2 .points-calendar__day-number {
+    color: #A7F3D0;
+}
+
+html.dark-mode .points-calendar__day-dots {
+    color: #64748B;
+}
+
+html.dark-mode .points-calendar__legend {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-calendar__legend-box--0 {
+    background: #334155;
+}
+
+html.dark-mode .points-calendar__legend-box--1 {
+    background: #064E3B;
+}
+
+html.dark-mode .points-calendar__legend-box--2 {
+    background: #047857;
+}
+
+html.dark-mode .points-calendar__legend-box--3 {
+    background: #059669;
+}
+
+html.dark-mode .points-calendar__legend-box--4 {
+    background: #10B981;
+}
+
+html.dark-mode .points-calendar__hint {
+    color: #64748B;
+}
+
+html.dark-mode .points-calendar__details {
+    background: #334155;
+}
+
+html.dark-mode .points-calendar__details-header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-calendar__no-activity {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-calendar__day-stats {
+    color: #CBD5E1;
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .points-calendar__day-summary {
+    color: #CBD5E1;
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .points-calendar__day-item {
+    background: #1E293B;
+}
+
+html.dark-mode .points-calendar__day-item-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-calendar__day-item-reason {
+    color: #64748B;
+}
+
+html.dark-mode .points-calendar__day--selected {
+    background: rgba(99, 102, 241, 0.3) !important;
+}
+
+html.dark-mode .points-calendar__day--selected .points-calendar__day-number {
+    color: #E2E8F0 !important;
+}
+
+/* Streak Calendar - Dark Mode */
+html.dark-mode .streak-calendar__day {
+    background-color: rgba(51, 65, 85, 0.6);
+}
+
+html.dark-mode .streak-calendar__day--active {
+    background-color: rgba(16, 185, 129, 0.3);
+    border-color: #10B981;
+}
+
+html.dark-mode .streak-calendar__day--today {
+    box-shadow: 0 0 0 2px #F59E0B;
+}
+
+html.dark-mode .streak-calendar__day-name {
+    color: #F59E0B;
+}
+
+html.dark-mode .streak-calendar__day-icon {
+    color: #FBBF24;
+}
+
+html.dark-mode .streak-calendar__day--active .streak-calendar__day-icon {
+    color: #34D399;
+}
+
+/* Streak Section - Dark Mode */
+html.dark-mode .streak-section {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+}
+
+html.dark-mode .streak-section__count {
+    color: #FCD34D;
+}
+
+html.dark-mode .streak-section__label {
+    color: #FDE68A;
+}
+
+html.dark-mode .streak-section__bonus {
+    background-color: rgba(251, 191, 36, 0.15);
+    color: #FCD34D;
+}
+
+/* Level Section - Dark Mode */
+html.dark-mode .level-section {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .level-section__level {
+    color: #E2E8F0;
+}
+
+html.dark-mode .level-section__xp-bar {
+    background: #475569;
+}
+
+html.dark-mode .level-section__xp-text {
+    color: #94A3B8;
+}
+
+html.dark-mode .level-section__total-xp {
+    color: #E2E8F0;
+}
+
+/* Points Chart - Dark Mode */
+html.dark-mode .points-chart {
+    background: #334155;
+}
+
+html.dark-mode .points-chart__bars {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .points-chart__bar {
+    background: #475569;
+}
+
+html.dark-mode .points-chart__bar-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-chart__bar-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .points-chart__bar-label--today {
+    color: #818CF8;
+}
+
+html.dark-mode .points-chart__total {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-chart__avg {
+    color: #94A3B8;
+}
+
+/* Top Activities - Dark Mode */
+html.dark-mode .top-activity {
+    background: #334155;
+}
+
+html.dark-mode .top-activity__name {
+    color: #CBD5E1;
+}
+
+html.dark-mode .top-activity__count {
+    color: #818CF8;
+}
+
+html.dark-mode .top-activities__empty {
+    color: #94A3B8;
+}
+
+/* Kid Workout Toast - Dark Mode */
+html.dark-mode .kid-workout-toast {
+    background: #1E293B;
+    color: #E2E8F0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Kid Workout Stats Items - Dark Mode */
+html.dark-mode .kid-workout-stats-item {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-stats-item__value {
+    color: #818CF8;
+}
+
+html.dark-mode .kid-workout-stats-item__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-workout-stats-progress {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-stats-progress__header {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-workout-stats-progress__bar {
+    background: #475569;
+}
+
+/* Stats Sections - Dark Mode */
+html.dark-mode .points-stats-section {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .points-stats-section__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .stats-grid .stats-card,
+html.dark-mode .stats-card {
+    background: #334155;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+html.dark-mode .stats-card__icon svg {
+    color: #818CF8;
+}
+
+html.dark-mode .stats-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .stats-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .stats-section {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .stats-section__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .stats-section__title svg {
+    color: #818CF8;
+}
+
+/* Points Week Stats - Dark Mode */
+html.dark-mode .points-week-stats-title {
+    color: #F59E0B;
+}
+
+html.dark-mode .points-day__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .points-day__stats {
+    color: #94A3B8;
+}
+
+/* Achievements Stats - Dark Mode */
+html.dark-mode .achievements-stats-page {
+    background: transparent;
+}
+
+html.dark-mode .achievements-stats-overview {
+    background: #334155;
+}
+
+html.dark-mode .achievements-stats-overview__info h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-stats-overview__info p {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-stats-ring__value {
+    color: #22D3EE;
+}
+
+html.dark-mode .achievements-stats-card {
+    background: #334155;
+}
+
+html.dark-mode .achievements-stats-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-stats-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-stats-categories {
+    background: #334155;
+}
+
+html.dark-mode .achievements-stats-categories h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-stats-category-bar__label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .achievements-stats-category-bar__track {
+    background: #475569;
+}
+
+/* Achievements Progress Cards - Dark Mode */
+html.dark-mode .achievements-progress-card {
+    background: #334155;
+}
+
+html.dark-mode .achievements-progress-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-progress-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-progress-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-progress-card__bar {
+    background: #475569;
+}
+
+/* Growth Stats - Dark Mode */
+html.dark-mode .growth-stats-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .growth-stats-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-stats-card__value {
+    color: #E2E8F0;
+}
+
+/* Activities Stats - Dark Mode */
+html.dark-mode .activities-stats-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .activities-stats-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .activities-stats-card__label {
+    color: #94A3B8;
+}
+
+/* Routine Stats - Dark Mode */
+html.dark-mode .routine-stats-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .routine-stats-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .routine-stats-card__label {
+    color: #94A3B8;
+}
+
+/* Kid Workout Stats - Dark Mode */
+html.dark-mode .kid-workout-stats-card--streak {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+}
+
+html.dark-mode .kid-workout-stats-card__value {
+    color: #FCD34D;
+}
+
+html.dark-mode .kid-workout-stats-card__label {
+    color: #FBBF24;
+}
+
+html.dark-mode .kid-workout-stats-title {
+    color: #E2E8F0;
+}
+
+/* Kid Workout (Move & Play) Widget - Dark Mode */
+html.dark-mode .kid-workout-stats {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-workout-suggestions {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-suggestions__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-suggestion {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-workout-suggestion:hover {
+    background: #3F4F63;
+    border-color: var(--primary);
+}
+
+html.dark-mode .kid-workout-suggestion__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-suggestion__duration {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-workout-today__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-entry {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-entry__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-entry__duration {
+    color: #94A3B8;
+}
+
+/* Kid Workout Full Page - Dark Mode */
+html.dark-mode .kid-workout-page .page-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-history__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-history-day {
+    background: #334155;
+    box-shadow: none;
+}
+
+html.dark-mode .kid-workout-history-day__header {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .kid-workout-history-day__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-history-day__stats {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-workout-history-day__activity {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-workout-history-day__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-history-day__duration {
+    background: #334155;
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-workout-history-btn {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-workout-history-btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+/* Kid Workout Calendar/Stats Page - Dark Mode */
+html.dark-mode .kid-workout-calendar-page,
+html.dark-mode .kid-workout-history-page {
+    background: transparent;
+}
+
+html.dark-mode .kid-workout-history-summary {
+    background: #334155;
+}
+
+html.dark-mode .kid-workout-history-summary__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-workout-history-summary__label {
+    color: #94A3B8;
+}
+
+/* Rewards Widget - Dark Mode */
+html.dark-mode .rewards-widget--kid {
+    background: linear-gradient(135deg, #1E293B 0%, #312E81 100%);
+}
+
+html.dark-mode .rewards-widget__section-title {
+    color: #CBD5E1;
+}
+
+html.dark-mode .reward-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .reward-card:hover {
+    background: #3F4F63;
+    border-color: #64748B;
+}
+
+html.dark-mode .reward-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .reward-card__btn--disabled {
+    background: #475569;
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-widget__footer .btn--ghost {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-widget__footer .btn--ghost:hover {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+/* Rewards Full Page - Dark Mode */
+html.dark-mode .rewards-full-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .rewards-full-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .rewards-full-card--available {
+    border-color: var(--reward-color, #3B82F6);
+}
+
+html.dark-mode .rewards-full-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-full-card__wishlist {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .rewards-full-card__wishlist:hover {
+    background: #831843;
+    color: #F9A8D4;
+}
+
+/* Rewards Wishlist Full - Dark Mode */
+html.dark-mode .rewards-wishlist-full-card {
+    background: #334155;
+    border-color: var(--reward-color, #3B82F6);
+}
+
+html.dark-mode .rewards-wishlist-full-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-wishlist-full-card__progress-bar {
+    background: #475569;
+}
+
+html.dark-mode .rewards-wishlist-full-card__progress-text {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-wishlist-full-card__remove {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .rewards-wishlist-full-card__remove:hover {
+    background: #7F1D1D;
+    color: #FCA5A5;
+}
+
+/* Rewards History Full - Dark Mode */
+html.dark-mode .rewards-history-full__stat {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-full__stat-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-history-full__section-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-history-full__top {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-full__top-item {
+    background: #1E293B;
+}
+
+html.dark-mode .rewards-history-full__top-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-history-full__top-meta {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-history-full__day {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-full__day-label {
+    color: #94A3B8;
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .rewards-history-full__entry {
+    background: #1E293B;
+}
+
+html.dark-mode .rewards-history-full__entry-name {
+    color: #E2E8F0;
+}
+
+/* Rewards History Page - Dark Mode */
+html.dark-mode .rewards-history-stat {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-history-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-history-entry {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-entry__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-history-day__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-history-empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .rewards-history-empty__icon {
+    background: #334155;
+}
+
+html.dark-mode .rewards-history-empty h3 {
+    color: #E2E8F0;
+}
+
+/* Manage Rewards V2 - Dark Mode */
+html.dark-mode .manage-rewards-v2__item {
+    background: #334155;
+}
+
+html.dark-mode .manage-rewards-v2__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .manage-rewards-v2__cost {
+    color: #94A3B8;
+}
+
+html.dark-mode .manage-rewards-v2__add {
+    background: #1E293B;
+}
+
+html.dark-mode .manage-rewards-v2__add-header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .manage-rewards-v2__empty {
+    color: #64748B;
+}
+
+html.dark-mode .manage-rewards-v2__empty svg {
+    color: #475569;
+}
+
+/* Rewards Balance Section - Dark Mode */
+html.dark-mode .rewards-widget__balance-count {
+    color: #E2E8F0;
+}
+
+html.dark-mode .rewards-widget__balance-label {
+    color: #CBD5E1;
+}
+
+/* Achievements Widget - Dark Mode */
+html.dark-mode .achievements-widget__summary {
+    background-color: #1E293B;
+}
+
+html.dark-mode .achievements-stat__value {
+    color: #60A5FA;
+}
+
+html.dark-mode .achievements-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-section__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievement-badge {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .achievement-badge:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .achievement-badge__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievement-badge__progress {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-widget__footer {
+    border-color: #334155;
+}
+
+html.dark-mode .achievements-widget__footer .btn--ghost {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-widget__footer .btn--ghost:hover {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+/* Rewards Widget - Wishlist Card (Saving For) - Dark Mode */
+html.dark-mode .reward-wishlist-card {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border-color: #475569;
+}
+
+html.dark-mode .reward-wishlist-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .reward-wishlist-card__progress-bar {
+    background-color: #475569;
+}
+
+html.dark-mode .reward-wishlist-card__progress-text {
+    color: #CBD5E1;
+}
+
+html.dark-mode .reward-wishlist-card__star {
+    color: #F472B6;
+}
+
+/* Achievements Full Page - Dark Mode */
+html.dark-mode .achievements-full-categories {
+    background: transparent;
+}
+
+html.dark-mode .achievements-full-category {
+    background: #1E293B;
+}
+
+html.dark-mode .achievements-full-category__header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-full-category__count {
+    background: rgba(255, 255, 255, 0.1);
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-full-badge {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .achievements-full-badge:hover {
+    background: #3F4F63;
+    border-color: #64748B;
+}
+
+html.dark-mode .achievements-full-badge--earned {
+    background: linear-gradient(135deg, #334155 0%, color-mix(in srgb, var(--badge-color), #1E293B 70%) 100%);
+    border-color: var(--badge-color);
+}
+
+html.dark-mode .achievements-full-badge__icon {
+    background: #475569;
+}
+
+html.dark-mode .achievements-full-badge__icon svg {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-full-badge--earned .achievements-full-badge__icon {
+    background: var(--badge-color);
+}
+
+html.dark-mode .achievements-full-badge--earned .achievements-full-badge__icon svg {
+    color: white;
+}
+
+html.dark-mode .achievements-full-badge__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-full-badge__desc {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-full-badge__progress-bar {
+    background: #475569;
+}
+
+html.dark-mode .achievements-full-badge__progress-text {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-full-badge__date {
+    color: #64748B;
+}
+
+/* Achievements Page Stats - Dark Mode */
+html.dark-mode .achievements-page-stat {
+    background: #334155;
+}
+
+html.dark-mode .achievements-page-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-page-stat__label {
+    color: #94A3B8;
+}
+
+/* Achievements Page Categories - Dark Mode */
+html.dark-mode .achievements-page__category-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-page-badge {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .achievements-page-badge:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .achievements-page-badge__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .achievements-page-badge__desc {
+    color: #94A3B8;
+}
+
+/* Achievements Full Badge Progress - Dark Mode */
+html.dark-mode .achievements-full-badge__progress span {
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-full-badge__progress-section .achievements-full-badge__decrement {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .achievements-full-badge__progress-section .achievements-full-badge__decrement:hover {
+    background: #64748B;
+}
+
+html.dark-mode .achievements-full-badge__streak-info .streak-current {
+    color: #F87171;
+}
+
+html.dark-mode .achievements-full-badge__streak-info .streak-best {
+    color: #FBBF24;
+}
+
+/* Achievements Full Badge Actions - Dark Mode */
+html.dark-mode .achievements-full-badge__delete,
+html.dark-mode .achievements-full-badge__revoke {
+    background: #475569;
+    color: #94A3B8;
+}
+
+html.dark-mode .achievements-full-badge__delete:hover {
+    background: #7F1D1D;
+    color: #FCA5A5;
+}
+
+html.dark-mode .achievements-full-badge__revoke:hover {
+    background: #78350F;
+    color: #FCD34D;
+}
+
+/* Kid Tasks Widget - Dark Mode */
+html.dark-mode .kid-tasks-widget {
+    background: linear-gradient(135deg, #1E293B 0%, #7C2D12 100%);
+}
+
+html.dark-mode .kid-task-item {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-task-item:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .kid-task-item__name {
+    color: #E2E8F0;
+}
+
+/* Kid Tasks Full Page - Dark Mode */
+html.dark-mode .kid-tasks-page {
+    background: #0F172A;
+}
+
+html.dark-mode .kid-tasks-page__stats {
+    background: transparent;
+}
+
+html.dark-mode .kid-tasks-page-stat {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-tasks-page-stat--pending {
+    background: linear-gradient(135deg, #334155 0%, #78350F 100%);
+    border-color: #F59E0B;
+}
+
+html.dark-mode .kid-tasks-page-stat--done {
+    background: linear-gradient(135deg, #334155 0%, #14532D 100%);
+    border-color: #10B981;
+}
+
+html.dark-mode .kid-tasks-page-stat--total {
+    background: linear-gradient(135deg, #334155 0%, #312E81 100%);
+    border-color: #06B6D4;
+}
+
+html.dark-mode .kid-tasks-page-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-page-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-page__add .form-input {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-page__add .form-input:focus {
+    border-color: #6366F1;
+}
+
+html.dark-mode .kid-tasks-page__add .form-input::placeholder {
+    color: #64748B;
+}
+
+html.dark-mode .kid-tasks-page__section-title {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-page__section-title--done {
+    background: linear-gradient(135deg, #14532D 0%, #065F46 100%);
+    color: #A7F3D0;
+}
+
+html.dark-mode .kid-task-page-item {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-task-page-item:hover {
+    border-color: #6366F1;
+    background: #3F4F63;
+}
+
+html.dark-mode .kid-task-page-item--completed {
+    background: #1E3A2F;
+    border-color: #10B981;
+}
+
+html.dark-mode .kid-task-page-item__checkmark {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-task-page-item__checkbox-wrapper:hover .kid-task-page-item__checkmark {
+    border-color: #818CF8;
+}
+
+html.dark-mode .kid-task-page-item__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-task-page-item--completed .kid-task-page-item__title {
+    color: #64748B;
+}
+
+html.dark-mode .kid-task-page-item__content:hover {
+    background-color: rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .kid-task-page-item__edit-input {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-page__empty {
+    background: #334155;
+}
+
+html.dark-mode .kid-tasks-page__empty h2 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-page__empty p {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-widget__empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-widget__input {
+    background: #334155;
+    border-color: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-widget__input:focus {
+    border-color: #6366F1;
+}
+
+html.dark-mode .kid-task-item__checkmark {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-task-item--completed {
+    background: #1E3A2F;
+    border-color: #10B981;
+}
+
+/* Toddler Tasks Page - Dark Mode */
+html.dark-mode .toddler-tasks-page {
+    background: #0F172A;
+}
+
+html.dark-mode .toddler-task-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .toddler-task-card:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .toddler-task-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .toddler-tasks-page__empty {
+    background: #334155;
+}
+
+html.dark-mode .toddler-tasks-page__empty h2 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .toddler-tasks-page__empty p {
+    color: #94A3B8;
+}
+
+/* Kid Tasks History Tab - Dark Mode */
+html.dark-mode .kid-tasks-history__nav {
+    background: #334155;
+}
+
+html.dark-mode .kid-tasks-history__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-history__summary-stat {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-history__day {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-tasks-history__day:hover {
+    border-color: #EAB308;
+}
+
+html.dark-mode .kid-tasks-history__day--today {
+    background: linear-gradient(135deg, #334155 0%, #78350F 100%);
+    border-color: #EAB308;
+}
+
+html.dark-mode .kid-tasks-history__day-header {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .kid-tasks-history__day-name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-history__day-month {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-history__day-count {
+    background: #78350F;
+    color: #FCD34D;
+}
+
+html.dark-mode .kid-tasks-history__task {
+    background: #1E293B;
+    color: #E2E8F0;
+}
+
+/* Kid Tasks Stats Tab - Dark Mode */
+html.dark-mode .kid-tasks-stats__streak-card {
+    background: #334155;
+}
+
+html.dark-mode .kid-tasks-stats__streak-card--current {
+    background: linear-gradient(135deg, #334155 0%, #7C2D12 100%);
+    border-color: #F97316;
+}
+
+html.dark-mode .kid-tasks-stats__streak-card--best {
+    background: linear-gradient(135deg, #334155 0%, #1E3A5F 100%);
+    border-color: #06B6D4;
+}
+
+html.dark-mode .kid-tasks-stats__streak-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-stats__streak-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-stats__month-card {
+    background: #334155;
+    border-color: #EAB308;
+}
+
+html.dark-mode .kid-tasks-stats__month-header h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-stats__month-count {
+    background: #78350F;
+    color: #FCD34D;
+}
+
+html.dark-mode .kid-tasks-stats__progress-bar {
+    background: #475569;
+}
+
+html.dark-mode .kid-tasks-stats__month-footer {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-stats__weekly-card {
+    background: #334155;
+}
+
+html.dark-mode .kid-tasks-stats__weekly-card h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-stats__weekly-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-tasks-stats__weekly-count {
+    color: #64748B;
+}
+
+html.dark-mode .kid-tasks-stats__grid-item {
+    background: #334155;
+}
+
+html.dark-mode .kid-tasks-stats__grid-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-tasks-stats__grid-label {
+    color: #94A3B8;
+}
+
+/* Toddler Tasks History - Dark Mode */
+html.dark-mode .toddler-tasks-history__day {
+    background: #334155;
+    box-shadow: none;
+}
+
+html.dark-mode .toddler-tasks-history__day-header {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .toddler-tasks-history__day-label {
+    color: #E2E8F0;
+}
+
+html.dark-mode .toddler-tasks-history__day-count {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .toddler-tasks-history__day-count--complete {
+    background: #14532D;
+    color: #A7F3D0;
+}
+
+html.dark-mode .toddler-tasks-history__item {
+    background: #1E293B;
+}
+
+html.dark-mode .toddler-tasks-history__item-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .toddler-tasks-history__item-time {
+    color: #64748B;
+}
+
+/* Chores Widget - Dark Mode */
+html.dark-mode .chores-widget--kid {
+    background: linear-gradient(135deg, #1E293B 0%, #14532D 100%);
+}
+
+html.dark-mode .chore-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .chore-card:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .chore-card__name {
+    color: #E2E8F0;
+}
+
+/* Chores Widget Full - Dark Mode */
+html.dark-mode .chores-widget--picker {
+    background: linear-gradient(135deg, #1E293B 0%, #312E81 100%);
+}
+
+html.dark-mode .chores-widget__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-widget__subtitle {
+    color: #94A3B8;
+}
+
+html.dark-mode .chores-widget__progress-badge {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-widget__section-title {
+    color: #CBD5E1;
+}
+
+/* Chores Full Page - Dark Mode */
+html.dark-mode .chores-history-page {
+    background: transparent;
+}
+
+html.dark-mode .chores-history-summary__stat {
+    background: #334155;
+}
+
+html.dark-mode .chores-history-summary__stat span {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-history-day {
+    background: #334155;
+}
+
+html.dark-mode .chores-history-day__header {
+    border-bottom-color: #475569;
+}
+
+html.dark-mode .chores-history-day__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-history-day__chores {
+    color: #CBD5E1;
+}
+
+html.dark-mode .chores-history-chore {
+    color: #E2E8F0;
+}
+
+/* Chores Pending/Completed Cards - Dark Mode */
+html.dark-mode .chores-pending-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .chores-pending-card:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .chores-pending-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-pending-card__points {
+    color: #FCD34D;
+}
+
+html.dark-mode .chores-completed-item {
+    background: #1E3A2F;
+    border-color: #10B981;
+}
+
+html.dark-mode .chores-completed-item__name {
+    color: #A7F3D0;
+}
+
+html.dark-mode .chores-pool-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .chores-pool-card:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .chores-pool-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-pool-card__points {
+    color: #FCD34D;
+}
+
+/* Chores Today Tab - Dark Mode */
+html.dark-mode .chores-today-page {
+    background: #0F172A;
+}
+
+html.dark-mode .chores-today-celebration {
+    background: linear-gradient(135deg, #064E3B 0%, #065F46 100%);
+}
+
+html.dark-mode .chores-today-celebration h2 {
+    color: #A7F3D0;
+}
+
+html.dark-mode .chores-today-celebration p {
+    color: #6EE7B7;
+}
+
+html.dark-mode .chores-today-section {
+    background: #1E293B;
+}
+
+html.dark-mode .chores-today-section h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-today-section--completed {
+    background: linear-gradient(135deg, #1E293B 0%, #064E3B 100%);
+}
+
+html.dark-mode .chores-today-section--completed h3 {
+    color: #A7F3D0;
+}
+
+html.dark-mode .chores-today-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .chores-today-card:hover {
+    border-color: #10B981;
+    background: #3F4F63;
+}
+
+html.dark-mode .chores-today-card--completed {
+    background: #064E3B;
+    border-color: #10B981;
+}
+
+html.dark-mode .chores-today-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-today-card--completed .chores-today-card__name {
+    color: #94A3B8;
+}
+
+html.dark-mode .chores-today-card__points {
+    color: #FCD34D;
+}
+
+html.dark-mode .chores-today-card__points--earned {
+    color: #A7F3D0;
+}
+
+/* Chores Pool (All Chores) Tab - Dark Mode */
+html.dark-mode .chores-pool-page {
+    background: #0F172A;
+}
+
+html.dark-mode .chores-pool-info {
+    background: transparent;
+}
+
+html.dark-mode .chores-pool-info__card {
+    background: #334155;
+    border-radius: var(--radius-lg);
+}
+
+html.dark-mode .chores-pool-info__card strong {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-pool-info__card span {
+    color: #94A3B8;
+}
+
+html.dark-mode .chores-pool-title {
+    color: #E2E8F0;
+}
+
+/* Chores Stats Section - Dark Mode */
+html.dark-mode .chores-stats-card {
+    background: #334155;
+}
+
+html.dark-mode .chores-stats-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .chores-stats-card__label {
+    color: #94A3B8;
+}
+
+/* Manage Chores - Dark Mode */
+html.dark-mode .manage-chores-v2__item {
+    background: #334155;
+}
+
+html.dark-mode .manage-chores-v2__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .manage-chores-v2__points {
+    color: #94A3B8;
+}
+
+html.dark-mode .manage-chores-v2__add {
+    background: #1E293B;
+}
+
+html.dark-mode .manage-chores-v2__add-header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .manage-chores-v2__empty {
+    color: #64748B;
+}
+
+html.dark-mode .chore-picker-card__icon {
+    background: rgba(99, 102, 241, 0.2) !important;
+}
+
+html.dark-mode .chore-picker-card__icon svg {
+    color: #A5B4FC !important;
+}
+
+/* Screen Time Widget - Dark Mode */
+html.dark-mode .screen-time-widget--kid {
+    background: linear-gradient(135deg, #1E293B 0%, #1E3A5F 100%);
+}
+
+html.dark-mode .screen-time__display {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time__limit {
+    color: #94A3B8;
+}
+
+/* Screen Time Full Page - Today Tab - Dark Mode */
+html.dark-mode .screen-time-today__gauge-section {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-today__gauge-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-today__sessions {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-today__sessions h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-session-card {
+    background: #1E293B;
+}
+
+html.dark-mode .screen-time-session-card__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-session-card__time {
+    color: #94A3B8;
+}
+
+/* Screen Time Full Page - History Tab - Dark Mode */
+html.dark-mode .screen-time-history-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .screen-time-history-card--over {
+    background: linear-gradient(135deg, #334155 0%, #7F1D1D 100%);
+    border-color: #DC2626;
+}
+
+html.dark-mode .screen-time-history-card__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-history-card__bar {
+    background: #475569;
+}
+
+html.dark-mode .screen-time-history-card__footer {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-history-stat {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-history-stat--warning {
+    background: #78350F;
+}
+
+html.dark-mode .screen-time-history-stat__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-history-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-history-day {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-history-day--over {
+    background: #78350F;
+}
+
+html.dark-mode .screen-time-history-day__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-history-day__time {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-history-day__bar {
+    background: #475569;
+}
+
+html.dark-mode .screen-time-history-day__sessions {
+    border-top-color: #475569;
+}
+
+html.dark-mode .screen-time-history-session {
+    background: #1E293B;
+    color: #CBD5E1;
+}
+
+html.dark-mode .screen-time-history-session__time {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-history-empty {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-history-empty__icon {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-history-empty h3 {
+    color: #E2E8F0;
+}
+
+/* Screen Time Full Page - Stats Tab - Dark Mode */
+html.dark-mode .screen-time-stats__card {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-stats__card-value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-stats__card-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .screen-time-stats__breakdown {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-stats__breakdown h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-breakdown-item__bar {
+    background: #475569;
+}
+
+html.dark-mode .screen-time-stats__limits {
+    background: #334155;
+}
+
+html.dark-mode .screen-time-stats__limits h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .screen-time-limit-item {
+    color: #CBD5E1;
+}
+
+/* Screen Time Limits Form - Dark Mode */
+html.dark-mode .screen-time-limits-form .form-group {
+    background: #1E293B;
+}
+
+html.dark-mode .screen-time-limits-form .form-label {
+    color: #E2E8F0;
+}
+
+/* Memory Book Widget - Dark Mode */
+html.dark-mode .memory-book-widget {
+    background: linear-gradient(135deg, #1E293B 0%, #4C1D95 100%);
+}
+
+html.dark-mode .memory-featured__polaroid {
+    background: #334155;
+}
+
+html.dark-mode .memory-featured__caption {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-mini {
+    background: #334155;
+}
+
+html.dark-mode .memory-mini__title {
+    color: #CBD5E1;
+}
+
+html.dark-mode .memory-book-widget__empty h4 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-book-widget__empty p {
+    color: #94A3B8;
+}
+
+/* Memory Book Full Page - Dark Mode */
+html.dark-mode .memory-book-page {
+    background: #0F172A;
+}
+
+html.dark-mode .memory-book-page__hero {
+    background: linear-gradient(135deg, #831843 0%, #9D174D 50%, #BE185D 100%) !important;
+    box-shadow: 0 4px 20px rgba(131, 24, 67, 0.5) !important;
+}
+
+html.dark-mode .memory-book-page__back {
+    color: #F1F5F9;
+    border-color: rgba(255, 255, 255, 0.25);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark-mode .memory-book-page__back:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    color: white;
+}
+
+html.dark-mode .memory-book-page__title {
+    color: #F8FAFC !important;
+}
+
+html.dark-mode .memory-book-page__title svg {
+    color: #F8FAFC;
+}
+
+html.dark-mode .memory-book-page__subtitle {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+html.dark-mode .memory-book-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .memory-book-page__actions .btn--primary:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .memory-book-page__actions .btn--ghost {
+    color: rgba(255, 255, 255, 0.85);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+html.dark-mode .memory-book-page__actions .btn--ghost:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+
+html.dark-mode .memory-book-page__content {
+    background: #0F172A;
+}
+
+html.dark-mode .memory-book-page__empty h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-book-page__empty p {
+    color: #94A3B8;
+}
+
+/* Memory Filter Bar - Dark Mode */
+html.dark-mode .memory-filter {
+    background: #1E293B;
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .memory-filter__chip {
+    background: #334155;
+    color: #CBD5E1;
+    border-color: #475569;
+}
+
+html.dark-mode .memory-filter__chip:hover {
+    background: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-filter__chip--active {
+    background: #EC4899;
+    color: white;
+    border-color: #EC4899;
+}
+
+html.dark-mode .memory-filter__count {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+/* Memory Timeline - Dark Mode */
+html.dark-mode .memory-timeline__year-label {
+    color: #F9A8D4;
+}
+
+html.dark-mode .memory-timeline__year-count {
+    color: #94A3B8;
+}
+
+html.dark-mode .memory-timeline--enhanced .memory-timeline__year-header {
+    border-bottom-color: #831843;
+}
+
+html.dark-mode .memory-timeline__month-header {
+    border-bottom-color: #831843;
+}
+
+html.dark-mode .memory-timeline__month-label {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-timeline__count {
+    background: #831843;
+    color: #FBCFE8;
+}
+
+/* Memory Cards - Dark Mode */
+html.dark-mode .memory-timeline__card {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .memory-timeline__card:hover {
+    box-shadow: 0 8px 20px rgba(236, 72, 153, 0.2);
+}
+
+html.dark-mode .memory-timeline__card--enhanced {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .memory-timeline__card--enhanced:hover {
+    border-color: #EC4899;
+    box-shadow: 0 12px 24px rgba(236, 72, 153, 0.25);
+}
+
+html.dark-mode .memory-timeline__card-content {
+    background: #1E293B;
+}
+
+html.dark-mode .memory-timeline__card-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-timeline__card-date {
+    color: #94A3B8;
+}
+
+html.dark-mode .memory-timeline__card-category {
+    background: #831843;
+    color: #FBCFE8;
+}
+
+html.dark-mode .memory-timeline__card-notes {
+    color: #CBD5E1;
+}
+
+html.dark-mode .memory-timeline__card-meta {
+    color: #94A3B8;
+}
+
+/* Memory Detail Modal - Dark Mode */
+html.dark-mode .memory-detail {
+    background: #1E293B;
+}
+
+html.dark-mode .memory-detail__header {
+    background: #334155;
+}
+
+html.dark-mode .memory-detail__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-detail__meta {
+    color: #94A3B8;
+}
+
+html.dark-mode .memory-detail__notes {
+    color: #CBD5E1;
+}
+
+html.dark-mode .memory-detail__notes p {
+    color: #CBD5E1;
+}
+
+/* Memory Featured Polaroid - Dark Mode Full Page */
+html.dark-mode .memory-featured__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-featured__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .memory-featured__photo {
+    background: #334155;
+}
+
+html.dark-mode .memory-featured__placeholder {
+    background: linear-gradient(135deg, #831843 0%, #9D174D 100%);
+}
+
+/* Memory Empty State Enhanced - Dark Mode */
+html.dark-mode .memory-book-widget__empty--enhanced h4 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .memory-book-widget__empty--enhanced p {
+    color: #94A3B8;
+}
+
+html.dark-mode .memory-empty__book {
+    background: linear-gradient(135deg, #831843 0%, #9D174D 100%);
+}
+
+/* Kid Journal Widget - Dark Mode */
+html.dark-mode .kid-journal-widget {
+    background: linear-gradient(135deg, #1E293B 0%, #831843 100%);
+}
+
+html.dark-mode .journal-entry-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .journal-entry-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .journal-entry-card__content {
+    color: #CBD5E1;
+}
+
+/* Kid Journal Full Page - Dark Mode */
+html.dark-mode .kid-journal-entry {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            rgba(139, 92, 246, 0.15) 31px,
+            rgba(139, 92, 246, 0.15) 32px
+        ),
+        linear-gradient(to right, rgba(236, 72, 153, 0.3) 0px, rgba(236, 72, 153, 0.3) 3px, transparent 3px);
+    background-color: #FFF8E7;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .kid-journal-entry::before {
+    background-color: rgba(236, 72, 153, 0.3);
+}
+
+html.dark-mode .kid-journal-entry__content {
+    color: #2D1F14 !important;
+}
+
+html.dark-mode .kid-journal-entry__time {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .kid-journal-entry__preview {
+    color: #4A3728 !important;
+}
+
+html.dark-mode .kid-journal-entry__prompt {
+    background: rgba(254, 243, 199, 0.9);
+    color: #5B4636;
+}
+
+html.dark-mode .kid-journal-entry__actions {
+    border-top-color: rgba(139, 92, 246, 0.3);
+}
+
+html.dark-mode .kid-journal-entry--preview {
+    background-color: #FFF8E7;
+}
+
+/* Kid Journal Textarea - Dark Mode - Transparent to show paper lines */
+html.dark-mode .kid-journal-entry__textarea {
+    color: #2D1F14 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+html.dark-mode .kid-journal-entry__textarea:focus {
+    background: transparent !important;
+    outline: none !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+html.dark-mode .kid-journal-entry__textarea::placeholder {
+    color: #9A8A7A !important;
+}
+
+/* Kid Journal Calendar - Dark Mode (Full Calendar Styling) */
+html.dark-mode .kid-journal-calendar {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .kid-journal-calendar__header {
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .kid-journal-calendar__month {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-calendar__nav-btn {
+    color: #94A3B8;
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .kid-journal-calendar__nav-btn:hover {
+    background: #475569;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-calendar__weekdays span {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-journal-calendar__day {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-calendar__day:hover:not(.kid-journal-calendar__day--empty) {
+    background: rgba(139, 92, 246, 0.3);
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .kid-journal-calendar__day--empty {
+    background: transparent;
+}
+
+html.dark-mode .kid-journal-calendar__day--today {
+    background: rgba(139, 92, 246, 0.25);
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .kid-journal-calendar__day--has-entry {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.3) 0%, rgba(168, 85, 247, 0.4) 100%);
+}
+
+html.dark-mode .kid-journal-calendar__day.selected {
+    background: rgba(139, 92, 246, 0.4) !important;
+    border-color: #A855F7;
+    box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.3);
+}
+
+html.dark-mode .kid-journal-calendar__day-num {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-calendar__selected {
+    background: #1E293B;
+}
+
+html.dark-mode .kid-journal-calendar__selected-date {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-journal-calendar__selected-hint {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-journal-calendar__selected-empty {
+    color: #64748B;
+}
+
+/* Kid Journal Stats - Dark Mode */
+html.dark-mode .kid-journal-stats-section {
+    background: #0F172A;
+}
+
+html.dark-mode .kid-journal-stat-card {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .kid-journal-stat-card__value {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-stat-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-journal-stat-card--flame .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, rgba(220, 38, 38, 0.2) 0%, rgba(239, 68, 68, 0.3) 100%);
+}
+
+html.dark-mode .kid-journal-stat-card--trophy .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, rgba(217, 119, 6, 0.2) 0%, rgba(245, 158, 11, 0.3) 100%);
+}
+
+html.dark-mode .kid-journal-stat-card--book .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, rgba(37, 99, 235, 0.2) 0%, rgba(59, 130, 246, 0.3) 100%);
+}
+
+html.dark-mode .kid-journal-stat-card--calendar .kid-journal-stat-card__icon {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.2) 0%, rgba(167, 139, 250, 0.3) 100%);
+}
+
+/* Kid Journal Month Card - Dark Mode */
+html.dark-mode .kid-journal-month-card {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .kid-journal-month-card__header {
+    background: linear-gradient(135deg, #831843 0%, #9D174D 100%);
+    color: #FDF2F8;
+}
+
+html.dark-mode .kid-journal-month-card__bar {
+    background: #475569;
+}
+
+html.dark-mode .kid-journal-month-card__text {
+    color: #94A3B8;
+}
+
+/* Kid Journal Mood Card - Dark Mode */
+html.dark-mode .kid-journal-mood-card {
+    background: #1E293B;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .kid-journal-mood-card__header {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+    color: #FDE68A;
+}
+
+html.dark-mode .kid-journal-mood-card__content {
+    background: #1E293B;
+}
+
+html.dark-mode .kid-journal-mood-card__count {
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-journal-mood-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .kid-journal-mood-card__most-common {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-journal-mood-card__most-common-mood {
+    background: color-mix(in srgb, var(--mood-color, #475569) 30%, #1E293B);
+    color: #E2E8F0;
+}
+
+/* Kid Journal Write Tab - Dark Mode */
+html.dark-mode .kid-journal-write-tab {
+    background: transparent;
+    padding: 0;
+}
+
+/* Make the entry in write tab fill the section and look consistent */
+html.dark-mode .kid-journal-write-tab .kid-journal-entry,
+html.dark-mode .kid-journal-entry--write,
+html.dark-mode .kid-journal-entry--today {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            rgba(139, 92, 246, 0.2) 31px,
+            rgba(139, 92, 246, 0.2) 32px
+        ),
+        linear-gradient(to right, rgba(236, 72, 153, 0.4) 0px, rgba(236, 72, 153, 0.4) 3px, transparent 3px);
+    background-color: #FFF8E7 !important;
+    border: 2px solid #8B5CF6;
+    box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+}
+
+/* Labels inside the paper should be brown for consistency */
+html.dark-mode .kid-journal-write-form__label {
+    color: #5B4636 !important;
+}
+
+html.dark-mode .kid-journal-write-form__moods {
+    background: transparent;
+}
+
+/* Mood buttons - softer style on paper background */
+html.dark-mode .kid-journal-mood-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #D8C4B0;
+    box-shadow: 0 2px 4px rgba(91, 70, 54, 0.1);
+}
+
+html.dark-mode .kid-journal-mood-btn:hover {
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+    box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .kid-journal-mood-btn.selected,
+html.dark-mode .kid-journal-mood-btn--selected {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    border-color: #6D28D9;
+    box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+html.dark-mode .kid-journal-mood-btn__label {
+    color: #5B4636;
+}
+
+html.dark-mode .kid-journal-mood-btn.selected .kid-journal-mood-btn__label,
+html.dark-mode .kid-journal-mood-btn--selected .kid-journal-mood-btn__label {
+    color: #FFFFFF;
+}
+
+/* Sticker buttons - softer style on paper background */
+html.dark-mode .kid-journal-sticker-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #D8C4B0;
+    box-shadow: 0 2px 4px rgba(91, 70, 54, 0.1);
+}
+
+html.dark-mode .kid-journal-sticker-btn:hover {
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+    box-shadow: 0 4px 8px rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .kid-journal-sticker-btn.selected {
+    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+    border-color: #DB2777;
+    box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+}
+
+/* Selected stickers display */
+html.dark-mode .kid-journal-write-form__selected-stickers {
+    color: #5B4636;
+}
+
+html.dark-mode .kid-journal-write-form__selected-stickers span {
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #D8C4B0;
+}
+
+/* Write tab hint text */
+html.dark-mode .kid-journal-write-tab__hint {
+    color: #8B5CF6 !important;
+}
+
+/* Kid Journal Page - Dark Mode (Banner & Header) */
+html.dark-mode .kid-page--journal {
+    background: linear-gradient(180deg, #1E1B4B 0%, #312E81 50%, #1E293B 100%) !important;
+}
+
+/* Hero/Banner area - override inline styles */
+html.dark-mode .kid-page__hero {
+    background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 50%, #5B21B6 100%) !important;
+    box-shadow: 0 4px 20px rgba(76, 29, 149, 0.5) !important;
+}
+
+/* Widget-specific dark mode hero colors (matching each widget's color theme) */
+html.dark-mode .kid-page--points .kid-page__hero {
+    background: linear-gradient(135deg, #78350F 0%, #B45309 50%, #92400E 100%) !important;
+    box-shadow: 0 4px 20px rgba(120, 53, 15, 0.5) !important;
+}
+
+html.dark-mode .kid-page--rewards .kid-page__hero {
+    background: linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #1D4ED8 100%) !important;
+    box-shadow: 0 4px 20px rgba(30, 58, 138, 0.5) !important;
+}
+
+html.dark-mode .kid-page--tasks .kid-page__hero {
+    background: linear-gradient(135deg, #7C2D12 0%, #C2410C 50%, #9A3412 100%) !important;
+    box-shadow: 0 4px 20px rgba(124, 45, 18, 0.5) !important;
+}
+
+html.dark-mode .kid-page--workout .kid-page__hero {
+    background: linear-gradient(135deg, #14532D 0%, #15803D 50%, #166534 100%) !important;
+    box-shadow: 0 4px 20px rgba(20, 83, 45, 0.5) !important;
+}
+
+html.dark-mode .kid-page--chores .kid-page__hero {
+    background: linear-gradient(135deg, #14532D 0%, #15803D 50%, #166534 100%) !important;
+    box-shadow: 0 4px 20px rgba(20, 83, 45, 0.5) !important;
+}
+
+html.dark-mode .kid-page--screen-time .kid-page__hero {
+    background: linear-gradient(135deg, #164E63 0%, #0891B2 50%, #155E75 100%) !important;
+    box-shadow: 0 4px 20px rgba(22, 78, 99, 0.5) !important;
+}
+
+html.dark-mode .kid-page--journal .kid-page__hero {
+    background: linear-gradient(135deg, #312E81 0%, #4F46E5 50%, #3730A3 100%) !important;
+    box-shadow: 0 4px 20px rgba(49, 46, 129, 0.5) !important;
+}
+
+html.dark-mode .kid-page__hero-title {
+    color: #F8FAFC !important;
+}
+
+html.dark-mode .kid-page__back {
+    color: #F1F5F9 !important;
+    border-color: rgba(255, 255, 255, 0.25) !important;
+}
+
+html.dark-mode .kid-page__back:hover {
+    background: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Stats in header area - darker */
+html.dark-mode .kid-hero-stat {
+    background: #1E293B !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+html.dark-mode .kid-hero-stat__value {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-hero-stat__label {
+    color: #94A3B8 !important;
+}
+
+/* ==========================================================================
+   TEEN JOURNAL FULL PAGE - Dark Mode
+   ========================================================================== */
+
+/* Hero banner - match tab gradient (indigo → cyan) */
+html.dark-mode .teen-journal-page__hero {
+    background: linear-gradient(135deg, #312E81 0%, #164E63 100%) !important;
+}
+
+/* Tabs */
+html.dark-mode .teen-journal-tab {
+    color: #94A3B8;
+    background: #1E293B;
+}
+
+html.dark-mode .teen-journal-tab:hover {
+    background: #334155;
+    color: #E2E8F0;
+}
+
+html.dark-mode .teen-journal-tab--active {
+    background: linear-gradient(135deg, #4338CA 0%, #0E7490 100%) !important;
+    color: white !important;
+}
+
+/* Paper aesthetic for write section (full page is NOT inside .tab-content--teen) */
+html.dark-mode .teen-journal-page .teen-journal-notebook {
+    background: #FFFEF5 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__paper {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            #E8DFC8 31px,
+            #E8DFC8 32px
+        ),
+        linear-gradient(to right, #F8C8C8 0px, #F8C8C8 3px, transparent 3px) !important;
+    background-color: #FFFEF5 !important;
+    background-position: 0 0, 24px 0 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__textarea,
+html.dark-mode .teen-journal-page .teen-journal-notebook textarea {
+    background: #FFFEF5 !important;
+    background-color: #FFFEF5 !important;
+    color: #3D2B1F !important;
+    border-color: #D4C8B0 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__textarea::placeholder,
+html.dark-mode .teen-journal-page .teen-journal-notebook textarea::placeholder {
+    color: #B0A090 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__date {
+    color: #8B7E6E !important;
+    border-bottom-color: #D4C8B0 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__prompt {
+    color: #6366F1 !important;
+    background: rgba(99, 102, 241, 0.08) !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__prompt span {
+    color: #6366F1 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__prompt svg {
+    color: #818CF8 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__mood-label,
+html.dark-mode .teen-journal-page .teen-journal-notebook__stickers-label {
+    color: #6B5E4E !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__entry-content {
+    color: #3D2B1F !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-sticker-btn {
+    background: #FFFEF5 !important;
+    border-color: #D4C8B0 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__save {
+    border-top-color: #D4C8B0 !important;
+}
+
+html.dark-mode .teen-journal-page .teen-journal-notebook__write {
+    background: #FFFEF5 !important;
+}
+
+html.dark-mode .teen-journal-page__content {
+    background: transparent;
+}
+
+/* Kid Journal Tabs - Dark Mode */
+html.dark-mode .kid-page__tabs {
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+html.dark-mode .kid-page__tab {
+    color: #94A3B8 !important;
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+html.dark-mode .kid-page__tab:hover {
+    background: #334155 !important;
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-page__tab--active {
+    background: var(--tab-gradient, linear-gradient(135deg, var(--tab-color, #7C3AED), color-mix(in srgb, var(--tab-color, #8B5CF6) 80%, black))) !important;
+    color: white !important;
+}
+
+/* Kid Page Content Area */
+html.dark-mode .kid-page__content {
+    background: transparent;
+}
+
+/* Edit Button in History Calendar Entries - Fix Readability */
+html.dark-mode .kid-journal-entry--preview .kid-journal-entry__actions .btn,
+html.dark-mode .kid-journal-entry .kid-journal-entry__actions .btn {
+    background: rgba(139, 92, 246, 0.2);
+    color: #A78BFA !important;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+html.dark-mode .kid-journal-entry--preview .kid-journal-entry__actions .btn:hover,
+html.dark-mode .kid-journal-entry .kid-journal-entry__actions .btn:hover {
+    background: rgba(139, 92, 246, 0.4);
+    color: #E9D5FF !important;
+    border-color: #8B5CF6;
+}
+
+/* Delete button styling */
+html.dark-mode .kid-journal-entry__actions .btn--danger,
+html.dark-mode .kid-journal-entry--preview .kid-journal-entry__actions .btn--danger {
+    background: rgba(239, 68, 68, 0.2) !important;
+    color: #FCA5A5 !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+}
+
+html.dark-mode .kid-journal-entry__actions .btn--danger:hover,
+html.dark-mode .kid-journal-entry--preview .kid-journal-entry__actions .btn--danger:hover {
+    background: rgba(239, 68, 68, 0.4) !important;
+    color: #FEE2E2 !important;
+    border-color: #EF4444 !important;
+}
+
+/* Kid Journal Edit Modal - Dark Mode with Paper Styling */
+html.dark-mode .kid-journal-modal {
+    background:
+        repeating-linear-gradient(
+            transparent,
+            transparent 31px,
+            rgba(139, 92, 246, 0.2) 31px,
+            rgba(139, 92, 246, 0.2) 32px
+        ),
+        linear-gradient(to right, rgba(236, 72, 153, 0.4) 0px, rgba(236, 72, 153, 0.4) 3px, transparent 3px);
+    background-color: #FFF8E7 !important;
+}
+
+html.dark-mode .kid-journal-modal::before {
+    background-color: rgba(236, 72, 153, 0.4);
+}
+
+html.dark-mode .kid-journal-modal .form-label {
+    color: #5B4636 !important;
+}
+
+/* Modal textarea - transparent to show paper lines */
+html.dark-mode .kid-journal-modal textarea {
+    background: transparent !important;
+    color: #2D1F14 !important;
+    border: none !important;
+    box-shadow: none !important;
+}
+
+html.dark-mode .kid-journal-modal textarea:focus {
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
+
+html.dark-mode .kid-journal-modal textarea::placeholder {
+    color: #9A8A7A !important;
+}
+
+/* Form inputs in modal (non-textarea) */
+html.dark-mode .kid-journal-modal .form-input:not(textarea) {
+    background: rgba(255, 255, 255, 0.9) !important;
+    color: #2D1F14 !important;
+    border-color: #D8C4B0 !important;
+}
+
+html.dark-mode .kid-journal-modal .form-input:not(textarea):focus {
+    background: #FFFFFF !important;
+    border-color: #8B5CF6 !important;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+}
+
+html.dark-mode .kid-journal-modal .form-input::placeholder {
+    color: #8B7A69 !important;
+}
+
+/* Mood picker in modal */
+html.dark-mode .kid-journal-mood-picker--modal .kid-journal-mood-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #D8C4B0;
+    color: #5B4636;
+}
+
+html.dark-mode .kid-journal-mood-picker--modal .kid-journal-mood-btn:hover {
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .kid-journal-mood-picker--modal .kid-journal-mood-btn.selected,
+html.dark-mode .kid-journal-mood-picker--modal .kid-journal-mood-btn--selected {
+    background: linear-gradient(135deg, #7C3AED 0%, #8B5CF6 100%);
+    border-color: #6D28D9;
+    color: white;
+}
+
+/* Stickers in modal */
+html.dark-mode .kid-journal-stickers-grid--modal .kid-journal-sticker-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #D8C4B0;
+}
+
+html.dark-mode .kid-journal-stickers-grid--modal .kid-journal-sticker-btn:hover {
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+}
+
+html.dark-mode .kid-journal-stickers-grid--modal .kid-journal-sticker-btn.selected {
+    background: linear-gradient(135deg, #EC4899 0%, #F472B6 100%);
+    border-color: #DB2777;
+}
+
+/* Modal form group separators */
+html.dark-mode .kid-journal-modal .form-group:last-child {
+    border-top-color: rgba(139, 92, 246, 0.3);
+}
+
+html.dark-mode .kid-journal-modal .form-group:last-child .form-label {
+    color: #6D28D9 !important;
+}
+
+/* Selected stickers display in modal */
+html.dark-mode .kid-journal-selected-stickers {
+    color: #5B4636;
+}
+
+/* Modal Header & Footer - Keep darker for contrast */
+html.dark-mode .modal__header {
+    background: #1E293B;
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .modal__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .modal__footer {
+    background: #1E293B;
+    border-top-color: #334155;
+}
+
+/* Emoji button in modal input area */
+html.dark-mode .kid-journal-modal__input-area .kid-journal-emoji-btn {
+    background: rgba(255, 255, 255, 0.9);
+    border-color: #D8C4B0;
+}
+
+html.dark-mode .kid-journal-modal__input-area .kid-journal-emoji-btn:hover {
+    background: #FFFFFF;
+    border-color: #8B5CF6;
+}
+
+/* Vision Board / Dreams Widget - Dark Mode */
+html.dark-mode .vision-board-widget--kid {
+    background: linear-gradient(135deg, #1E293B 0%, #134E4A 100%);
+}
+
+html.dark-mode .goal-card {
+    background: #334155;
+    border-color: #475569;
+}
+
+html.dark-mode .goal-card:hover {
+    background: #3F4F63;
+}
+
+html.dark-mode .goal-card__title {
+    color: #E2E8F0;
+}
+
+/* General Widget Footer Dark Mode */
+html.dark-mode .widget__footer {
+    background-color: #1E293B;
+    border-color: #334155;
+}
+
+/* General widget body in kid tab - dark mode */
+html.dark-mode .tab-content--kid .widget__body,
+html.dark-mode .tab-content--toddler .widget__body {
+    background: #1E293B;
+}
+
+/* Fix widget card borders and backgrounds */
+html.dark-mode .tab-content--kid .widget,
+html.dark-mode .tab-content--toddler .widget {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .tab-content--kid .widget__header,
+html.dark-mode .tab-content--toddler .widget__header {
+    border-color: #334155;
+}
+
+/* ==========================================================================
+   Focus Nav Tabs - Dark Mode
+   Adult inactive tabs need dark backgrounds with light text/icons
+   ========================================================================== */
+
+/* Base tab label in dark mode - ensure it's light on dark backgrounds */
+html.dark-mode .focus-nav__tab-label {
+    color: #E2E8F0;
+}
+
+html.dark-mode .focus-nav__tab-icon {
+    color: #CBD5E1;
+}
+
+/* Adult widget inactive tabs - Dark backgrounds with light icons */
+html.dark-mode .focus-nav__tab--task-list:not(.focus-nav__tab--active) {
+    background: #1E3A8A;  /* blue-900 */
+}
+html.dark-mode .focus-nav__tab--task-list:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #93C5FD;  /* blue-300 */
+}
+
+html.dark-mode .focus-nav__tab--meal-plan:not(.focus-nav__tab--active) {
+    background: #064E3B;  /* emerald-900 */
+}
+html.dark-mode .focus-nav__tab--meal-plan:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #6EE7B7;  /* emerald-300 */
+}
+
+html.dark-mode .focus-nav__tab--habits:not(.focus-nav__tab--active) {
+    background: #14532D;  /* green-900 - matches dark mode banner */
+}
+html.dark-mode .focus-nav__tab--habits:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #86EFAC;  /* green-300 */
+}
+
+html.dark-mode .focus-nav__tab--workout:not(.focus-nav__tab--active) {
+    background: #7C2D12;  /* orange-900 */
+}
+html.dark-mode .focus-nav__tab--workout:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDBA74;  /* orange-300 */
+}
+
+html.dark-mode .focus-nav__tab--gratitude:not(.focus-nav__tab--active) {
+    background: #78350F;  /* amber-900 - matches dark mode banner */
+}
+html.dark-mode .focus-nav__tab--gratitude:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FCD34D;  /* amber-300 */
+}
+
+html.dark-mode .focus-nav__tab--recipes:not(.focus-nav__tab--active) {
+    background: #831843;  /* rose-900 - matches hero theme */
+}
+html.dark-mode .focus-nav__tab--recipes:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #F9A8D4;  /* pink-300 */
+}
+
+/* Recipes Active Tab - Colorful gradient matching full page */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--recipes {
+    background: linear-gradient(135deg, #BE185D 0%, #7C3AED 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--recipes::after {
+    background: #BE185D !important;  /* Solid pink for arrow - matches gradient start */
+}
+
+html.dark-mode .focus-nav__tab--grocery:not(.focus-nav__tab--active) {
+    background: #14532D;  /* green-900 */
+}
+html.dark-mode .focus-nav__tab--grocery:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #86EFAC;  /* green-300 */
+}
+
+html.dark-mode .focus-nav__tab--routine:not(.focus-nav__tab--active) {
+    background: #0C4A6E;  /* sky-900 */
+}
+html.dark-mode .focus-nav__tab--routine:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #7DD3FC;  /* sky-300 */
+}
+
+html.dark-mode .focus-nav__tab--journal:not(.focus-nav__tab--active) {
+    background: #4C1D95;  /* violet-900 - matches dark mode banner */
+}
+html.dark-mode .focus-nav__tab--journal:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #C4B5FD;  /* violet-300 */
+}
+
+html.dark-mode .focus-nav__tab--vision-board:not(.focus-nav__tab--active) {
+    background: #134E4A;  /* teal-900 - matches dark mode banner */
+}
+html.dark-mode .focus-nav__tab--vision-board:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #5EEAD4;  /* teal-300 */
+}
+
+html.dark-mode .focus-nav__tab--circuit-timer:not(.focus-nav__tab--active) {
+    background: #78350F;  /* amber-900 */
+}
+html.dark-mode .focus-nav__tab--circuit-timer:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FCD34D;  /* amber-300 */
+}
+
+/* Teen/Kid widget inactive tabs - Darker backgrounds */
+html.dark-mode .focus-nav__tab--points:not(.focus-nav__tab--active) {
+    background: #78350F;  /* amber-900 */
+}
+html.dark-mode .focus-nav__tab--points:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FCD34D;  /* amber-300 */
+}
+
+html.dark-mode .focus-nav__tab--rewards:not(.focus-nav__tab--active) {
+    background: #1E3A8A;  /* blue-900 */
+}
+html.dark-mode .focus-nav__tab--rewards:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #93C5FD;  /* blue-300 */
+}
+
+html.dark-mode .focus-nav__tab--achievements:not(.focus-nav__tab--active) {
+    background: #4C1D95;  /* violet-900 */
+}
+html.dark-mode .focus-nav__tab--achievements:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #C4B5FD;  /* violet-300 */
+}
+
+html.dark-mode .focus-nav__tab--kid-tasks:not(.focus-nav__tab--active) {
+    background: #7C2D12;  /* orange-900 */
+}
+html.dark-mode .focus-nav__tab--kid-tasks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDBA74;  /* orange-300 */
+}
+
+html.dark-mode .focus-nav__tab--kid-journal:not(.focus-nav__tab--active) {
+    background: #312E81;  /* indigo-900 */
+}
+html.dark-mode .focus-nav__tab--kid-journal:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #A5B4FC;  /* indigo-300 */
+}
+
+html.dark-mode .focus-nav__tab--kid-workout:not(.focus-nav__tab--active) {
+    background: #14532D;  /* green-900 */
+}
+html.dark-mode .focus-nav__tab--kid-workout:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #86EFAC;  /* green-300 */
+}
+
+html.dark-mode .focus-nav__tab--chores:not(.focus-nav__tab--active) {
+    background: #064E3B;  /* emerald-900 */
+}
+html.dark-mode .focus-nav__tab--chores:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #6EE7B7;  /* emerald-300 */
+}
+
+html.dark-mode .focus-nav__tab--screen-time:not(.focus-nav__tab--active) {
+    background: #164E63;  /* cyan-900 */
+}
+html.dark-mode .focus-nav__tab--screen-time:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #67E8F9;  /* cyan-300 */
+}
+
+html.dark-mode .focus-nav__tab--memory-book:not(.focus-nav__tab--active) {
+    background: #831843;  /* pink-900 */
+}
+html.dark-mode .focus-nav__tab--memory-book:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #F9A8D4;  /* pink-300 */
+}
+
+/* Toddler widget inactive tabs - Dark backgrounds */
+html.dark-mode .focus-nav__tab--activities:not(.focus-nav__tab--active) {
+    background: #7C2D12;  /* orange-900 */
+}
+html.dark-mode .focus-nav__tab--activities:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDBA74;  /* orange-300 */
+}
+
+html.dark-mode .focus-nav__tab--daily-log:not(.focus-nav__tab--active) {
+    background: #312E81;  /* indigo-900 */
+}
+html.dark-mode .focus-nav__tab--daily-log:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #A5B4FC;  /* indigo-300 */
+}
+
+html.dark-mode .focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) {
+    background: #713F12;  /* yellow-900 */
+}
+html.dark-mode .focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDE047;  /* yellow-300 */
+}
+
+html.dark-mode .focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) {
+    background: #0C4A6E;  /* sky-900 */
+}
+html.dark-mode .focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #7DD3FC;  /* sky-300 */
+}
+
+/* ==========================================================================
+   Toddler Routine Widget - Dark Mode
+   ========================================================================== */
+
+/* Card styling */
+html.dark-mode .toddler-routine-card {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border-color: #475569;
+}
+
+html.dark-mode .toddler-routine-card:hover {
+    border-color: #64748B;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .toddler-routine-card--done {
+    border-color: #16A34A;
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%);
+}
+
+html.dark-mode .toddler-routine-card--dimmed {
+    opacity: 0.5;
+}
+
+/* Card image container */
+html.dark-mode .toddler-routine-card__image {
+    background: #475569;
+}
+
+/* Card label text */
+html.dark-mode .toddler-routine-card__label {
+    color: #F1F5F9;  /* slate-100 - high contrast for readability */
+}
+
+/* Progress text in header */
+html.dark-mode .toddler-routine-widget__progress {
+    color: #CBD5E1;  /* slate-300 */
+}
+
+/* Progress ring text */
+html.dark-mode .toddler-routine-progress-ring__text {
+    color: #E2E8F0;  /* slate-200 */
+}
+
+/* Progress bar */
+html.dark-mode .toddler-routine-progress-bar {
+    background: #475569;  /* slate-600 */
+}
+
+html.dark-mode .toddler-routine-progress-bar__fill {
+    background: linear-gradient(90deg, #22C55E 0%, #4ADE80 100%);
+}
+
+/* Progress text below bar */
+html.dark-mode .toddler-routine-progress-text {
+    color: #CBD5E1;  /* slate-300 */
+}
+
+/* Time filter badge */
+html.dark-mode .toddler-routine-time-badge {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+    border-color: #F59E0B;
+    color: #FDE68A;  /* amber-200 */
+}
+
+/* Time filter dropdown */
+html.dark-mode .toddler-routine-filter-select {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%);
+    border-color: #F59E0B;
+    color: #FDE68A;  /* amber-200 */
+}
+
+html.dark-mode .toddler-routine-filter-select:hover {
+    background: linear-gradient(135deg, #92400E 0%, #B45309 100%);
+}
+
+html.dark-mode .toddler-routine-filter-select:focus {
+    box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
+}
+
+/* Full page header */
+html.dark-mode .toddler-routine-full-header {
+    background: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .toddler-routine-full-header--complete {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%);
+    border-color: #22C55E;
+}
+
+html.dark-mode .toddler-routine-full-header__info {
+    color: #E2E8F0;
+}
+
+/* Complete badge */
+html.dark-mode .toddler-routine-complete-badge {
+    background: linear-gradient(135deg, #166534 0%, #22C55E 100%);
+    color: #FFFFFF;
+}
+
+/* Category section headers */
+html.dark-mode .toddler-routine-category__header {
+    color: #E2E8F0;
+}
+
+html.dark-mode .toddler-routine-category__icon {
+    color: #7DD3FC;  /* sky-300 */
+}
+
+/* Grid container */
+html.dark-mode .toddler-routine-grid,
+html.dark-mode .toddler-routine-full-grid {
+    background: transparent;
+}
+
+/* Checkmark overlay - keep visible in dark mode */
+html.dark-mode .toddler-routine-card__check {
+    background: rgba(22, 163, 74, 0.95);  /* green-600 with high opacity */
+}
+
+html.dark-mode .focus-nav__tab--milestones:not(.focus-nav__tab--active) {
+    background: #881337;  /* rose-900 */
+}
+html.dark-mode .focus-nav__tab--milestones:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDA4AF;  /* rose-300 */
+}
+
+html.dark-mode .focus-nav__tab--caregiver-handoff:not(.focus-nav__tab--active) {
+    background: #134E4A;  /* teal-900 */
+}
+html.dark-mode .focus-nav__tab--caregiver-handoff:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #5EEAD4;  /* teal-300 */
+}
+
+html.dark-mode .focus-nav__tab--growth-chart:not(.focus-nav__tab--active) {
+    background: #1E1B4B;  /* indigo-950 */
+}
+html.dark-mode .focus-nav__tab--growth-chart:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #C7D2FE;  /* indigo-200 */
+}
+
+/* ==========================================================================
+   Toddler Widget Headers - Dark Mode (Grid View)
+   Each widget has a unique color theme
+   ========================================================================== */
+
+/* 1. My Routine - Sky Blue theme */
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-routine"] .widget-card__header {
+    background: linear-gradient(135deg, #0C4A6E 0%, #0369A1 100%) !important;
+    border-bottom-color: #0EA5E9 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-routine"] .widget-card__title {
+    color: #BAE6FD !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-routine"] .widget-card__title svg {
+    color: #7DD3FC !important;
+}
+
+/* 2. Activities - Emerald Green theme */
+html.dark-mode .widget-grid .widget-card[data-widget="activities"] .widget-card__header {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    border-bottom-color: #10B981 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="activities"] .widget-card__title {
+    color: #A7F3D0 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="activities"] .widget-card__title svg {
+    color: #6EE7B7 !important;
+}
+
+/* 3. Daily Log - Violet/Purple theme */
+html.dark-mode .widget-grid .widget-card[data-widget="daily-log"] .widget-card__header {
+    background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%) !important;
+    border-bottom-color: #8B5CF6 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="daily-log"] .widget-card__title {
+    color: #DDD6FE !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="daily-log"] .widget-card__title svg {
+    color: #C4B5FD !important;
+}
+
+/* 4. My To-Dos - Amber/Orange theme */
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-tasks"] .widget-card__header {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%) !important;
+    border-bottom-color: #F59E0B !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-tasks"] .widget-card__title {
+    color: #FDE68A !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="toddler-tasks"] .widget-card__title svg {
+    color: #FCD34D !important;
+}
+
+/* 5. Milestones - Rose/Pink theme */
+html.dark-mode .widget-grid .widget-card[data-widget="milestones"] .widget-card__header {
+    background: linear-gradient(135deg, #881337 0%, #BE123C 100%) !important;
+    border-bottom-color: #F43F5E !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="milestones"] .widget-card__title {
+    color: #FECDD3 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="milestones"] .widget-card__title svg {
+    color: #FDA4AF !important;
+}
+
+/* 6. Caregiver Handoff - Teal/Cyan theme */
+html.dark-mode .widget-grid .widget-card[data-widget="caregiver-handoff"] .widget-card__header {
+    background: linear-gradient(135deg, #134E4A 0%, #0F766E 100%) !important;
+    border-bottom-color: #14B8A6 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="caregiver-handoff"] .widget-card__title {
+    color: #99F6E4 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="caregiver-handoff"] .widget-card__title svg {
+    color: #5EEAD4 !important;
+}
+
+/* 7. Growth Chart - Indigo/Blue theme */
+html.dark-mode .widget-grid .widget-card[data-widget="growth-chart"] .widget-card__header {
+    background: linear-gradient(135deg, #312E81 0%, #4338CA 100%) !important;
+    border-bottom-color: #6366F1 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="growth-chart"] .widget-card__title {
+    color: #C7D2FE !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="growth-chart"] .widget-card__title svg {
+    color: #A5B4FC !important;
+}
+
+/* 8. Bookmarks - Indigo theme */
+html.dark-mode .widget-grid .widget-card[data-widget="bookmarks"] .widget-card__header {
+    background: linear-gradient(135deg, #312E81 0%, #4338CA 100%) !important;
+    border-bottom-color: #6366F1 !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="bookmarks"] .widget-card__title {
+    color: #C7D2FE !important;
+}
+html.dark-mode .widget-grid .widget-card[data-widget="bookmarks"] .widget-card__title svg {
+    color: #A5B4FC !important;
+}
+
+/* ==========================================================================
+   Caregiver Handoff Widget Body - Dark Mode
+   ========================================================================== */
+
+html.dark-mode .handoff-widget {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+    border-color: #14B8A6;
+}
+
+html.dark-mode .handoff-widget--important {
+    border-color: #F87171;
+    background: linear-gradient(135deg, #1E293B 0%, #2D1B1B 100%);
+}
+
+html.dark-mode .handoff-widget__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .handoff-summary__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .handoff-mood-btn {
+    background: #475569;
+    border-color: transparent;
+}
+
+html.dark-mode .handoff-mood-btn--active {
+    border-color: #F59E0B;
+    background: #475569;
+}
+
+html.dark-mode .handoff-counter {
+    background: #475569;
+}
+
+html.dark-mode .handoff-counter__btn {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .handoff-counter__btn:hover {
+    background: var(--primary);
+    color: white;
+}
+
+html.dark-mode .handoff-counter__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .handoff-input,
+html.dark-mode .handoff-textarea {
+    background: #475569;
+    border-color: #64748B;
+    color: #F1F5F9;
+}
+
+html.dark-mode .handoff-input::placeholder,
+html.dark-mode .handoff-textarea::placeholder {
+    color: #94A3B8;
+}
+
+html.dark-mode .handoff-widget__footer {
+    border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .handoff-widget__updated {
+    color: #94A3B8;
+}
+
+/* ==========================================================================
+   Growth Chart Widget Body - Dark Mode
+   ========================================================================== */
+
+html.dark-mode .growth-chart-widget {
+    background: linear-gradient(135deg, #1E1B4B 0%, #312E81 100%);
+    border-color: #06B6D4;
+}
+
+html.dark-mode .growth-chart-stat {
+    background: #334155;
+}
+
+html.dark-mode .growth-chart-stat__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-chart-stat__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .growth-chart-trend--up {
+    background: rgba(22, 163, 74, 0.2);
+    color: #4ADE80;
+}
+
+html.dark-mode .growth-chart-trend--down {
+    background: rgba(220, 38, 38, 0.2);
+    color: #F87171;
+}
+
+html.dark-mode .growth-chart-trend--same {
+    background: #475569;
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-chart-widget__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-chart-widget__empty {
+    color: #94A3B8;
+}
+
+/* ==========================================================================
+   Toddler Tasks (My To-Do) Widget Body - Dark Mode
+   ========================================================================== */
+
+html.dark-mode .toddler-tasks-widget {
+    background: linear-gradient(135deg, #1E293B 0%, #334155 100%);
+}
+
+html.dark-mode .toddler-task-item {
+    background: #475569;
+    border-color: #64748B;
+}
+
+html.dark-mode .toddler-task-item:hover {
+    border-color: #F97316;
+}
+
+html.dark-mode .toddler-task-item--completed {
+    background: rgba(22, 163, 74, 0.15);
+    border-color: #22C55E;
+}
+
+html.dark-mode .toddler-task-item__title {
+    color: #F1F5F9;
+}
+
+html.dark-mode .toddler-task-item--completed .toddler-task-item__title {
+    color: #64748B;
+}
+
+html.dark-mode .toddler-task-item__checkmark {
+    background: #334155;
+    border-color: #64748B;
+}
+
+html.dark-mode .toddler-tasks-widget__input {
+    background: #475569;
+    border-color: #64748B;
+    color: #F1F5F9;
+}
+
+html.dark-mode .toddler-tasks-widget__input::placeholder {
+    color: #94A3B8;
+}
+
+html.dark-mode .toddler-tasks-widget__more {
+    background: #334155;
+    border-color: #64748B;
+    color: #FB923C;
+}
+
+html.dark-mode .toddler-tasks-widget__more:hover {
+    background: #475569;
+    border-color: #F97316;
+    color: #F97316;
+}
+
+html.dark-mode .toddler-tasks-widget__footer {
+    border-top-color: #475569;
+}
+
+html.dark-mode .toddler-tasks-widget__empty {
+    color: #94A3B8;
+}
+
+/* ==========================================================================
+   Milestones Widget Body - Dark Mode
+   ========================================================================== */
+
+html.dark-mode .milestones-widget__count {
+    color: #CBD5E1;
+}
+
+html.dark-mode .milestones-mini-cat__label {
+    color: #CBD5E1;
+}
+
+html.dark-mode .milestones-mini-cat__count {
+    color: #94A3B8;
+}
+
+html.dark-mode .milestones-widget__coming-up {
+    background: rgba(236, 72, 153, 0.15);
+}
+
+html.dark-mode .milestones-widget__coming-up-label {
+    color: #F9A8D4;
+}
+
+html.dark-mode .milestones-widget__coming-up-name {
+    color: #F1F5F9;
+}
+
+html.dark-mode .milestones-age-badge {
+    background: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .milestone-recent {
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .milestone-recent__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .milestone-recent__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .milestones-widget__footer {
+    border-top-color: #334155;
+}
+
+/* ==========================================================================
+   Toddler Focus Nav Tabs - Dark Mode (Inactive States)
+   Updated to match widget header themes
+   ========================================================================== */
+
+/* Override existing toddler-routine inactive */
+html.dark-mode .focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) {
+    background: #082F49 !important;  /* sky-950 */
+}
+html.dark-mode .focus-nav__tab--toddler-routine:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #7DD3FC !important;  /* sky-300 */
+}
+html.dark-mode .focus-nav__tab--toddler-routine:not(.focus-nav__tab--active):hover {
+    background: #0C4A6E !important;  /* sky-900 */
+}
+
+/* Override existing activities inactive */
+html.dark-mode .focus-nav__tab--activities:not(.focus-nav__tab--active) {
+    background: #022C22 !important;  /* emerald-950 */
+}
+html.dark-mode .focus-nav__tab--activities:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #6EE7B7 !important;  /* emerald-300 */
+}
+html.dark-mode .focus-nav__tab--activities:not(.focus-nav__tab--active):hover {
+    background: #064E3B !important;  /* emerald-900 */
+}
+
+/* Override existing daily-log inactive */
+html.dark-mode .focus-nav__tab--daily-log:not(.focus-nav__tab--active) {
+    background: #2E1065 !important;  /* violet-950 */
+}
+html.dark-mode .focus-nav__tab--daily-log:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #C4B5FD !important;  /* violet-300 */
+}
+html.dark-mode .focus-nav__tab--daily-log:not(.focus-nav__tab--active):hover {
+    background: #4C1D95 !important;  /* violet-900 */
+}
+
+/* Override existing toddler-tasks inactive */
+html.dark-mode .focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) {
+    background: #451A03 !important;  /* amber-950 */
+}
+html.dark-mode .focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FCD34D !important;  /* amber-300 */
+}
+html.dark-mode .focus-nav__tab--toddler-tasks:not(.focus-nav__tab--active):hover {
+    background: #78350F !important;  /* amber-900 */
+}
+
+/* Override existing milestones inactive */
+html.dark-mode .focus-nav__tab--milestones:not(.focus-nav__tab--active) {
+    background: #4C0519 !important;  /* rose-950 */
+}
+html.dark-mode .focus-nav__tab--milestones:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #FDA4AF !important;  /* rose-300 */
+}
+html.dark-mode .focus-nav__tab--milestones:not(.focus-nav__tab--active):hover {
+    background: #881337 !important;  /* rose-900 */
+}
+
+/* Override existing caregiver-handoff inactive */
+html.dark-mode .focus-nav__tab--caregiver-handoff:not(.focus-nav__tab--active) {
+    background: #042F2E !important;  /* teal-950 */
+}
+html.dark-mode .focus-nav__tab--caregiver-handoff:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #5EEAD4 !important;  /* teal-300 */
+}
+html.dark-mode .focus-nav__tab--caregiver-handoff:not(.focus-nav__tab--active):hover {
+    background: #134E4A !important;  /* teal-900 */
+}
+
+/* Override growth-chart inactive */
+html.dark-mode .focus-nav__tab--growth-chart:not(.focus-nav__tab--active) {
+    background: #1E1B4B !important;  /* indigo-950 */
+}
+html.dark-mode .focus-nav__tab--growth-chart:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #A5B4FC !important;  /* indigo-300 */
+}
+html.dark-mode .focus-nav__tab--growth-chart:not(.focus-nav__tab--active):hover {
+    background: #312E81 !important;  /* indigo-900 */
+}
+
+/* ==========================================================================
+   Toddler Focus Nav Tabs - Dark Mode (Active States)
+   ========================================================================== */
+
+/* 1. My Routine - Sky Blue active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--toddler-routine {
+    background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--toddler-routine::after {
+    background: #0EA5E9 !important;
+}
+
+/* 2. Activities - Emerald active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--activities {
+    background: linear-gradient(135deg, #047857 0%, #10B981 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--activities::after {
+    background: #10B981 !important;
+}
+
+/* 3. Daily Log - Violet active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--daily-log {
+    background: linear-gradient(135deg, #6D28D9 0%, #8B5CF6 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--daily-log::after {
+    background: #8B5CF6 !important;
+}
+
+/* 4. My To-Dos - Amber active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--toddler-tasks {
+    background: linear-gradient(135deg, #92400E 0%, #F59E0B 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--toddler-tasks::after {
+    background: #F59E0B !important;
+}
+
+/* 5. Milestones - Rose active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--milestones {
+    background: linear-gradient(135deg, #BE123C 0%, #F43F5E 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--milestones::after {
+    background: #F43F5E !important;
+}
+
+/* 6. Caregiver Handoff - Teal active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--caregiver-handoff {
+    background: linear-gradient(135deg, #0F766E 0%, #14B8A6 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--caregiver-handoff::after {
+    background: #14B8A6 !important;
+}
+
+/* 7. Growth Chart - Indigo active */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--growth-chart {
+    background: linear-gradient(135deg, #4338CA 0%, #6366F1 100%) !important;
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--growth-chart::after {
+    background: #6366F1 !important;
+}
+
+/* ==========================================================================
+   Dark Mode - Active Focus Nav Tab Overrides
+   Match the full page banner colors for each widget
+   ========================================================================== */
+
+/* Habits - Green theme (matches dark mode banner) */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--habits {
+    background: linear-gradient(135deg, #14532D 0%, #22C55E 100%);
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--habits::after {
+    background: #22C55E;
+}
+
+/* Journal - Purple theme (matches dark mode banner) */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--journal {
+    background: linear-gradient(135deg, #4C1D95 0%, #7C3AED 100%);
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--journal::after {
+    background: #7C3AED;
+}
+
+/* Gratitude - Amber theme (matches dark mode banner) */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--gratitude {
+    background: linear-gradient(135deg, #78350F 0%, #F59E0B 100%);
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--gratitude::after {
+    background: #F59E0B;
+}
+
+/* Vision Board - Teal theme (matches dark mode banner) */
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--vision-board {
+    background: linear-gradient(135deg, #134E4A 0%, #14B8A6 100%);
+}
+html.dark-mode .focus-nav__tab--active.focus-nav__tab--vision-board::after {
+    background: #14B8A6;
+}
+
+/* ==========================================================================
+   Layout Toggle Buttons - Dark Mode
+   Focus/Grid toggle and similar navigation buttons
+   ========================================================================== */
+
+html.dark-mode .layout-toggle-group {
+    background: #334155;  /* slate-700 */
+}
+
+html.dark-mode .layout-toggle-btn {
+    color: #CBD5E1;  /* slate-300 - light text for dark background */
+}
+
+html.dark-mode .layout-toggle-btn:hover {
+    color: #F1F5F9;  /* slate-100 */
+    background: #475569;  /* slate-600 */
+}
+
+html.dark-mode .layout-toggle-btn--active {
+    background: #6366F1;  /* indigo-500 - primary color */
+    color: #FFFFFF;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .layout-toggle-btn--active:hover {
+    background: #818CF8;  /* indigo-400 */
+    color: #FFFFFF;
+}
+
+/* View toggle buttons in widgets (used in full-page views) */
+html.dark-mode .view-toggle-btn {
+    color: #CBD5E1;  /* slate-300 */
+}
+
+html.dark-mode .view-toggle-btn:hover {
+    color: #F1F5F9;  /* slate-100 */
+    background: #475569;  /* slate-600 */
+}
+
+html.dark-mode .view-toggle-btn--active {
+    background: #6366F1;  /* indigo-500 */
+    color: #FFFFFF;
+}
+
+/* Full-page tab navigation (horizontal tabs in full-page views) */
+html.dark-mode .fullpage-tabs {
+    background: #1E293B;  /* slate-800 */
+    border-color: #334155;  /* slate-700 */
+}
+
+html.dark-mode .fullpage-tab {
+    color: #94A3B8;  /* slate-400 */
+}
+
+html.dark-mode .fullpage-tab:hover {
+    color: #E2E8F0;  /* slate-200 */
+    background: #334155;  /* slate-700 */
+}
+
+html.dark-mode .fullpage-tab--active {
+    color: #FFFFFF;
+    background: #6366F1;  /* indigo-500 */
+}
+
+/* ==========================================================================
+   Dark Mode - Kid Vision Board Cards
+   ========================================================================== */
+
+html.dark-mode .vision-board-page--kid .vision-board-card {
+    background: #1E293B;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .vision-board-page--kid .vision-board-card:hover {
+    box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+}
+
+html.dark-mode .vision-board-page--kid .vision-board-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .vision-board-page--kid .vision-board-card__progress-bar {
+    background: linear-gradient(90deg, #374151 0%, #4B5563 100%);
+}
+
+/* ==========================================================================
+   TODDLER WIDGETS - FULL PAGE BANNER - DARK MODE
+   Rule: Banner = Grid Widget Header = Active Nav Tab
+   Override inline styles applied by JavaScript
+   ========================================================================== */
+
+/* 1. My Routine - Sky Blue */
+html.dark-mode .kid-page--routine .kid-page__hero {
+    background: linear-gradient(135deg, #0C4A6E 0%, #0369A1 100%) !important;
+    box-shadow: 0 4px 20px rgba(12, 74, 110, 0.5) !important;
+}
+
+/* 2. Activities - Emerald Green */
+html.dark-mode .kid-page--activities .kid-page__hero {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    box-shadow: 0 4px 20px rgba(6, 78, 59, 0.5) !important;
+}
+
+/* 3. Daily Log - Violet */
+html.dark-mode .kid-page--daily-log .kid-page__hero {
+    background: linear-gradient(135deg, #4C1D95 0%, #6D28D9 100%) !important;
+    box-shadow: 0 4px 20px rgba(76, 29, 149, 0.5) !important;
+}
+
+/* 4. My To-Dos (toddler-tasks) - Amber */
+html.dark-mode .kid-page--tasks .kid-page__hero {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%) !important;
+    box-shadow: 0 4px 20px rgba(120, 53, 15, 0.5) !important;
+}
+
+/* 5. Milestones - Rose */
+html.dark-mode .kid-page--milestones .kid-page__hero {
+    background: linear-gradient(135deg, #881337 0%, #BE123C 100%) !important;
+    box-shadow: 0 4px 20px rgba(136, 19, 55, 0.5) !important;
+}
+
+/* 6. Caregiver Handoff - Teal */
+html.dark-mode .kid-page--handoff .kid-page__hero {
+    background: linear-gradient(135deg, #134E4A 0%, #0F766E 100%) !important;
+    box-shadow: 0 4px 20px rgba(19, 78, 74, 0.5) !important;
+}
+
+/* 7. Growth Chart - Indigo */
+html.dark-mode .kid-page--growth .kid-page__hero {
+    background: linear-gradient(135deg, #312E81 0%, #4338CA 100%) !important;
+    box-shadow: 0 4px 20px rgba(49, 46, 129, 0.5) !important;
+}
+
+/* Override --tab-color in dark mode to match dark hero colors */
+html.dark-mode .kid-page--growth .kid-page__tabs {
+    --tab-color: #4338CA !important;
+}
+
+html.dark-mode .kid-page--handoff .kid-page__tabs {
+    --tab-color: #0F766E !important;
+}
+
+html.dark-mode .kid-page--activities .kid-page__tabs {
+    --tab-color: #047857 !important;
+}
+
+html.dark-mode .kid-page--milestones .kid-page__tabs {
+    --tab-color: #BE123C !important;
+}
+
+/* ==========================================================================
+   MY ROUTINE - FULL PAGE DARK MODE STYLES
+   Sky Blue theme to match banner color
+   ========================================================================== */
+
+/* Section tabs - Sky Blue theme */
+/* Base tab style (inactive) */
+html.dark-mode .kid-page--routine .kid-page__tab {
+    color: #94A3B8 !important;
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+/* Hover state for inactive tabs */
+html.dark-mode .kid-page--routine .kid-page__tab:hover:not(.kid-page__tab--active) {
+    background: #0C4A6E !important;
+    color: #BAE6FD !important;
+    border-color: #0EA5E9 !important;
+}
+
+/* Active tab - Sky Blue (must come last to override) */
+html.dark-mode .kid-page--routine .kid-page__tab.kid-page__tab--active {
+    background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%) !important;
+    color: white !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4) !important;
+}
+
+/* Category section headers (Morning, Afternoon, etc.) */
+html.dark-mode .kid-page--routine .routine-category__header {
+    background: linear-gradient(135deg, #0C4A6E 0%, #075985 100%) !important;
+    border-bottom: 1px solid #0EA5E9;
+}
+
+html.dark-mode .kid-page--routine .routine-category__title {
+    color: #E0F2FE !important;
+}
+
+html.dark-mode .kid-page--routine .routine-category__emoji {
+    font-size: 1.1em;
+}
+
+html.dark-mode .kid-page--routine .routine-category__count {
+    color: #7DD3FC !important;
+    background: rgba(14, 165, 233, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+/* Completed category header */
+html.dark-mode .kid-page--routine .routine-category--complete .routine-category__header {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    border-bottom-color: #22C55E;
+}
+
+html.dark-mode .kid-page--routine .routine-category--complete .routine-category__count {
+    color: #86EFAC !important;
+    background: rgba(34, 197, 94, 0.2);
+}
+
+/* Category card container */
+html.dark-mode .kid-page--routine .routine-category__grid {
+    background: #1E293B;
+}
+
+/* Routine cards in full page */
+html.dark-mode .kid-page--routine .toddler-routine-card {
+    background: #334155;
+    border: 1px solid #475569;
+}
+
+html.dark-mode .kid-page--routine .toddler-routine-card:hover {
+    border-color: #0EA5E9;
+    box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
+}
+
+html.dark-mode .kid-page--routine .toddler-routine-card__label {
+    color: #E2E8F0 !important;
+}
+
+/* Completed routine cards */
+html.dark-mode .kid-page--routine .toddler-routine-card--done {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%);
+    border-color: #22C55E;
+}
+
+html.dark-mode .kid-page--routine .toddler-routine-card--done .toddler-routine-card__label {
+    color: #DCFCE7 !important;
+}
+
+/* Progress section (Let's begin! area) */
+html.dark-mode .kid-page--routine .routine-progress-section {
+    background: linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%);
+    border: 2px solid #F59E0B;
+}
+
+html.dark-mode .kid-page--routine .routine-progress-message__title {
+    color: #78350F !important;
+}
+
+html.dark-mode .kid-page--routine .routine-progress-message__subtitle {
+    color: #92400E !important;
+}
+
+/* Progress gauge */
+html.dark-mode .kid-page--routine .routine-progress-gauge__value {
+    color: #0369A1 !important;
+}
+
+/* Routine category section wrapper */
+html.dark-mode .kid-page--routine .routine-category {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* ==========================================================================
+   MY ROUTINE - HISTORY TAB - DARK MODE
+   Sky Blue theme for calendar and activity history
+   ========================================================================== */
+
+/* History tab container */
+html.dark-mode .kid-page--routine .routine-history-tab {
+    background: transparent;
+}
+
+/* Calendar container */
+html.dark-mode .kid-page--routine .history-calendar {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+/* Calendar header */
+html.dark-mode .kid-page--routine .history-calendar__header {
+    background: linear-gradient(135deg, #0C4A6E 0%, #075985 100%) !important;
+    border-bottom: 1px solid #0EA5E9;
+    padding: 16px;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__title {
+    color: #E0F2FE !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__nav {
+    color: #BAE6FD !important;
+    background: rgba(14, 165, 233, 0.2);
+    border: 1px solid rgba(14, 165, 233, 0.3);
+    border-radius: 8px;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__nav:hover {
+    background: rgba(14, 165, 233, 0.4) !important;
+    color: white !important;
+}
+
+/* Calendar weekday headers */
+html.dark-mode .kid-page--routine .history-calendar__weekdays {
+    background: #0F172A;
+    border-bottom: 1px solid #334155;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__weekday {
+    color: #7DD3FC !important;
+    font-weight: 600;
+}
+
+/* Calendar grid */
+html.dark-mode .kid-page--routine .history-calendar__grid {
+    background: #1E293B;
+    padding: 8px;
+}
+
+/* Calendar day cells */
+html.dark-mode .kid-page--routine .history-calendar__day {
+    color: #CBD5E1 !important;
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__day:hover {
+    background: #475569 !important;
+    border-color: #0EA5E9;
+}
+
+/* Today indicator - Sky Blue */
+html.dark-mode .kid-page--routine .history-calendar__day--today {
+    background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%) !important;
+    color: white !important;
+    border-color: #38BDF8 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+}
+
+/* Days with activity */
+html.dark-mode .kid-page--routine .history-calendar__day--has-activity {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    color: #DCFCE7 !important;
+    border-color: #22C55E !important;
+}
+
+html.dark-mode .kid-page--routine .history-calendar__day--has-activity.history-calendar__day--today {
+    background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%) !important;
+    color: white !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4), inset 0 0 0 2px #22C55E;
+}
+
+/* Days outside current month */
+html.dark-mode .kid-page--routine .history-calendar__day--outside {
+    color: #64748B !important;
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+/* Selected day */
+html.dark-mode .kid-page--routine .history-calendar__day--selected {
+    border-color: #0EA5E9 !important;
+    box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.4);
+}
+
+/* Activity details section */
+html.dark-mode .kid-page--routine .history-details {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    margin-top: 16px;
+}
+
+html.dark-mode .kid-page--routine .history-details__header {
+    background: linear-gradient(135deg, #0C4A6E 0%, #075985 100%);
+    color: #E0F2FE;
+    padding: 12px 16px;
+    border-radius: 16px 16px 0 0;
+}
+
+html.dark-mode .kid-page--routine .history-details__item {
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    color: #E2E8F0;
+}
+
+html.dark-mode .kid-page--routine .history-details__item--completed {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%);
+    border-color: #22C55E;
+}
+
+/* History day cards (when clicking a date) */
+html.dark-mode .kid-page--routine .routine-history-day {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day--perfect {
+    border-color: #F59E0B !important;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day__header {
+    background: linear-gradient(135deg, #0C4A6E 0%, #075985 100%) !important;
+    padding: 12px 16px;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day--perfect .routine-history-day__header {
+    background: linear-gradient(135deg, #78350F 0%, #92400E 100%) !important;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day__date {
+    color: #E0F2FE !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day__count {
+    color: #7DD3FC !important;
+    background: rgba(14, 165, 233, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+html.dark-mode .kid-page--routine .routine-history-day--perfect .routine-history-day__count {
+    color: #FDE68A !important;
+    background: rgba(245, 158, 11, 0.2);
+}
+
+html.dark-mode .kid-page--routine .routine-history-day__list {
+    background: #1E293B;
+    padding: 12px;
+}
+
+/* Individual routine history items */
+html.dark-mode .kid-page--routine .routine-history-item {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 8px 12px;
+}
+
+html.dark-mode .kid-page--routine .routine-history-item__image {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--routine .routine-history-item__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-page--routine .routine-history-item__check {
+    color: #22C55E !important;
+}
+
+html.dark-mode .kid-page--routine .routine-history-item--empty {
+    color: #64748B !important;
+    background: transparent !important;
+    border: 1px dashed #475569;
+}
+
+/* Empty history message */
+html.dark-mode .kid-page--routine .routine-history-empty {
+    color: #94A3B8 !important;
+    background: #1E293B;
+    border: 1px dashed #475569;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   MY ROUTINE - STATS TAB - DARK MODE
+   Sky Blue theme for statistics and charts
+   ========================================================================== */
+
+/* Stats tab container */
+html.dark-mode .kid-page--routine .routine-stats-tab {
+    background: transparent;
+}
+
+/* Stats overview cards */
+html.dark-mode .kid-page--routine .routine-stats-overview {
+    display: grid;
+    gap: 12px;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-card {
+    background: linear-gradient(135deg, #0C4A6E 0%, #075985 100%) !important;
+    border: 1px solid #0EA5E9 !important;
+    border-radius: 16px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(12, 74, 110, 0.3);
+}
+
+html.dark-mode .kid-page--routine .routine-stats-card__value {
+    color: #BAE6FD !important;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-card__label {
+    color: #7DD3FC !important;
+    font-size: 0.875rem;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-card__icon {
+    color: #38BDF8 !important;
+}
+
+/* Stats calendar / Last 7 Days */
+html.dark-mode .kid-page--routine .routine-stats-calendar {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-calendar__title {
+    color: #E0F2FE !important;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+/* Stats days grid */
+html.dark-mode .kid-page--routine .routine-stats-days {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px 8px;
+    text-align: center;
+    flex: 1;
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__label {
+    color: #94A3B8 !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__value {
+    color: #E2E8F0 !important;
+    font-weight: 700;
+    font-size: 1.1rem;
+}
+
+/* Today indicator in stats */
+html.dark-mode .kid-page--routine .routine-stats-day--today {
+    background: linear-gradient(135deg, #0369A1 0%, #0EA5E9 100%) !important;
+    border-color: #38BDF8 !important;
+    box-shadow: 0 2px 8px rgba(14, 165, 233, 0.4);
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day--today .routine-stats-day__label,
+html.dark-mode .kid-page--routine .routine-stats-day--today .routine-stats-day__value {
+    color: white !important;
+}
+
+/* Days with high completion */
+html.dark-mode .kid-page--routine .routine-stats-day--complete {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    border-color: #22C55E !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day--complete .routine-stats-day__label,
+html.dark-mode .kid-page--routine .routine-stats-day--complete .routine-stats-day__value {
+    color: #DCFCE7 !important;
+}
+
+/* Weekly summary section */
+html.dark-mode .kid-page--routine .routine-weekly-summary {
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+html.dark-mode .kid-page--routine .routine-weekly-summary__title {
+    color: #E0F2FE !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--routine .routine-weekly-summary__stat {
+    color: #CBD5E1;
+}
+
+html.dark-mode .kid-page--routine .routine-weekly-summary__value {
+    color: #38BDF8 !important;
+    font-weight: 700;
+}
+
+/* Progress bars in stats */
+html.dark-mode .kid-page--routine .routine-stats-progress {
+    background: #334155;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-progress__bar {
+    background: linear-gradient(90deg, #0369A1 0%, #0EA5E9 100%);
+}
+
+/* Streak display */
+html.dark-mode .kid-page--routine .routine-streak {
+    background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+    border-radius: 16px;
+    padding: 16px;
+    text-align: center;
+}
+
+html.dark-mode .kid-page--routine .routine-streak__value {
+    color: white !important;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+html.dark-mode .kid-page--routine .routine-streak__label {
+    color: #FEF3C7 !important;
+}
+
+/* Section titles in stats */
+html.dark-mode .kid-page--routine .routine-stats-section-title {
+    color: #E0F2FE !important;
+}
+
+/* Stats day name and circle */
+html.dark-mode .kid-page--routine .routine-stats-day__name {
+    color: #94A3B8 !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__circle {
+    background: #475569 !important;
+    color: #E2E8F0 !important;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+/* Stats day circle levels */
+html.dark-mode .kid-page--routine .routine-stats-day__circle--none {
+    background: #334155 !important;
+    color: #64748B !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__circle--partial {
+    background: rgba(245, 158, 11, 0.2) !important;
+    color: #FCD34D !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__circle--good {
+    background: rgba(14, 165, 233, 0.2) !important;
+    color: #7DD3FC !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day__circle--perfect {
+    background: rgba(34, 197, 94, 0.2) !important;
+    color: #86EFAC !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day--today .routine-stats-day__name {
+    color: #BAE6FD !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-day--today .routine-stats-day__circle {
+    background: rgba(14, 165, 233, 0.3) !important;
+    color: white !important;
+}
+
+/* "Sometimes Missed" / Skipped section */
+html.dark-mode .kid-page--routine .routine-stats-skipped {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-skipped-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-skipped-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px;
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-skipped-item span {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-page--routine .routine-stats-skipped-rate {
+    color: #F87171 !important;
+    font-weight: 600;
+    background: rgba(248, 113, 113, 0.15);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+/* Empty skipped state */
+html.dark-mode .kid-page--routine .routine-stats-skipped-empty {
+    color: #64748B !important;
+    text-align: center;
+    padding: 16px;
+}
+
+/* ==========================================================================
+   ACTIVITIES WIDGET - FULL PAGE DARK MODE STYLES
+   Emerald Green theme to match banner color
+   ========================================================================== */
+
+/* Section tabs - Emerald Green theme */
+/* Base tab style (inactive) */
+html.dark-mode .kid-page--activities .kid-page__tab {
+    color: #94A3B8 !important;
+    background: #1E293B !important;
+    border-color: #334155 !important;
+}
+
+/* Hover state for inactive tabs */
+html.dark-mode .kid-page--activities .kid-page__tab:hover:not(.kid-page__tab--active) {
+    background: #064E3B !important;
+    color: #A7F3D0 !important;
+    border-color: #10B981 !important;
+}
+
+/* Active tab - Emerald Green (must come last to override) */
+html.dark-mode .kid-page--activities .kid-page__tab.kid-page__tab--active {
+    background: linear-gradient(135deg, #047857 0%, #10B981 100%) !important;
+    color: white !important;
+    border-color: #34D399 !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4) !important;
+}
+
+/* ==========================================================================
+   ACTIVITIES - SUGGEST TAB - DARK MODE
+   ========================================================================== */
+
+html.dark-mode .kid-page--activities .activities-suggest-tab {
+    background: transparent;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-tab__intro {
+    color: #94A3B8 !important;
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px 16px;
+    margin-bottom: 16px;
+}
+
+/* Suggest cards */
+html.dark-mode .kid-page--activities .activities-suggest-card {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card:hover {
+    border-color: #10B981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card--done {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    border-color: #22C55E !important;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card__icon {
+    border-radius: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card__category {
+    color: #10B981 !important;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card__name {
+    color: #E2E8F0 !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card--done .activities-suggest-card__name {
+    color: #DCFCE7 !important;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card__actions button {
+    background: #334155 !important;
+    border: 1px solid #475569 !important;
+    color: #94A3B8 !important;
+}
+
+html.dark-mode .kid-page--activities .activities-suggest-card__actions button:hover {
+    background: #064E3B !important;
+    border-color: #10B981 !important;
+    color: #A7F3D0 !important;
+}
+
+/* ==========================================================================
+   ACTIVITIES - BROWSE TAB - DARK MODE
+   ========================================================================== */
+
+html.dark-mode .kid-page--activities .activities-browse-tab {
+    background: transparent;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-category {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-category__header {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    padding: 12px 16px;
+    border-left-width: 4px !important;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-category__name {
+    color: #E0FFF4 !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-category__count {
+    color: #A7F3D0 !important;
+    background: rgba(167, 243, 208, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-category__list {
+    background: #1E293B;
+    padding: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item:hover {
+    border-color: #10B981;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item--done {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    border-color: #22C55E !important;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item__name {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item--done .activities-browse-item__name {
+    color: #DCFCE7 !important;
+}
+
+html.dark-mode .kid-page--activities .activities-browse-item__check {
+    color: #22C55E !important;
+}
+
+/* ==========================================================================
+   ACTIVITIES - HISTORY TAB - DARK MODE
+   ========================================================================== */
+
+html.dark-mode .kid-page--activities .activities-history-tab {
+    background: transparent;
+}
+
+/* Calendar styles for Activities (shared component but with Emerald theme) */
+html.dark-mode .kid-page--activities .history-calendar {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__header {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    border-bottom: 1px solid #10B981;
+    padding: 16px;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__title {
+    color: #E0FFF4 !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__nav {
+    color: #A7F3D0 !important;
+    background: rgba(16, 185, 129, 0.2);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 8px;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__nav:hover {
+    background: rgba(16, 185, 129, 0.4) !important;
+    color: white !important;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__weekdays {
+    background: #0F172A;
+    border-bottom: 1px solid #334155;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__weekday,
+html.dark-mode .kid-page--activities .history-calendar__weekdays span {
+    color: #6EE7B7 !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__grid {
+    background: #1E293B;
+    padding: 8px;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__day {
+    color: #CBD5E1 !important;
+    background: #334155;
+    border: 1px solid #475569;
+    border-radius: 8px;
+}
+
+html.dark-mode .kid-page--activities .history-calendar__day:hover {
+    background: #475569 !important;
+    border-color: #10B981;
+}
+
+/* Today indicator - Emerald Green */
+html.dark-mode .kid-page--activities .history-calendar__day--today {
+    background: linear-gradient(135deg, #047857 0%, #10B981 100%) !important;
+    color: white !important;
+    border-color: #34D399 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Days with activity */
+html.dark-mode .kid-page--activities .history-calendar__day--has-activity {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    color: #DCFCE7 !important;
+    border-color: #22C55E !important;
+}
+
+/* History day cards */
+html.dark-mode .kid-page--activities .activities-history-day {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--activities .activities-history-day--today {
+    border-color: #10B981 !important;
+}
+
+html.dark-mode .kid-page--activities .activities-history-day__header {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    padding: 12px 16px;
+}
+
+html.dark-mode .kid-page--activities .activities-history-day__date {
+    color: #E0FFF4 !important;
+    font-weight: 600;
+}
+
+html.dark-mode .kid-page--activities .activities-history-day__count {
+    color: #A7F3D0 !important;
+    background: rgba(167, 243, 208, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-history-day__list {
+    background: #1E293B;
+    padding: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-history-item {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-history-item__icon {
+    border-radius: 8px;
+}
+
+html.dark-mode .kid-page--activities .activities-history-item__name {
+    color: #E2E8F0 !important;
+    font-weight: 500;
+}
+
+html.dark-mode .kid-page--activities .activities-history-item__category {
+    color: #10B981 !important;
+    font-size: 0.75rem;
+}
+
+/* Empty history state */
+html.dark-mode .kid-page--activities .activities-history-empty {
+    color: #64748B !important;
+    background: #1E293B;
+    border: 1px dashed #475569;
+    border-radius: 16px;
+    padding: 24px;
+    text-align: center;
+}
+
+/* ==========================================================================
+   ACTIVITIES - STATS TAB - DARK MODE
+   ========================================================================== */
+
+html.dark-mode .kid-page--activities .activities-stats-tab {
+    background: transparent;
+}
+
+/* Stats overview cards */
+html.dark-mode .kid-page--activities .activities-stats-overview {
+    display: grid;
+    gap: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-card {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    border: 1px solid #10B981 !important;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(6, 78, 59, 0.3);
+}
+
+html.dark-mode .kid-page--activities .activities-stats-card__value {
+    color: #A7F3D0 !important;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-card__label {
+    color: #6EE7B7 !important;
+    font-size: 0.875rem;
+}
+
+/* Category breakdown */
+html.dark-mode .kid-page--activities .activities-stats-categories {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    padding: 16px;
+    margin-top: 16px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-categories__title {
+    color: #E0FFF4 !important;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-categories__list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__icon {
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__name {
+    color: #E2E8F0 !important;
+    font-weight: 500;
+    flex: 1;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__count {
+    color: #10B981 !important;
+    font-weight: 700;
+    background: rgba(16, 185, 129, 0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__bar {
+    background: #1E293B !important;
+    border-radius: 8px;
+    height: 8px;
+    overflow: hidden;
+}
+
+html.dark-mode .kid-page--activities .activities-stats-category__fill {
+    height: 100%;
+    border-radius: 8px;
+}
+
+/* ==========================================================================
+   ACTIVITIES - MODALS - DARK MODE (Emerald Green theme)
+   ========================================================================== */
+
+/* Browse All Activities Modal */
+html.dark-mode .all-activities {
+    background: transparent;
+}
+
+html.dark-mode .all-activities__category {
+    background: #1E293B !important;
+    border: 1px solid #334155;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    padding: 16px;
+}
+
+html.dark-mode .all-activities__title {
+    color: #10B981 !important;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #334155;
+}
+
+html.dark-mode .all-activities__title svg {
+    color: #10B981 !important;
+}
+
+html.dark-mode .all-activities__list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+html.dark-mode .all-activities__item {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px;
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .all-activities__item:hover {
+    background: #475569 !important;
+    border-color: #10B981;
+}
+
+html.dark-mode .all-activities__item span {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .all-activities__item--done {
+    background: linear-gradient(135deg, #14532D 0%, #166534 100%) !important;
+    border-color: #22C55E !important;
+}
+
+html.dark-mode .all-activities__item--done span {
+    color: #DCFCE7 !important;
+}
+
+html.dark-mode .all-activities__check {
+    color: #22C55E !important;
+}
+
+html.dark-mode .all-activities__item button {
+    background: #064E3B !important;
+    border: 1px solid #10B981 !important;
+    color: #A7F3D0 !important;
+}
+
+html.dark-mode .all-activities__item button:hover {
+    background: #047857 !important;
+    color: white !important;
+}
+
+/* Manage Activities Modal */
+html.dark-mode .manage-activities {
+    background: transparent;
+}
+
+html.dark-mode .manage-activities__info {
+    color: #94A3B8 !important;
+    background: #1E293B;
+    border: 1px solid #334155;
+    border-radius: 12px;
+    padding: 12px 16px;
+}
+
+html.dark-mode .manage-activities__category {
+    background: #1E293B !important;
+    border: 1px solid #334155 !important;
+    border-radius: 16px;
+    margin-bottom: 16px;
+    overflow: hidden;
+}
+
+html.dark-mode .manage-activities__category-header {
+    background: linear-gradient(135deg, #064E3B 0%, #047857 100%) !important;
+    padding: 12px 16px;
+    color: #E0FFF4 !important;
+}
+
+html.dark-mode .manage-activities__category-header svg {
+    color: #A7F3D0 !important;
+}
+
+html.dark-mode .manage-activities__count {
+    color: #A7F3D0 !important;
+    background: rgba(167, 243, 208, 0.2);
+    padding: 2px 8px;
+    border-radius: 12px;
+}
+
+html.dark-mode .manage-activities__list {
+    background: #1E293B;
+    padding: 12px;
+}
+
+html.dark-mode .manage-activities__item {
+    background: #334155 !important;
+    border: 1px solid #475569;
+    border-radius: 12px;
+    padding: 12px;
+    margin-bottom: 8px;
+    color: #E2E8F0 !important;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+html.dark-mode .manage-activities__item span {
+    color: #E2E8F0 !important;
+}
+
+html.dark-mode .manage-activities__item button {
+    background: #7F1D1D !important;
+    border: 1px solid #DC2626 !important;
+    color: #FCA5A5 !important;
+}
+
+html.dark-mode .manage-activities__item button:hover {
+    background: #991B1B !important;
+    color: white !important;
+}
+
+html.dark-mode .manage-activities__add {
+    background: #1E293B;
+    padding: 12px;
+    border-top: 1px solid #334155;
+}
+
+html.dark-mode .manage-activities__add input {
+    background: #334155 !important;
+    border: 1px solid #475569 !important;
+    color: #E2E8F0 !important;
+    border-radius: 8px;
+    padding: 8px 12px;
+}
+
+html.dark-mode .manage-activities__add input::placeholder {
+    color: #64748B !important;
+}
+
+html.dark-mode .manage-activities__add input:focus {
+    border-color: #10B981 !important;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+html.dark-mode .manage-activities__add button {
+    background: linear-gradient(135deg, #047857 0%, #10B981 100%) !important;
+    border: none !important;
+    color: white !important;
+}
+
+html.dark-mode .manage-activities__add button:hover {
+    background: linear-gradient(135deg, #059669 0%, #34D399 100%) !important;
+}
+
+/* Manage Activities V2 (if used) */
+html.dark-mode .manage-activities-v2 {
+    background: transparent;
+}
+
+html.dark-mode .manage-activities-v2__reset {
+    border-bottom-color: #334155;
+}
+
+/* ==========================================================================
+   Bookmarks Widget - Kid Theme & Dark Mode
+   ========================================================================== */
+
+/* Collapsed icon for focus nav */
+.widget--collapsed__icon--bookmarks {
+    background: linear-gradient(135deg, #818CF8 0%, #6366F1 100%);
+    color: white;
+}
+
+/* Focus nav tab colors */
+.focus-nav__tab--active.focus-nav__tab--bookmarks {
+    background: #6366F1;
+}
+.focus-nav__tab--active.focus-nav__tab--bookmarks::after {
+    background: #6366F1;
+}
+
+.focus-nav__tab--bookmarks:not(.focus-nav__tab--active) {
+    background: #C7D2FE;
+}
+.focus-nav__tab--bookmarks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #3730A3;
+}
+
+/* Dark Mode */
+html.dark-mode .bookmarks-widget__empty p {
+    color: #94A3B8;
+}
+
+html.dark-mode .bookmarks-widget__item:hover {
+    background: #1E293B;
+}
+
+html.dark-mode .bookmarks-widget__item-title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .bookmarks-widget__item-domain {
+    color: #64748B;
+}
+
+html.dark-mode .bookmarks-widget__item-tag {
+    background: color-mix(in srgb, var(--tag-color, #6366F1) 20%, transparent);
+}
+
+html.dark-mode .bookmarks-widget__footer {
+    border-top-color: #334155;
+}
+
+html.dark-mode .bookmarks-page {
+    background: #0F172A;
+}
+
+html.dark-mode .bookmarks-page__hero {
+    background: linear-gradient(135deg, #312E81 0%, #4C1D95 50%, #581C87 100%);
+}
+
+html.dark-mode .bookmarks-page__back {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+html.dark-mode .bookmarks-page__actions .btn--primary {
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .bookmarks-page__actions .btn--primary:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+html.dark-mode .bookmarks-page__filters {
+    background: #1E293B;
+    border-bottom-color: #334155;
+}
+
+html.dark-mode .bookmarks-filter__chip {
+    background: #334155;
+    border-color: #475569;
+    color: #CBD5E1;
+}
+
+html.dark-mode .bookmarks-filter__chip:hover {
+    background: #475569;
+}
+
+html.dark-mode .bookmarks-filter__count {
+    background: rgba(0, 0, 0, 0.2);
+}
+
+html.dark-mode .bookmarks-search {
+    background: #0F172A;
+    border-color: #334155;
+    color: #64748B;
+}
+
+html.dark-mode .bookmarks-search__input {
+    color: #E2E8F0;
+}
+
+html.dark-mode .bookmarks-page__empty h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .bookmarks-page__empty p {
+    color: #94A3B8;
+}
+
+html.dark-mode .bookmarks-page__empty svg {
+    color: #475569;
+}
+
+html.dark-mode .bookmarks-page__empty-icon {
+    background: linear-gradient(135deg, #1E1B4B, #312E81);
+}
+
+html.dark-mode .bookmark-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .bookmark-card:hover {
+    box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+    border-color: #6366F1;
+}
+
+html.dark-mode .bookmark-card__domain {
+    color: #64748B;
+}
+
+html.dark-mode .bookmark-card__menu-btn {
+    color: #64748B;
+}
+
+html.dark-mode .bookmark-card__menu-btn:hover {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .bookmark-card__dropdown {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+html.dark-mode .bookmark-card__dropdown button {
+    color: #CBD5E1;
+}
+
+html.dark-mode .bookmark-card__dropdown button:hover {
+    background: #334155;
+}
+
+html.dark-mode .bookmark-card__dropdown button[data-action="delete"] {
+    color: #F87171;
+}
+
+html.dark-mode .bookmark-card__dropdown button[data-action="delete"]:hover {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+html.dark-mode .bookmark-card__title {
+    color: #E2E8F0;
+}
+
+html.dark-mode .bookmark-card__desc {
+    color: #94A3B8;
+}
+
+html.dark-mode .bookmark-card__date {
+    color: #64748B;
+}
+
+html.dark-mode .bookmark-card__tag {
+    background: color-mix(in srgb, var(--tag-color, #6366F1) 20%, transparent);
+}
+
+/* Dark mode focus nav tab */
+html.dark-mode .focus-nav__tab--bookmarks:not(.focus-nav__tab--active) {
+    background: #312E81;
+}
+html.dark-mode .focus-nav__tab--bookmarks:not(.focus-nav__tab--active) .focus-nav__tab-icon {
+    color: #A5B4FC;
+}
+
+/* Dark mode tag picker in modal */
+html.dark-mode .bookmarks-tag-option__label {
+    background: #334155;
+    color: #CBD5E1;
+    border-color: #475569;
+}
+
+html.dark-mode .bookmarks-tag-option__label:hover {
+    background: #475569;
+}
+
+/* ==========================================================================
+   CAREGIVER HANDOFF - Full Page Dark Mode
+   ========================================================================== */
+html.dark-mode .handoff-today-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .handoff-today-card--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #1E293B 0%, #2D1520 100%);
+}
+
+html.dark-mode .handoff-today-header {
+    border-color: #334155;
+}
+
+html.dark-mode .handoff-today-header h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .handoff-today-label {
+    color: #94A3B8;
+}
+
+html.dark-mode .handoff-today-label svg {
+    color: #94A3B8;
+}
+
+html.dark-mode .handoff-today-footer {
+    border-color: #334155;
+}
+
+html.dark-mode .handoff-today-updated {
+    color: #64748B;
+}
+
+html.dark-mode .handoff-today-updated svg {
+    color: #64748B;
+}
+
+/* History cards */
+html.dark-mode .handoff-history-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .handoff-history-card--today {
+    border-color: #D97706;
+    background: linear-gradient(135deg, #1E293B 0%, #2D2510 100%);
+}
+
+html.dark-mode .handoff-history-card--important {
+    border-color: #EF4444;
+    background: linear-gradient(135deg, #1E293B 0%, #2D1520 100%);
+}
+
+html.dark-mode .handoff-history-card__day {
+    color: #E2E8F0;
+}
+
+html.dark-mode .handoff-history-stat {
+    background: #334155;
+    color: #CBD5E1;
+}
+
+html.dark-mode .handoff-history-stat svg {
+    color: #94A3B8;
+}
+
+html.dark-mode .handoff-history-card__notes {
+    background: #0F172A;
+}
+
+html.dark-mode .handoff-history-card__notes p {
+    color: #CBD5E1;
+}
+
+html.dark-mode .handoff-history-card__time {
+    color: #64748B;
+}
+
+/* ==========================================================================
+   GROWTH CHART - Full Page Dark Mode
+   ========================================================================== */
+
+/* Chart container */
+html.dark-mode .growth-chart-container {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .growth-chart-tooltip {
+    background: #1E293B;
+    border-color: #334155;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+html.dark-mode .growth-chart-tooltip__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .growth-chart-tooltip__date {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-chart-legend__item {
+    color: #CBD5E1;
+}
+
+html.dark-mode .growth-chart-axis-label {
+    fill: #94A3B8;
+}
+
+/* Unit toggle */
+html.dark-mode .growth-chart-unit-toggle {
+    background: #334155;
+}
+
+html.dark-mode .unit-toggle-btn {
+    color: #94A3B8;
+}
+
+html.dark-mode .unit-toggle-btn:hover {
+    color: #E2E8F0;
+}
+
+html.dark-mode .unit-toggle-btn--active {
+    background: #1E293B;
+    color: #A5B4FC;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Latest measurement section */
+html.dark-mode .growth-chart-latest {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .growth-chart-latest h3 {
+    color: #E2E8F0;
+}
+
+html.dark-mode .growth-latest-value {
+    background: #0F172A;
+}
+
+html.dark-mode .growth-latest-value__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-latest-value__val {
+    color: #F1F5F9;
+}
+
+/* History cards */
+html.dark-mode .growth-history-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .growth-history-card__date {
+    color: #E2E8F0;
+}
+
+html.dark-mode .growth-history-card__note {
+    border-color: #334155;
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-history-card__note svg {
+    color: #64748B;
+}
+
+html.dark-mode .growth-measurement-value {
+    background: #0F172A;
+}
+
+html.dark-mode .growth-measurement-value__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-measurement-value__val {
+    color: #F1F5F9;
+}
+
+/* Filter tags */
+html.dark-mode .growth-chart-filter {
+    background: #1E293B;
+    color: #94A3B8;
+    border-color: #475569;
+}
+
+html.dark-mode .growth-chart-filter--active {
+    background: color-mix(in srgb, var(--filter-color) 15%, #1E293B);
+    color: #E2E8F0;
+    border-color: var(--filter-color);
+}
+
+html.dark-mode .growth-chart-filter:not(.growth-chart-filter--disabled):hover {
+    background: color-mix(in srgb, var(--filter-color) 10%, #1E293B);
+    border-color: var(--filter-color);
+}
+
+/* Stats cards */
+html.dark-mode .growth-stats-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .growth-stats-card__label {
+    color: #94A3B8;
+}
+
+html.dark-mode .growth-stats-card__value {
+    color: #F1F5F9;
+}
+
+html.dark-mode .growth-stats-field {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .growth-stats-field__title {
+    color: #E2E8F0;
+}
+
+/* ==========================================================================
+   MILESTONES - Coming Up / Full Page Dark Mode
+   ========================================================================== */
+
+/* Age banner */
+html.dark-mode .milestones-coming-up__age-banner {
+    background: linear-gradient(135deg, #4C1D35 0%, #831843 100%);
+}
+
+html.dark-mode .milestones-coming-up__age-label {
+    color: #FBCFE8;
+}
+
+html.dark-mode .milestones-coming-up__age-value {
+    color: #F1F5F9;
+}
+
+/* Milestone cards */
+html.dark-mode .milestones-coming-up-card {
+    background: #1E293B;
+    border-color: #334155;
+}
+
+html.dark-mode .milestones-coming-up-card__name {
+    color: #E2E8F0;
+}
+
+/* Section titles */
+html.dark-mode .milestones-section-title {
+    color: #E2E8F0;
+}
+
+/* Milestone items (category view) */
+html.dark-mode .milestone-item--achieved {
+    background-color: rgba(34, 197, 94, 0.15);
+}
+
+html.dark-mode .milestone-item__checkbox {
+    background-color: #1E293B;
+    border-color: #475569;
+}
+
+html.dark-mode .milestone-item__name {
+    color: #E2E8F0;
+}
+
+html.dark-mode .milestone-item__age {
+    color: #94A3B8;
 }
